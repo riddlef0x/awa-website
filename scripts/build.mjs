@@ -25,8 +25,9 @@ const YOUTUBE_SUBSCRIBE = `${YOUTUBE_CHANNEL}?sub_confirmation=1`;
 
 // One article per published episode. Verified facts only, sourced from episode
 // transcripts / show notes / fact-checks in RESEARCH — never the raw recording.
-// Every article is a draft: it renders with a visible "draft" badge and is not
-// to be treated as final copy without a human voice pass (per Jenny's brief).
+// Cleared for publish 30 Aug 2026: fact pass (Jenny/Oksana) and voice pass
+// (Stephanie) both done, Robin waived further approval gates — draft badges
+// removed accordingly. See WORK_LOGS for the QA trail if any article changes.
 const ARTICLES = [
   {
     episodeNumber: 1,
@@ -124,7 +125,6 @@ function articleBlock(article, episodesByNumber) {
     <article class="article" id="article-${article.episodeNumber}">
       <div class="article-head">
         <span class="ep-num">Episode ${String(article.episodeNumber).padStart(2, "0")}</span>
-        <span class="draft-badge">Draft — pending human voice pass</span>
       </div>
       <h3>${article.title}</h3>
       <p class="article-dek">${article.dek}</p>
@@ -216,7 +216,6 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
   .articles{display:flex;flex-direction:column;gap:36px;max-width:760px;margin:0 auto}
   .article{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px}
   .article-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
-  .draft-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);background:var(--lime);padding:3px 9px;border-radius:4px}
   .article h3{font-size:22px;margin:6px 0 8px;line-height:1.3}
   .article-dek{color:var(--muted);font-size:15px;margin-bottom:16px}
   .article p{margin-bottom:14px;font-size:15px;color:#D6DCE8}
