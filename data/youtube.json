@@ -1,0 +1,47 @@
+{
+  "fetchedAt": "2026-08-30T15:24:27.598Z",
+  "source": "live",
+  "episodes": [
+    {
+      "videoId": "IT1CxSch6x4",
+      "title": "What is a harness? | Episode 1",
+      "published": "2026-08-10T12:27:21+00:00",
+      "url": "https://www.youtube.com/watch?v=IT1CxSch6x4",
+      "thumbnail": "https://i.ytimg.com/vi/IT1CxSch6x4/hqdefault.jpg",
+      "episodeNumber": 1
+    },
+    {
+      "videoId": "-cv48twm9Kw",
+      "title": "Multiplayer agents |  Episode 2",
+      "published": "2026-08-12T12:55:21+00:00",
+      "url": "https://www.youtube.com/watch?v=-cv48twm9Kw",
+      "thumbnail": "https://i.ytimg.com/vi/-cv48twm9Kw/hqdefault.jpg",
+      "episodeNumber": 2
+    },
+    {
+      "videoId": "qp1zBerxoaE",
+      "title": "The Brain | Episode 3",
+      "published": "2026-08-19T11:39:24+00:00",
+      "url": "https://www.youtube.com/watch?v=qp1zBerxoaE",
+      "thumbnail": "https://i.ytimg.com/vi/qp1zBerxoaE/hqdefault.jpg",
+      "episodeNumber": 3
+    },
+    {
+      "videoId": "foh1JHjA8GE",
+      "title": "Buzz | Episode 4",
+      "published": "2026-08-30T03:36:49+00:00",
+      "url": "https://www.youtube.com/watch?v=foh1JHjA8GE",
+      "thumbnail": "https://i.ytimg.com/vi/foh1JHjA8GE/hqdefault.jpg",
+      "episodeNumber": 4
+    }
+  ],
+  "shorts": [
+    {
+      "videoId": "Tokxxm8rFAk",
+      "title": "Marketing Director Builds Advanced Dashboard in Claude Over a Weekend! #shorts",
+      "published": "2026-08-30T14:05:44+00:00",
+      "url": "https://www.youtube.com/shorts/Tokxxm8rFAk",
+      "thumbnail": "https://i.ytimg.com/vi/Tokxxm8rFAk/hqdefault.jpg"
+    }
+  ]
+}

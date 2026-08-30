@@ -1,0 +1,9 @@
+{
+  "name": "awa-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch:youtube": "node scripts/fetch-youtube.mjs",
+    "build": "node scripts/fetch-youtube.mjs && node scripts/build.mjs"
+  }
+}
