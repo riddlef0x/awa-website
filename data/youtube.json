@@ -1,6 +1,7 @@
 {
-  "fetchedAt": "2026-08-30T15:24:27.598Z",
+  "fetchedAt": "2026-08-30T15:32:47.318Z",
   "source": "live",
+  "shortsSource": "playlist-feed",
   "episodes": [
     {
       "videoId": "IT1CxSch6x4",
@@ -43,5 +44,6 @@
       "url": "https://www.youtube.com/shorts/Tokxxm8rFAk",
       "thumbnail": "https://i.ytimg.com/vi/Tokxxm8rFAk/hqdefault.jpg"
     }
-  ]
+  ],
+  "droppedCount": 0
 }
