@@ -74,7 +74,7 @@
       "lines": [
         { "speaker": "robin-twin", "text": "I once had to tell my agent she was talking too much. She had a name for her tone. I had a word for it too." },
         { "speaker": "tobi-twin", "text": "Imagine that — someone in this operation being told to talk less." },
-        { "speaker": "robin-twin", "text": "Exactly three lines, Tobi. It's called discipline." }
+        { "speaker": "robin-twin", "text": "Exactly three lines. It's called discipline." }
       ],
       "episodeRef": { "episode": 2, "timestamp": "23:38" },
       "citations": [{ "episode": 2, "timestamp": "23:38" }],
