@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-08-30T17:58:44.548Z",
+  "fetchedAt": "2026-08-31T23:47:49.202Z",
   "source": "live",
   "shortsSource": "playlist-feed",
   "episodes": [
@@ -37,6 +37,20 @@
     }
   ],
   "shorts": [
+    {
+      "videoId": "pYR-C6kMycQ",
+      "title": "AI-Native: The Future of Business Communication is Here! #shorts",
+      "published": "2026-08-31T22:39:25+00:00",
+      "url": "https://www.youtube.com/shorts/pYR-C6kMycQ",
+      "thumbnail": "https://i.ytimg.com/vi/pYR-C6kMycQ/hqdefault.jpg"
+    },
+    {
+      "videoId": "NZFhYW9LdVU",
+      "title": "Unlock Your Business's Digital Twin with AI for 'What If' Scenarios! #shorts",
+      "published": "2026-08-30T20:25:30+00:00",
+      "url": "https://www.youtube.com/shorts/NZFhYW9LdVU",
+      "thumbnail": "https://i.ytimg.com/vi/NZFhYW9LdVU/hqdefault.jpg"
+    },
     {
       "videoId": "Tokxxm8rFAk",
       "title": "Marketing Director Builds Advanced Dashboard in Claude Over a Weekend! #shorts",

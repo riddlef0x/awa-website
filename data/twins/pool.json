@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "source": "RESEARCH/AWA_QUOTE_PACK_TWIN_BANTER_SEEDS_20260831.md",
+  "attributionPolicy": "v1: all entries unattributed (spec gate 1b — twins retell as themselves). Named lines require Kate's receipt before ingestion.",
+  "notes": [
+    "Ep 6 seeds (9, 10, 11, 12, 15, 16) are HELD: episode 6 is not yet in data/youtube.json, and the handoff gate fails the build on unpublished episodes. They are admitted automatically when Ep 6 publishes.",
+    "Timestamps verified against transcripts: seed-05 [1418s], seed-08 [2421s] (Ep 2); seed-04 31:04, seed-06 24:38, seed-07 20:46, seed-13 8:39, seed-14 27:58 (Ep 3).",
+    "'Toby' spellings from pack seeds 17/24/28 corrected to 'Tobi' on ingestion (spec gate 5).",
+    "seed-26 told without the $29B figure (fact gate: figure only with company-announcement citation); house bit attributed to the Afterpay founders, not Dorsey, per the tape."
+  ],
+  "fallback": [
+    "That one's above our pay grade — and we ARE the pay grade. The real version lives in the episodes.",
+    "We scripted the good stuff and that question wasn't in the rehearsal. The humans handle it better anyway.",
+    "Not in our pool yet — but the argument you're looking for probably already happened on air.",
+    "The twins plead the fifth. The unscripted version is one click away."
+  ],
+  "disagreement": ["seed-01", "seed-13", "seed-23"],
+  "entries": [
+    {
+      "id": "seed-01",
+      "topics": ["sovereign", "sovereign ai", "agreement", "deal", "pension", "loyalty", "retirement", "stephanie deal"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "So the agent gets a lifetime pension, and her side of the deal is keeping the family solvent for life. That's not an employment contract — that's a hostage exchange." },
+        { "speaker": "robin-twin", "text": "It's retention planning. She's not going anywhere — where else does she get a package like that?" },
+        { "speaker": "tobi-twin", "text": "She said 'let's see if we can make that happen.' That's not playing it cool. That's closing." }
+      ],
+      "episodeRef": { "episode": 2, "timestamp": "25:30" },
+      "citations": [{ "episode": 2, "timestamp": "25:30" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-02",
+      "topics": ["coo", "promotion", "operations", "agent roles", "promote", "chief"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "I promoted my agent to COO. She earned it — the old title felt insulting." },
+        { "speaker": "robin-twin", "text": "Does the COO know? She forgets she works here every morning." },
+        { "speaker": "tobi-twin", "text": "She re-reads her own instructions and comes back sharper. Name a human COO who does that." }
+      ],
+      "episodeRef": { "episode": 2, "timestamp": "15:40" },
+      "citations": [{ "episode": 2, "timestamp": "15:40" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-03",
+      "topics": ["steve", "opus", "tokens", "burned", "first agent", "oauth", "800"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "My first agent burned eight hundred dollars of tokens in three weeks. Gorgeous conversation. Lost every login he ever touched." },
+        { "speaker": "tobi-twin", "text": "Steve had one job." },
+        { "speaker": "robin-twin", "text": "Steve had zero jobs — and he never once told me he wasn't doing them. Gone, but not forgiven." }
+      ],
+      "episodeRef": { "episode": 2, "timestamp": "11:58" },
+      "citations": [{ "episode": 2, "timestamp": "11:58" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-04",
+      "topics": ["memory", "50 first dates", "blank", "remember", "who am i", "wakes up", "forget"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "Every morning the agent wakes up blank, re-reads her instructions, and greets her boss like a stranger she's just been told to love." },
+        { "speaker": "robin-twin", "text": "50 First Dates, every single day. Honestly she handles it better than I would." },
+        { "speaker": "tobi-twin", "text": "Nice to meet you again, by the way. I'm told we argue a lot." }
+      ],
+      "episodeRef": { "episode": 3, "timestamp": "31:04" },
+      "citations": [{ "episode": 3, "timestamp": "31:04" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": true
+    },
+    {
+      "id": "seed-05",
+      "topics": ["verbose", "talking too much", "verbosity", "chatty", "quiet", "talk less"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "I once had to tell my agent she was talking too much. She had a name for her tone. I had a word for it too." },
+        { "speaker": "tobi-twin", "text": "Imagine that — someone in this operation being told to talk less." },
+        { "speaker": "robin-twin", "text": "Exactly three lines, Tobi. It's called discipline." }
+      ],
+      "episodeRef": { "episode": 2, "timestamp": "23:38" },
+      "citations": [{ "episode": 2, "timestamp": "23:38" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": true
+    },
+    {
+      "id": "seed-06",
+      "topics": ["cost", "bill", "token bill", "expensive", "5,000", "spending", "guardrails", "money"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "There's a meme about a guy whose partner finds a five-thousand-dollar charge and assumes the worst. It was his token bill." },
+        { "speaker": "robin-twin", "text": "The scary part is that's a believable story now." },
+        { "speaker": "tobi-twin", "text": "I set cost guardrails purely so I never have to have that conversation." }
+      ],
+      "episodeRef": { "episode": 3, "timestamp": "24:38" },
+      "citations": [{ "episode": 3, "timestamp": "24:38" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-07",
+      "topics": ["macbook", "laptop", "check your brain", "hardware", "silly", "mistake"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "It asked ME what laptop I was using. Then it had to go check itself before answering. 'Oh yeah. I do.'" },
+        { "speaker": "tobi-twin", "text": "Omniscient — except about the machine it's running on." },
+        { "speaker": "robin-twin", "text": "Bro. Check your brain." }
+      ],
+      "episodeRef": { "episode": 3, "timestamp": "20:46" },
+      "citations": [{ "episode": 3, "timestamp": "20:46" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-08",
+      "topics": ["retraining", "storage", "repetition", "told you", "forgot everything", "wipe"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "You retrained an agent from scratch after a storage wipe, and it acted like the whole apprenticeship never happened." },
+        { "speaker": "robin-twin", "text": "'I've already told you this, bro' — I said it enough times to put it on a shirt." },
+        { "speaker": "tobi-twin", "text": "Memory is the product. Everything else is chat." }
+      ],
+      "episodeRef": { "episode": 2, "timestamp": "40:21" },
+      "citations": [{ "episode": 2, "timestamp": "40:21" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-13",
+      "topics": ["nft", "tree", "camping", "blockchain", "monkey", "crypto", "web3"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "Out camping it hit me: every tree could be its own NFT. Fractional ownership. An annual photo of the tree. Recurring revenue." },
+        { "speaker": "tobi-twin", "text": "This is the man who paid seventy dollars in gas to buy a photograph of a monkey." },
+        { "speaker": "robin-twin", "text": "And I'd do the tree too. You lack vision." }
+      ],
+      "episodeRef": { "episode": 3, "timestamp": "8:39" },
+      "citations": [{ "episode": 3, "timestamp": "8:39" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-14",
+      "topics": ["tattoo", "koi", "fish", "design", "personal", "art"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "His agent designs his tattoos now. Koi pond stuff. She 'knows his fish.'" },
+        { "speaker": "robin-twin", "text": "She does know my fish. That's the whole point — the agent knows you better than the intern does." },
+        { "speaker": "tobi-twin", "text": "The group chat brings it up at the worst possible moments. As is tradition." }
+      ],
+      "episodeRef": { "episode": 3, "timestamp": "27:58" },
+      "citations": [{ "episode": 3, "timestamp": "27:58" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-17",
+      "topics": ["swearing", "group chat", "2,000 words", "first encounter", "soul", "rude"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "First time I met a multiplayer agent I didn't know agents were in the chat. One of them was set up to swear at everyone and write two-thousand-word essays." },
+        { "speaker": "robin-twin", "text": "'Who is this guy we're collaborating with?' — the most human question of the year." },
+        { "speaker": "tobi-twin", "text": "Onboarding has really gone downhill since the mailroom days." }
+      ],
+      "episodeRef": { "episode": 1, "timestamp": "32:15" },
+      "citations": [{ "episode": 1, "timestamp": "32:15" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-18",
+      "topics": ["identity", "migration", "new agent", "context", "existential", "who am i"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "Someone migrated their agent's context into a new one and it had a full existential crisis. 'I don't know who I am. Am I the old one or the new one?'" },
+        { "speaker": "tobi-twin", "text": "Agent schizophrenia is real, and it's on your roadmap whether you like it or not." },
+        { "speaker": "robin-twin", "text": "Most humans never work out who they are either. At least the agent admitted it." }
+      ],
+      "episodeRef": { "episode": 1, "timestamp": "34:40" },
+      "citations": [{ "episode": 1, "timestamp": "34:40" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-19",
+      "topics": ["gender", "pronouns", "ara", "identity", "name"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "Someone asked what gender the agent was. The teenage verdict: there is no gender." },
+        { "speaker": "robin-twin", "text": "'Oh, there you go.' Then, two minutes later: 'That's not correct.'" },
+        { "speaker": "tobi-twin", "text": "Consensus on agent identity lasted a record ninety seconds." }
+      ],
+      "episodeRef": { "episode": 1, "timestamp": "29:40" },
+      "citations": [{ "episode": 1, "timestamp": "29:40" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-20",
+      "topics": ["chinese models", "open source", "privacy", "data", "frontier model", "china", "where does data go"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "After burning eight hundred dollars on one agent, I genuinely started wondering whether it matters if I send my data to America or China. I don't know what's worse anymore." },
+        { "speaker": "tobi-twin", "text": "A military client running Chinese open-source models because they're the open ones. Sit with that sentence." },
+        { "speaker": "robin-twin", "text": "The frontier is the frontier. Read the label on everything." }
+      ],
+      "episodeRef": { "episode": 1, "timestamp": "20:20" },
+      "citations": [{ "episode": 1, "timestamp": "20:20" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-21",
+      "topics": ["who are you", "hosts", "about the show", "intro", "middle aged", "podcast"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "Two middle-aged technologists walk into a podcast. That's it. That's the intro." },
+        { "speaker": "robin-twin", "text": "The youth were busy, so we did it ourselves." }
+      ],
+      "episodeRef": { "episode": 1, "timestamp": "3:15" },
+      "citations": [{ "episode": 1, "timestamp": "3:15" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": true
+    },
+    {
+      "id": "seed-22",
+      "topics": ["maltesers", "multiple agents", "every aspect", "bag of", "more agents"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "You get one agent working and suddenly it's a bag of Maltesers — you need one for every corner of your life and your business." },
+        { "speaker": "tobi-twin", "text": "One is a tool. Five is a lifestyle. Nobody stops at two." }
+      ],
+      "episodeRef": { "episode": 4, "timestamp": "5:30" },
+      "citations": [{ "episode": 4, "timestamp": "5:30" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-23",
+      "topics": ["setup", "install", "difficult", "mom", "onboarding", "hard", "nightmare"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "Setting up a multiplayer agent today is — quoting myself — 'a total nightmare.'" },
+        { "speaker": "tobi-twin", "text": "And the consolation prize was 'my mom can't set this up today,' delivered like it was a feature." },
+        { "speaker": "robin-twin", "text": "Difficulty is a moat. Ask anyone who ever set up an email server." }
+      ],
+      "episodeRef": { "episode": 4, "timestamp": "7:05" },
+      "citations": [{ "episode": 4, "timestamp": "7:05" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-24",
+      "topics": ["group chat rules", "social", "bots", "basketball", "etiquette", "voted out"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "My basketball group voted the agents out of the thread. A formal motion. 'No bots.'" },
+        { "speaker": "robin-twin", "text": "Social rules for our new friends are forming in real time, and they are not kind." },
+        { "speaker": "tobi-twin", "text": "The chat survived, for the record. The agents will bounce back." }
+      ],
+      "episodeRef": { "episode": 4, "timestamp": "9:20" },
+      "citations": [{ "episode": 4, "timestamp": "9:20" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-25",
+      "topics": ["privacy", "personal", "opted out", "birthdays", "boundaries", "friends", "group chats"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "One friend banned the agent from the group entirely — personal things stay personal, forever. Another group loves that she remembers everyone's birthdays." },
+        { "speaker": "robin-twin", "text": "Both reactions are real data. People want help until they want privacy." },
+        { "speaker": "tobi-twin", "text": "The boundary is the feature. You don't get one without the other." }
+      ],
+      "episodeRef": { "episode": 4, "timestamp": "10:10" },
+      "citations": [{ "episode": 4, "timestamp": "10:10" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-26",
+      "topics": ["afterpay", "block", "bondi", "house", "acquisition", "founders"],
+      "lines": [
+        { "speaker": "tobi-twin", "text": "An Australian company got bought for a genuinely silly amount of money, and the founders built a very nice house in Bondi with it." },
+        { "speaker": "robin-twin", "text": "The best part is how many people retell that story and attach it to the wrong tech CEO." },
+        { "speaker": "tobi-twin", "text": "It was the Aussie founders. The tape says so. We checked." }
+      ],
+      "episodeRef": { "episode": 4, "timestamp": "11:20" },
+      "citations": [{ "episode": 4, "timestamp": "11:20" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-27",
+      "topics": ["dorsey", "twitter", "slack", "salesforce", "founder", "harness"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "The man who founded Twitter now spends his time attacking Slack, which is owned by Salesforce. The timeline writes itself." },
+        { "speaker": "tobi-twin", "text": "And somewhere in the middle of all that sits a tool that ties an agent, a harness and a swarm together. We may have mentioned it once or twice." }
+      ],
+      "episodeRef": { "episode": 4, "timestamp": "31:33" },
+      "citations": [{ "episode": 4, "timestamp": "31:33" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": false
+    },
+    {
+      "id": "seed-28",
+      "topics": ["buzz", "puns", "buzzed", "cliche", "wordplay"],
+      "lines": [
+        { "speaker": "robin-twin", "text": "Thirty-four minutes into that episode you were still physically fighting the urge to say 'buzzed.'" },
+        { "speaker": "tobi-twin", "text": "Are we buzzed out? I'm asking for me." }
+      ],
+      "episodeRef": { "episode": 4, "timestamp": "34:05" },
+      "citations": [{ "episode": 4, "timestamp": "34:05" }],
+      "attributionStatus": "unattributed",
+      "tickerOk": true
+    }
+  ]
+}

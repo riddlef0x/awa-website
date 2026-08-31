@@ -1,7 +1,8 @@
 // Renders dist/index.html from data/youtube.json + the article drafts below.
 // Static output only — no client-side fetch to any third party (Oksana ruling,
 // AWA channel, 30 Aug 2026: build-time static, not a runtime dependency).
-import { readFile, writeFile, mkdir, cp } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { buildTwins } from "./build-twins.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -318,8 +319,17 @@ ${articleBlocks}
 `;
 
   await mkdir(DIST, { recursive: true });
-  await writeFile(path.join(DIST, "index.html"), html);
+
+  // Twins Phase A: gates run first (any failure aborts the build), widget goes
+  // site-wide on the homepage, /twins page ships with its own embedded widget.
+  const twins = await buildTwins(data);
+  const homepageHtml = html.replace("</body>", `${twins.widget}\n</body>`);
+  if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
+  await writeFile(path.join(DIST, "index.html"), homepageHtml);
+  await mkdir(path.join(DIST, "twins"), { recursive: true });
+  await writeFile(path.join(DIST, "twins", "index.html"), twins.twinsPage);
   console.log(`[build] wrote dist/index.html (${data.episodes.length} episodes, ${data.shorts.length} shorts, ${ARTICLES.length} articles, stale=${isStale})`);
+  console.log(`[build] wrote dist/twins/index.html + netlify/functions/ask-data.json (twins gates passed)`);
 }
 
 main().catch((err) => {

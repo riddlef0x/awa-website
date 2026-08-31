@@ -4,3 +4,10 @@
 
 [functions."scheduled-rebuild"]
   schedule = "0 */6 * * *"
+
+# Twins Phase A ask endpoint (PLANS/AWA_TWINS_V1_SCRIPTED_SPEC.md §3).
+[[redirects]]
+  from = "/api/ask"
+  to = "/.netlify/functions/ask"
+  status = 200
+  force = true
