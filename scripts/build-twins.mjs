@@ -34,7 +34,7 @@ const ASK_STYLES = `
 .twins-go{background:#C8FF3D;border:0;border-radius:8px;color:#0A1628;font-weight:700;padding:8px 12px;cursor:pointer}
 .twins-err{color:#FFB86B;font-size:12px;margin:0 12px 10px}
 .twins-tag{display:inline-block;font-size:11px;letter-spacing:.02em;color:#C8FF3D;background:rgba(200,255,61,.08);border:1px solid rgba(200,255,61,.25);border-radius:6px;padding:4px 8px;margin:10px 12px 0}
-.twins-widget{position:fixed;right:16px;bottom:16px;z-index:9999;max-width:min(360px,calc(100vw - 32px))}
+.twins-widget{position:fixed;right:16px;bottom:74px;z-index:9999;max-width:min(360px,calc(100vw - 32px))}
 .twins-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none}
 .twins-dot{width:8px;height:8px;border-radius:50%;background:#C8FF3D;flex:none}
 .twins-ticker{font-size:13px;color:#9AA7BA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -42,7 +42,7 @@ const ASK_STYLES = `
 .twins-open .twins-panel{display:block}
 .twins-hidden{display:none}
 @media (prefers-reduced-motion: reduce){.twins-ask *{transition:none!important;animation:none!important}}
-@media (max-width:640px){.twins-widget{left:16px;right:16px;bottom:12px;max-width:none}.twins-widget .twins-ask{max-height:70vh;overflow-y:auto}}
+@media (max-width:640px){.twins-widget{left:16px;right:16px;bottom:70px;max-width:none}.twins-widget .twins-ask{max-height:70vh;overflow-y:auto}}
 `;
 
 const ASK_SCRIPT = `
