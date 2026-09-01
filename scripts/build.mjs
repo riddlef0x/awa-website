@@ -517,6 +517,8 @@ ${articleBlocks}
   .legal h2{text-align:left;margin-bottom:6px}
   h1.legal-title{font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin-bottom:6px;font-weight:600;text-align:left}
   .ep-page h1.legal-title,.article-page h1.legal-title,.about h1.legal-title,.nf h1.legal-title{margin-bottom:12px}
+  .nf h1.legal-title{text-align:center}
+  .legal .kicker,.ep-page .kicker,.article-page .kicker,.about .kicker{text-align:left}
   .legal h3{margin:28px 0 8px;font-size:19px}
   .legal p{color:#D6DCE8;margin-bottom:12px;font-size:15px}
   .legal ul{margin:0 0 14px 20px;color:#D6DCE8;font-size:15px}
