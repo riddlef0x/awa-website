@@ -1,7 +1,7 @@
 // Renders dist/index.html from data/youtube.json + the article drafts below.
 // Static output only — no client-side fetch to any third party (Oksana ruling,
 // AWA channel, 30 Aug 2026: build-time static, not a runtime dependency).
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { buildTwins } from "./build-twins.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -355,7 +355,14 @@ async function main() {
   const latestEp = data.episodes.length ? data.episodes[data.episodes.length - 1] : null;
   // A4 "Start here" anchor: Episode 1, lowest episodeNumber (not array order).
   const firstEp = [...data.episodes].sort((a, b) => a.episodeNumber - b.episodeNumber)[0] ?? null;
-  const DEFAULT_OG = latestEp?.thumbnail ?? null;
+  // P2 branded share card (assets/og-card.png, committed — Netlify builds have
+  // no renderer; regenerate with assets/og-card-source.html + headless Chrome).
+  // Default for pages with no natural image (episodes index, about, subscribe,
+  // privacy, 404). Homepage/episodes/articles/twins keep real episode
+  // thumbnails per the DoD v2 ruling.
+  const BRAND_OG = `${SITE_URL}/og-card.png`;
+  await copyFile(path.join(ROOT, "assets", "og-card.png"), path.join(DIST, "og-card.png")).catch(() => {});
+  const DEFAULT_OG = BRAND_OG;
 
   const ageDays = (Date.now() - new Date(data.fetchedAt).getTime()) / 86400000;
   const isStale = data.source !== "live" || ageDays > 14;
