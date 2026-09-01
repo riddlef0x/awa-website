@@ -431,7 +431,7 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
     <p class="hero-ctas">${latestEp
       ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
       : `<a class="btn" href="${YOUTUBE_SUBSCRIBE}">Watch on YouTube</a>`}</p>
-    <p class="byline">Hosted by Robin Leonard and Tobi Webster</p>
+    <p class="byline">Hosted by Robin Leonard and Tobi Webster — two operators who run real businesses on AI agents.</p>
     ${listenOnBlock({ compact: true })}
 ${latestEp ? featuredPlayer(latestEp) : ""}
   </div>
