@@ -17,6 +17,19 @@ const UPLOADS_FEED_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${
 const SHORTS_FEED_URL = `https://www.youtube.com/feeds/videos.xml?playlist_id=UUSH${CHANNEL_ID.slice(2)}`;
 const STALE_DAYS = 14;
 
+// Episode slots are pinned by videoId. A re-title on the channel must never
+// silently reclassify a published episode (incident 1 Sep 2026: Ep1/Ep2
+// re-titled without "| Episode N" → title regex dropped both → build gate
+// failed). The title regex stays as the fallback for NEW uploads only; if a
+// pinned video's title still matches the regex with a DIFFERENT number, the
+// pin wins and the mismatch is logged loudly.
+const KNOWN_EPISODE_IDS = {
+  "IT1CxSch6x4": 1,
+  "-cv48twm9Kw": 2,
+  "qp1zBerxoaE": 3,
+  "foh1JHjA8GE": 4,
+};
+
 function parseEntries(xml) {
   const entries = [];
   const blocks = xml.split("<entry>").slice(1);
@@ -78,8 +91,16 @@ async function classify(uploadEntries) {
 
   for (const e of uploadEntries) {
     const epMatch = e.title.match(/Episode\s+(\d+)/i);
+    const pinned = KNOWN_EPISODE_IDS[e.videoId];
     if (shortIds.has(e.videoId)) {
       shorts.push(toRecord(e, { isShort: true }));
+    } else if (pinned) {
+      if (epMatch && Number(epMatch[1]) !== pinned) {
+        console.warn(
+          `[fetch-youtube] pinned episode ${pinned} (${e.videoId}) title says "Episode ${epMatch[1]}" — pin wins`
+        );
+      }
+      episodes.push({ ...toRecord(e, { isShort: false }), episodeNumber: pinned });
     } else if (epMatch) {
       episodes.push({ ...toRecord(e, { isShort: false }), episodeNumber: Number(epMatch[1]) });
     } else {
