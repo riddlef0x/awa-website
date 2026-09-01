@@ -226,7 +226,9 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl) {
 <meta name="description" content="Scripted AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
 <meta property="og:title" content="The twins — Act Without Asking">
 <meta property="og:description" content="Two scripted AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
-<link rel="canonical" href="${siteUrl}/twins/"><style>
+<link rel="canonical" href="${siteUrl}/twins/">
+<meta property="og:url" content="${siteUrl}/twins/">
+<style>
 body{margin:0;background:#0A1628;color:#F4F7FB;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
 .wrap{max-width:760px;margin:0 auto;padding:48px 20px 96px}
 .kicker{color:#C8FF3D;text-transform:uppercase;letter-spacing:.14em;font-size:12px;margin:0 0 8px}
