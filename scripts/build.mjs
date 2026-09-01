@@ -39,6 +39,21 @@ const PLACEHOLDER_HOSTS = ["actwithoutasking.com", "awa-website.netlify.app"].fi
   (h) => h !== new URL(SITE_URL).host
 );
 
+// Arch condition A (event 36f1e546): escape feed-derived strings (youtube.json
+// titles/URLs) in every HTML context — the multi-page rewrite multiplies the
+// interpolation surface, and one future feed title with a quote or & must not
+// mangle every card it lands in.
+const escapeHtml = (s) =>
+  String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+// JSON-LD must never be able to close its own <script> tag — serialize with
+// every literal < escaped to \u003c (valid JSON, inert in HTML).
+const jsonLdSafe = (o) => JSON.stringify(o, null, 2).replace(/</g, "\\u003c");
+
 const SITE_CSS = `
   :root{
     --navy:#0A1628; --navy2:#111A2E; --lime:#C8FF3D; --ink:#F4F7FB;
@@ -213,11 +228,11 @@ function episodeCard(ep, { internal = false } = {}) {
   const external = internal ? "" : ` target="_blank" rel="noopener"`;
   const cta = internal ? "Episode page" : "Watch on YouTube";
   return `
-    <a class="ep-card" href="${href}"${external}>
-      <div class="ep-thumb"><img src="${ep.thumbnail}" alt="${cleanTitle} — Episode ${ep.episodeNumber}" loading="lazy"></div>
+    <a class="ep-card" href="${escapeHtml(href)}"${external}>
+      <div class="ep-thumb"><img src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanTitle} — Episode ${ep.episodeNumber}`)}" loading="lazy"></div>
       <div class="ep-body">
         <span class="ep-num">Episode ${String(ep.episodeNumber).padStart(2, "0")}</span>
-        <h3>${cleanTitle}</h3>
+        <h3>${escapeHtml(cleanTitle)}</h3>
         <p>${dateStr} · ${cta}</p>
       </div>
     </a>`;
@@ -230,16 +245,16 @@ function shortCard(s) {
     year: "numeric",
   });
   return `
-    <a class="short-card" href="${s.url}" target="_blank" rel="noopener">
-      <div class="short-thumb"><img src="${s.thumbnail}" alt="${s.title}" loading="lazy"></div>
-      <p class="short-title">${s.title.replace(/#shorts/i, "").trim()}</p>
+    <a class="short-card" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">
+      <div class="short-thumb"><img src="${escapeHtml(s.thumbnail)}" alt="${escapeHtml(s.title)}" loading="lazy"></div>
+      <p class="short-title">${escapeHtml(s.title.replace(/#shorts/i, "").trim())}</p>
       <p class="short-date">${dateStr}</p>
     </a>`;
 }
 
 function articleBlock(article, episodesByNumber) {
   const ep = episodesByNumber.get(article.episodeNumber);
-  const linked = ep ? `<a class="article-watch" href="${ep.url}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a>` : "";
+  const linked = ep ? `<a class="article-watch" href="${escapeHtml(ep.url)}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a>` : "";
   return `
     <article class="article" id="article-${article.episodeNumber}">
       <div class="article-head">
@@ -283,12 +298,12 @@ async function main() {
 <meta name="description" content="Act Without Asking is a podcast about AI agents doing real work, and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta property="og:title" content="Act Without Asking — The agentic AI podcast">
 <meta property="og:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
-<meta property="og:image" content="${data.episodes[0]?.thumbnail ?? ""}">
+<meta property="og:image" content="${escapeHtml(data.episodes[0]?.thumbnail ?? "")}">
 <meta property="og:url" content="${SITE_URL}/">
 <meta property="og:type" content="website">
 <link rel="canonical" href="${SITE_URL}/">
 <script type="application/ld+json">
-${JSON.stringify({
+${jsonLdSafe({
   "@context": "https://schema.org",
   "@type": "PodcastSeries",
   name: "Act Without Asking",
@@ -451,14 +466,14 @@ ${articleBlocks}
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title}</title>
-<meta name="description" content="${desc}">
-<meta property="og:title" content="${title}">
-<meta property="og:description" content="${desc}">
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(desc)}">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(desc)}">
 <meta property="og:url" content="${abs}">
 <meta property="og:type" content="website">
 <link rel="canonical" href="${abs}">
-${jsonLd ? `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>\n` : ""}<link rel="stylesheet" href="/site.css">
+${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script>\n` : ""}<link rel="stylesheet" href="/site.css">
 <style>${innerCSS}</style>
 </head>
 <body>
@@ -604,11 +619,11 @@ ${subscribeBar}
     <div class="wrap narrow">
       <p class="crumb"><a href="/episodes/">← All episodes</a></p>
       <p class="kicker">Episode ${String(ep.episodeNumber).padStart(2, "0")}</p>
-      <h2>${cleanEpTitle(ep)}</h2>
+      <h2>${escapeHtml(cleanEpTitle(ep))}</h2>
       <p class="ep-meta">${fmtDate(ep.published)} · Hosted by Robin Leonard, with Tobi Webster</p>
-      <img class="ep-hero" src="${ep.thumbnail}" alt="${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail">
-      <p class="dek">${epDek(ep)}</p>
-      <a class="btn" href="${ep.url}" target="_blank" rel="noopener">Watch on YouTube</a>
+      <img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail`)}">
+      <p class="dek">${escapeHtml(epDek(ep))}</p>
+      <a class="btn" href="${escapeHtml(ep.url)}" target="_blank" rel="noopener">Watch on YouTube</a>
       ${articleSection}
       ${transcriptSlot}
     </div>
@@ -646,7 +661,7 @@ ${subscribeBar}
   function articleRoute(article) {
     const ep = episodesByNumber.get(article.episodeNumber);
     const watch = ep
-      ? `<p><a class="article-watch" href="${ep.url}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a></p>`
+      ? `<p><a class="article-watch" href="${escapeHtml(ep.url)}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a></p>`
       : "";
     const body = `
   <section class="article-page legal">
@@ -741,7 +756,11 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
     }
   }
 
-  const buildDate = new Date().toISOString().slice(0, 10);
+  // Arch condition B (event 36f1e546): sitemap lastmod must be content-true.
+  // Derive from youtube.json fetchedAt — changes only when the feed data
+  // changes, not on every rebuild. A missing lastmod is honest; a build-date
+  // one lies.
+  const contentDate = data.fetchedAt.slice(0, 10);
   const sitemapPaths = [
     "/",
     "/episodes/",
@@ -753,7 +772,7 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
   ];
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${buildDate}</lastmod></url>`).join("\n")}
+${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${contentDate}</lastmod></url>`).join("\n")}
 </urlset>
 `;
   pages.push(["sitemap.xml", sitemapXml]);
