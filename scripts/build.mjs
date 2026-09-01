@@ -352,7 +352,12 @@ async function main() {
   const episodesByNumber = new Map(data.episodes.map((e) => [e.episodeNumber, e]));
   // Feed runs Ep 1→N in order, so the latest episode is the LAST element —
   // not episodes[0] (Kate's flag: the homepage og:image was sharing Ep 1).
-  const latestEp = data.episodes.length ? data.episodes[data.episodes.length - 1] : null;
+  // Latest = newest by PUBLISHED DATE (DoD v1.1), not array position — an
+  // out-of-order publish must not silently share/link the wrong episode
+  // (QA Low, Yoshi 1 Sep). Today the last element wins anyway.
+  const latestEp = data.episodes.length
+    ? data.episodes.reduce((a, b) => (new Date(b.published) > new Date(a.published) ? b : a))
+    : null;
   // A4 "Start here" anchor: Episode 1, lowest episodeNumber (not array order).
   const firstEp = [...data.episodes].sort((a, b) => a.episodeNumber - b.episodeNumber)[0] ?? null;
   // P2 branded share card (assets/og-card.png, committed — Netlify builds have
@@ -719,6 +724,19 @@ ${subscribeBar}
   const fmtDate = (iso) =>
     new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
 
+  // Page <title>: keep the full brand suffix when the base headline is short
+  // enough; drop to "— Episode N", then to the bare headline, as length grows
+  // (QA Low: Google truncates >~60-char titles — don't lose the words to the
+  // suffix). Wording untouched, length only (Jane ruling, 1 Sep).
+  const pageTitle = (base, epNum) => {
+    const full = epNum
+      ? `${base} — Act Without Asking, Episode ${epNum}`
+      : `${base} — Act Without Asking`;
+    if (full.length <= 60) return full;
+    const short = epNum ? `${base} — Episode ${epNum}` : base;
+    return short.length <= 60 ? short : base;
+  };
+
   function episodeRoute(ep) {
     const slug = episodeSlug(ep);
     const article = articlesByEpisode.get(ep.episodeNumber);
@@ -772,7 +790,7 @@ ${subscribeBar}
       `episodes/${slug}/index.html`,
       pageShell({
         path: `/episodes/${slug}/`,
-        title: `${cleanEpTitle(ep)} — Act Without Asking, Episode ${ep.episodeNumber}`,
+        title: pageTitle(cleanEpTitle(ep), ep.episodeNumber),
         desc: epDek(ep),
         body,
         jsonLd,
@@ -816,7 +834,7 @@ ${subscribeBar}
       `articles/${article.slug}/index.html`,
       pageShell({
         path: `/articles/${article.slug}/`,
-        title: `${article.title} — Act Without Asking`,
+        title: pageTitle(article.title, null),
         desc: article.dek,
         body,
         jsonLd,
@@ -908,6 +926,36 @@ ${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${contentDa
 </urlset>
 `;
   pages.push(["sitemap.xml", sitemapXml]);
+
+  // llms.txt (Jane ruling, 1 Sep): the machine-readable signpost — the site is
+  // server-rendered precisely so machines can read it; this tells them where
+  // to look. Generated from the same feed data as the pages.
+  const llmsTxt = `# Act Without Asking
+
+> AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster. New episodes as they land on YouTube.
+
+Act Without Asking is a podcast where two operators hand real AI agents real responsibility inside real businesses — and report exactly what happened. Every episode has a server-rendered page with the full write-up; transcripts are added as they are completed.
+
+## Episodes
+
+${data.episodes.map((ep) => `- [${cleanEpTitle(ep)} (Episode ${ep.episodeNumber})](${SITE_URL}/episodes/${episodeSlug(ep)}/): ${epDek(ep)}`).join("\n")}
+
+## Articles
+
+${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [${a.title}](${SITE_URL}/articles/${a.slug}/): ${a.dek}`).join("\n")}
+
+## Site
+
+- [About the show and hosts](${SITE_URL}/about/)
+- [Subscribe — The Harness Kit](${SITE_URL}/subscribe/)
+- [Privacy](${SITE_URL}/privacy/)
+- [The twins — ask the show's AI twins](${SITE_URL}/twins/)
+
+## Listen
+
+- YouTube: ${YOUTUBE_CHANNEL}
+`;
+  pages.push(["llms.txt", llmsTxt]);
 
   await mkdir(DIST, { recursive: true });
   await mkdir(path.join(DIST, "subscribe"), { recursive: true });

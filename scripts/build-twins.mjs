@@ -42,7 +42,7 @@ const ASK_STYLES = `
 .twins-open .twins-panel{display:block}
 .twins-hidden{display:none}
 @media (prefers-reduced-motion: reduce){.twins-ask *{transition:none!important;animation:none!important}}
-@media (max-width:640px){.twins-widget{left:16px;right:16px;bottom:70px;max-width:none}.twins-widget .twins-ask{max-height:70vh;overflow-y:auto}}
+@media (max-width:640px){.twins-widget{left:16px;right:16px;bottom:108px;max-width:none}.twins-widget .twins-ask{max-height:70vh;overflow-y:auto}}
 `;
 
 const ASK_SCRIPT = `
@@ -97,6 +97,21 @@ const ASK_SCRIPT = `
   bar.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(!card.classList.contains("twins-open"));}});
   card.addEventListener("mouseenter",function(){paused=true;});
   card.addEventListener("mouseleave",function(){paused=!card.classList.contains("twins-open");});
+  // Keep the widget above the fixed subscribe bar at every width — the bar
+  // wraps to two rows on phones, so a constant offset guesses wrong (QA
+  // Medium, Yoshi 1 Sep). Measure the real bar; CSS offsets are the no-JS
+  // fallback. No bar (/twins) -> clear the inline override.
+  var widgetEl=document.getElementById("twinsWidget");
+  // NOTE: the bar is injected AFTER this script in document order, so it must
+  // be queried at call time, not captured at parse time.
+  function sizeToBar(){
+    if(!widgetEl)return;
+    var barEl=document.querySelector(".subscribe-bar");
+    widgetEl.style.bottom=barEl?(barEl.offsetHeight+14)+"px":"";
+  }
+  window.addEventListener("resize",sizeToBar);
+  window.addEventListener("load",sizeToBar);
+  if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",sizeToBar);}else{sizeToBar();}
 })();
 `;
 
