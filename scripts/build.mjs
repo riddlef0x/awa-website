@@ -390,11 +390,11 @@ async function main() {
 <meta name="description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta property="og:title" content="Act Without Asking — The agentic AI podcast">
 <meta property="og:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
-<meta property="og:image" content="${escapeHtml(DEFAULT_OG ?? "")}">
+<meta property="og:image" content="${escapeHtml(latestEp?.thumbnail ?? "")}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Act Without Asking — The agentic AI podcast">
 <meta name="twitter:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
-<meta name="twitter:image" content="${escapeHtml(DEFAULT_OG ?? "")}">
+<meta name="twitter:image" content="${escapeHtml(latestEp?.thumbnail ?? "")}">
 <meta property="og:url" content="${SITE_URL}/">
 <meta property="og:type" content="website">
 <link rel="canonical" href="${SITE_URL}/">
