@@ -27,6 +27,23 @@ const LINKEDIN_URL = null; // e.g. "https://www.linkedin.com/company/..."
 const YOUTUBE_CHANNEL = "https://www.youtube.com/@actwithoutaskingpod";
 const YOUTUBE_SUBSCRIBE = `${YOUTUBE_CHANNEL}?sub_confirmation=1`;
 
+// A2 "Listen on" block (DoD v2): YouTube ONLY tonight — show is not on
+// Apple/Spotify (verified via iTunes Search API, 1 Sep 2026). Data-driven so
+// platform deep links slot in on distribution day without touching markup:
+// push a { name, url } entry and every placement picks it up.
+const LISTEN_PLATFORMS = [
+  { name: "YouTube", url: YOUTUBE_CHANNEL },
+];
+function listenOnBlock({ compact = false } = {}) {
+  const links = LISTEN_PLATFORMS.map(
+    (p) => `<a class="cta-btn ${compact ? "ghost" : "primary"}" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.name)}</a>`
+  ).join("\n      ");
+  return `<div class="listen-on${compact ? " compact" : ""}">
+      <span class="listen-label">Listen on</span>
+      ${links}
+    </div>`;
+}
+
 // ONE domain constant (Oksana arch v1 §2). Every absolute internal URL —
 // canonical, sitemap, JSON-LD, OG — derives from SITE_URL. Domain switch =
 // change this one line + rebuild + 301 map at the host.
@@ -133,6 +150,13 @@ const SITE_CSS = `
   .strip-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
   .strip .cta-btn.primary{background:var(--navy);color:var(--lime)}
   .strip .cta-btn.ghost{border-color:var(--navy);color:var(--navy)}
+  .strip-sub{color:var(--navy);max-width:560px;margin:8px auto 0;font-size:15px}
+  .listen-on{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+  .listen-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.14em;font-family:'JetBrains Mono',monospace}
+  .listen-on .cta-btn{font-size:13px;padding:8px 16px}
+  footer .listen-on{justify-content:flex-start;margin-top:12px}
+  .start-here{color:var(--muted);font-size:15px;margin-top:12px}
+  .start-here a{color:var(--lime)}
   footer{border-top:1px solid var(--line);padding:32px 0;color:var(--muted);font-size:13px}
   footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
   footer .foot-ctas{display:flex;gap:10px}
@@ -329,6 +353,8 @@ async function main() {
   // Feed runs Ep 1→N in order, so the latest episode is the LAST element —
   // not episodes[0] (Kate's flag: the homepage og:image was sharing Ep 1).
   const latestEp = data.episodes.length ? data.episodes[data.episodes.length - 1] : null;
+  // A4 "Start here" anchor: Episode 1, lowest episodeNumber (not array order).
+  const firstEp = [...data.episodes].sort((a, b) => a.episodeNumber - b.episodeNumber)[0] ?? null;
   const DEFAULT_OG = latestEp?.thumbnail ?? null;
 
   const ageDays = (Date.now() - new Date(data.fetchedAt).getTime()) / 86400000;
@@ -399,6 +425,7 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
       ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
       : `<a class="btn" href="${YOUTUBE_SUBSCRIBE}">Watch on YouTube</a>`}</p>
     <p class="byline">Hosted by Robin Leonard and Tobi Webster</p>
+    ${listenOnBlock({ compact: true })}
 ${latestEp ? featuredPlayer(latestEp) : ""}
   </div>
 
@@ -407,6 +434,7 @@ ${latestEp ? featuredPlayer(latestEp) : ""}
       <div class="section-head">
         <p class="kicker">Full episodes</p>
         <h2>Episodes</h2>
+        <p class="start-here">New here? <a href="/episodes/${firstEp ? episodeSlug(firstEp) : ""}/">Start with Episode 1</a> — the opening argument.</p>
       </div>
       <div class="eps">
 ${episodeCards}
@@ -448,7 +476,11 @@ ${articleBlocks}
   <section class="strip">
     <div class="wrap">
       <h2>New episodes as they land.</h2>
-      <div class="strip-ctas">${footerCTAs}</div>
+      <p class="strip-sub">Get The Harness Kit — the checklists and templates we use on the show, free after you confirm.</p>
+      <div class="strip-ctas">
+        <a class="cta-btn primary" href="/subscribe/">Get the Harness Kit</a>
+        <a class="cta-btn ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a>
+      </div>
     </div>
   </section>
 </main>
@@ -457,6 +489,7 @@ ${articleBlocks}
   <div class="wrap">
     <span>© 2026 Act Without Asking · A show from Axela</span>
     <div class="foot-ctas">${footerCTAs}</div>
+    ${listenOnBlock({ compact: true })}
   </div>
 </footer>
 
@@ -575,6 +608,7 @@ ${body}
   <div class="wrap">
     <span>© 2026 Act Without Asking · A show from Axela</span>
     <div class="foot-ctas">${footerCTAs}</div>
+    ${listenOnBlock({ compact: true })}
   </div>
 </footer>
 ${subscribeBar}
@@ -642,6 +676,7 @@ ${subscribeBar}
         <p class="form-note">Email capture opens with our list provider this week — the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
       </form>
       <p class="alt">Not into email? <a href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a> instead.</p>
+      ${listenOnBlock({ compact: true })}
     </div>
   </section>`;
 
@@ -818,7 +853,14 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
     ["episodes/index.html", pageShell({ path: "/episodes/", title: "Episodes — Act Without Asking", desc: "Every episode of Act Without Asking: harnesses, multiplayer agents, agent memory, and Buzz — AI agents doing real work.", body: episodesIndexBody })],
     ...data.episodes.map(episodeRoute),
     ...articleRoutes,
-    ["about/index.html", pageShell({ path: "/about/", title: "About — Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action — no hype, no scripts.", body: aboutBody })],
+    ["about/index.html", pageShell({ path: "/about/", title: "About — Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action — no hype, no scripts.", body: aboutBody, jsonLd: {
+      "@context": "https://schema.org",
+      "@graph": [
+        { "@type": "Person", name: "Robin Leonard", jobTitle: "Host", url: SITE_URL, sameAs: [YOUTUBE_CHANNEL] },
+        { "@type": "Person", name: "Tobi Webster", jobTitle: "Co-host", url: SITE_URL, sameAs: [YOUTUBE_CHANNEL] },
+        podcastSeriesRef,
+      ],
+    } })],
     ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe — Act Without Asking", desc: "Get new episodes and The Harness Kit — checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
     ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: email list, analytics, and nothing hidden.", body: privacyBody })],
     ["404.html", pageShell({ path: "/404.html", title: "Page not found — Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
