@@ -791,7 +791,14 @@ ${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${contentDa
   await writeFile(path.join(DIST, "site.css"), SITE_CSS);
   await mkdir(path.join(DIST, "twins"), { recursive: true });
   await writeFile(path.join(DIST, "twins", "index.html"), twins.twinsPage);
-  console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html (routes: /, /episodes, ${data.episodes.length} episode pages, ${articleRoutes.length} article pages, /about, /subscribe, /privacy, 404, robots, sitemap; twins gates passed; stale=${isStale})`);
+  // Redirects ship in the publish dir, not via netlify.toml. The 01 Sep 2026
+  // deploys proved the toml [[redirects]] rule never reached the deploy's
+  // redirect table: prod /api/ask fell through to dist/404.html (the twins
+  // widget calls /api/ask, so the feature was dead for users even with the
+  // function itself healthy). A _redirects file in the publish dir is
+  // processed on every deploy type, so the rewrite cannot be lost again.
+  await writeFile(path.join(DIST, "_redirects"), "/api/ask  /.netlify/functions/ask  200\n");
+  console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html + _redirects (routes: /, /episodes, ${data.episodes.length} episode pages, ${articleRoutes.length} article pages, /about, /subscribe, /privacy, 404, robots, sitemap; twins gates passed; stale=${isStale})`);
 }
 
 main().catch((err) => {
