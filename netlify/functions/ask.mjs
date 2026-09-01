@@ -106,10 +106,8 @@ function response(entry, { fallback = false } = {}) {
     ? nextFallback()
     : entry.lines.map((l) => (l.speaker === "robin-twin" ? "Robin-twin: " : "Tobi-twin: ") + l.text).join("\n\n");
   const speakers = new Set((entry.lines || []).map((l) => l.speaker));
-  return {
-    statusCode: 200,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
+  return new Response(
+    JSON.stringify({
       answer,
       speaker: speakers.size === 1 ? [...speakers][0] : "both",
       citations: entry.citations,
@@ -117,14 +115,13 @@ function response(entry, { fallback = false } = {}) {
       poolId: entry.id,
       fallbackUsed: fallback,
     }),
-  };
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
 }
 
 function handoffResponse(statusCode, answer) {
-  return {
-    statusCode,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
+  return new Response(
+    JSON.stringify({
       answer,
       speaker: "both",
       citations: fallbackHandoff.citations,
@@ -132,7 +129,8 @@ function handoffResponse(statusCode, answer) {
       poolId: "fallback",
       fallbackUsed: true,
     }),
-  };
+    { status: statusCode, headers: { "content-type": "application/json" } },
+  );
 }
 
 function log(event) {
@@ -140,6 +138,9 @@ function log(event) {
   console.log(JSON.stringify({ kind: "twins-metric", t: new Date().toISOString(), ...event }));
 }
 
+// Netlify Functions v2 contract: the handler MUST return a Response (or
+// undefined). v1-shaped {statusCode, headers, body} objects 502 every
+// invocation with "Function returned an unsupported value".
 export default async (req) => {
   try {
     if (req.method !== "POST") {
@@ -156,7 +157,7 @@ export default async (req) => {
     // Client beacon: handoff click counting (aggregate, no identifiers).
     if (body.kind === "handoff-click") {
       log({ poolId: String(body.poolId || "unknown").slice(0, 40), event: "handoffClicked" });
-      return { statusCode: 204 };
+      return new Response(null, { status: 204 });
     }
 
     const question = typeof body.question === "string" ? body.question.trim() : "";
