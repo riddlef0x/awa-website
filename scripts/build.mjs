@@ -21,8 +21,101 @@ const MUTED = "#9AA7BA";
 // LinkedIn company page URL — pending from Stephanie (Jenny flagged this 30 Aug).
 // Placeholder only. Grep for LINKEDIN_URL_PENDING before treating any build as final.
 const LINKEDIN_URL = null; // e.g. "https://www.linkedin.com/company/..."
+// Phase 0 quick win (audit roadmap, 31 Aug): the three "(link pending)" LinkedIn
+// buttons are REMOVED from header/footer/strip until the company page exists —
+// dead buttons don't ship. Re-add via markCTA({ href: LINKEDIN_URL }) when set.
 const YOUTUBE_CHANNEL = "https://www.youtube.com/@actwithoutaskingpod";
 const YOUTUBE_SUBSCRIBE = `${YOUTUBE_CHANNEL}?sub_confirmation=1`;
+
+// ONE domain constant (Oksana arch v1 §2). Every absolute internal URL —
+// canonical, sitemap, JSON-LD, OG — derives from SITE_URL. Domain switch =
+// change this one line + rebuild + 301 map at the host.
+const SITE_URL = "https://awa-website.netlify.app"; // interim host until the real domain lands
+// Hardcoded-host gate: hosts that must NEVER appear in emitted HTML except via
+// SITE_URL. "actwithoutasking.com" is the expected real domain — if it shows up
+// before the switch, someone hardcoded it; after the switch it IS SITE_URL and
+// the old netlify host moves here, so any forgotten literal fails the build.
+const PLACEHOLDER_HOSTS = ["actwithoutasking.com", "awa-website.netlify.app"].filter(
+  (h) => h !== new URL(SITE_URL).host
+);
+
+const SITE_CSS = `
+  :root{
+    --navy:#0A1628; --navy2:#111A2E; --lime:#C8FF3D; --ink:#F4F7FB;
+    --muted:#9AA7BA; --card:#131E33; --line:#22304A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--navy);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--lime)}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  header{position:sticky;top:0;background:rgba(10,22,40,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:.02em}
+  .nav-ctas{display:flex;gap:10px}
+  .cta-btn{display:inline-block;font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
+  .cta-btn.primary{background:var(--lime);color:var(--navy)}
+  .cta-btn.primary:hover{filter:brightness(1.08)}
+  .cta-btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .cta-btn.ghost:hover{border-color:var(--lime);color:var(--lime)}
+  .cta-btn[data-pending]{opacity:.55;cursor:not-allowed}
+  .hero{padding:96px 0 64px;text-align:center;background:radial-gradient(600px 300px at 50% -50px, rgba(200,255,61,.10), transparent 70%),linear-gradient(180deg, var(--navy2), var(--navy));position:relative;overflow:hidden}
+  .hero .kicker{color:var(--lime);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.18em;font-family:'JetBrains Mono',monospace}
+  .hero h1{font-size:clamp(40px,7vw,84px);line-height:1.02;letter-spacing:-.02em;margin:20px 0;font-weight:700}
+  .hero .sub{color:var(--muted);max-width:600px;margin:0 auto 28px;font-size:18px}
+  .hero .btn{display:inline-block;background:var(--lime);color:var(--navy);font-weight:700;text-decoration:none;padding:15px 30px;border-radius:8px;font-size:15px}
+  .hero .byline{margin-top:20px;color:#5A6478;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
+  section{padding:72px 0}
+  .kicker{color:var(--lime);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-align:center}
+  h2{font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin-bottom:8px;text-align:center;font-weight:600}
+  .section-head{margin-bottom:44px}
+  .eps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+  .ep-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--ink);display:block;transition:transform .15s ease,border-color .15s ease}
+  .ep-card:hover{transform:translateY(-3px);border-color:var(--lime)}
+  .ep-thumb img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--navy2)}
+  .ep-body{padding:18px}
+  .ep-num{color:var(--lime);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
+  .ep-body h3{font-size:17px;margin:8px 0 4px;line-height:1.3}
+  .ep-body p{color:var(--muted);font-size:13px}
+  .shorts-wall{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:800px;margin:0 auto}
+  .short-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--ink);display:block}
+  .short-card:hover{border-color:var(--lime)}
+  .short-thumb img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:var(--navy2)}
+  .short-title{font-size:12px;padding:10px 10px 2px;color:var(--ink)}
+  .short-date{font-size:11px;padding:0 10px 10px;color:var(--muted)}
+  .empty-note{text-align:center;color:var(--muted);font-size:14px}
+  .articles{display:flex;flex-direction:column;gap:36px;max-width:760px;margin:0 auto}
+  .article{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px}
+  .article-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+  .article h3{font-size:22px;margin:6px 0 8px;line-height:1.3}
+  .article-dek{color:var(--muted);font-size:15px;margin-bottom:16px}
+  .article p{margin-bottom:14px;font-size:15px;color:#D6DCE8}
+  .article-watch{display:inline-block;margin-top:6px;font-weight:600;font-size:14px}
+  .quote{text-align:center;max-width:700px;margin:0 auto}
+  .quote blockquote{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:clamp(22px,3vw,30px);margin-bottom:20px}
+  .quote p{color:var(--muted);font-size:16px}
+  .strip{text-align:center;background:var(--lime)}
+  .strip h2{color:var(--navy)}
+  .strip-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+  .strip .cta-btn.primary{background:var(--navy);color:var(--lime)}
+  .strip .cta-btn.ghost{border-color:var(--navy);color:var(--navy)}
+  footer{border-top:1px solid var(--line);padding:32px 0;color:var(--muted);font-size:13px}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  footer .foot-ctas{display:flex;gap:10px}
+  .subscribe-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,22,40,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
+  .sb-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;flex-wrap:wrap}
+  .sb-inner span{color:var(--muted);font-size:13px}
+  .sb-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .sb-btn{display:inline-block;background:var(--lime);color:var(--navy);font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
+  .sb-btn:hover{filter:brightness(1.08)}
+  .sb-ghost{display:inline-block;background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
+  .sb-ghost:hover{border-color:var(--lime);color:var(--lime)}
+  body{padding-bottom:58px}
+  @media (max-width:820px){
+    .hero{padding:72px 0 48px}
+    .nav{height:auto;padding:12px 0}
+  }
+`;
 
 // One article per published episode. Verified facts only, sourced from episode
 // transcripts / show notes / fact-checks in RESEARCH — never the raw recording.
@@ -151,12 +244,10 @@ async function main() {
     .join("\n");
 
   const headerCTAs = `
-      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}
-      ${markCTA({ label: "Follow on LinkedIn", href: LINKEDIN_URL, kind: "ghost" })}`;
+      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}`;
 
   const footerCTAs = `
-        ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}
-        ${markCTA({ label: "Follow on LinkedIn", href: LINKEDIN_URL, kind: "ghost" })}`;
+        ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -168,75 +259,24 @@ async function main() {
 <meta property="og:title" content="Act Without Asking — The agentic AI podcast">
 <meta property="og:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta property="og:image" content="${data.episodes[0]?.thumbnail ?? ""}">
+<meta property="og:url" content="${SITE_URL}/">
+<meta property="og:type" content="website">
+<link rel="canonical" href="${SITE_URL}/">
+<script type="application/ld+json">
+${JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "PodcastSeries",
+  name: "Act Without Asking",
+  url: SITE_URL,
+  description: "AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.",
+  author: [
+    { "@type": "Person", name: "Robin Leonard" },
+    { "@type": "Person", name: "Tobi Webster" },
+  ],
+}, null, 2)}
+</script>
 ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt=${data.fetchedAt} (${ageDays.toFixed(1)} days old). This build shipped with stale/fallback data rather than failing. -->` : ""}
-<style>
-  :root{
-    --navy:${NAVY}; --navy2:${NAVY_2}; --lime:${LIME}; --ink:${INK};
-    --muted:${MUTED}; --card:${NAVY_CARD}; --line:${LINE};
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-  body{background:var(--navy);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:var(--lime)}
-  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
-  header{position:sticky;top:0;background:rgba(10,22,40,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
-  .nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px;flex-wrap:wrap}
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:.02em}
-  .nav-ctas{display:flex;gap:10px}
-  .cta-btn{display:inline-block;font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
-  .cta-btn.primary{background:var(--lime);color:var(--navy)}
-  .cta-btn.primary:hover{filter:brightness(1.08)}
-  .cta-btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-  .cta-btn.ghost:hover{border-color:var(--lime);color:var(--lime)}
-  .cta-btn[data-pending]{opacity:.55;cursor:not-allowed}
-  .hero{padding:96px 0 64px;text-align:center;background:radial-gradient(600px 300px at 50% -50px, rgba(200,255,61,.10), transparent 70%),linear-gradient(180deg, var(--navy2), var(--navy));position:relative;overflow:hidden}
-  .hero .kicker{color:var(--lime);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.18em;font-family:'JetBrains Mono',monospace}
-  .hero h1{font-size:clamp(40px,7vw,84px);line-height:1.02;letter-spacing:-.02em;margin:20px 0;font-weight:700}
-  .hero .sub{color:var(--muted);max-width:600px;margin:0 auto 28px;font-size:18px}
-  .hero .btn{display:inline-block;background:var(--lime);color:var(--navy);font-weight:700;text-decoration:none;padding:15px 30px;border-radius:8px;font-size:15px}
-  .hero .byline{margin-top:20px;color:#5A6478;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
-  section{padding:72px 0}
-  .kicker{color:var(--lime);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-align:center}
-  h2{font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin-bottom:8px;text-align:center;font-weight:600}
-  .section-head{margin-bottom:44px}
-  .eps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
-  .ep-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--ink);display:block;transition:transform .15s ease,border-color .15s ease}
-  .ep-card:hover{transform:translateY(-3px);border-color:var(--lime)}
-  .ep-thumb img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--navy2)}
-  .ep-body{padding:18px}
-  .ep-num{color:var(--lime);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
-  .ep-body h3{font-size:17px;margin:8px 0 4px;line-height:1.3}
-  .ep-body p{color:var(--muted);font-size:13px}
-  .shorts-wall{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:800px;margin:0 auto}
-  .short-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--ink);display:block}
-  .short-card:hover{border-color:var(--lime)}
-  .short-thumb img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:var(--navy2)}
-  .short-title{font-size:12px;padding:10px 10px 2px;color:var(--ink)}
-  .short-date{font-size:11px;padding:0 10px 10px;color:var(--muted)}
-  .empty-note{text-align:center;color:var(--muted);font-size:14px}
-  .articles{display:flex;flex-direction:column;gap:36px;max-width:760px;margin:0 auto}
-  .article{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px}
-  .article-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
-  .article h3{font-size:22px;margin:6px 0 8px;line-height:1.3}
-  .article-dek{color:var(--muted);font-size:15px;margin-bottom:16px}
-  .article p{margin-bottom:14px;font-size:15px;color:#D6DCE8}
-  .article-watch{display:inline-block;margin-top:6px;font-weight:600;font-size:14px}
-  .quote{text-align:center;max-width:700px;margin:0 auto}
-  .quote blockquote{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:clamp(22px,3vw,30px);margin-bottom:20px}
-  .quote p{color:var(--muted);font-size:16px}
-  .strip{text-align:center;background:var(--lime)}
-  .strip h2{color:var(--navy)}
-  .strip-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
-  .strip .cta-btn.primary{background:var(--navy);color:var(--lime)}
-  .strip .cta-btn.ghost{border-color:var(--navy);color:var(--navy)}
-  footer{border-top:1px solid var(--line);padding:32px 0;color:var(--muted);font-size:13px}
-  footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-  footer .foot-ctas{display:flex;gap:10px}
-  @media (max-width:820px){
-    .hero{padding:72px 0 48px}
-    .nav{height:auto;padding:12px 0}
-  }
-</style>
+<link rel="stylesheet" href="/site.css">
 </head>
 <body>
 
@@ -318,18 +358,205 @@ ${articleBlocks}
 </html>
 `;
 
-  await mkdir(DIST, { recursive: true });
+  // ---- Phase 0 multi-page skeleton: shared shell, inner pages, SEO artifacts ----
+  const REAL_DOMAIN_LANDED = !PLACEHOLDER_HOSTS.includes("actwithoutasking.com");
 
-  // Twins Phase A: gates run first (any failure aborts the build), widget goes
-  // site-wide on the homepage, /twins page ships with its own embedded widget.
+  const subscribeBar = `
+<div class="subscribe-bar">
+  <div class="wrap sb-inner">
+    <span>New episodes weekly — no hype, just the real work.</span>
+    <div class="sb-actions">
+      <a class="sb-btn" href="/subscribe/">Get the Harness Kit</a>
+      <a class="sb-ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">YouTube</a>
+    </div>
+  </div>
+</div>`;
+
+  const innerCSS = `
+  .wrap.narrow{max-width:720px}
+  .legal{padding:64px 0 96px}
+  .legal h2{text-align:left;margin-bottom:6px}
+  .legal h3{margin:28px 0 8px;font-size:19px}
+  .legal p{color:#D6DCE8;margin-bottom:12px;font-size:15px}
+  .legal ul{margin:0 0 14px 20px;color:#D6DCE8;font-size:15px}
+  .legal li{margin-bottom:8px}
+  .legal .updated{color:var(--muted);font-size:13px;font-family:'JetBrains Mono',monospace}
+  .sub-left{color:var(--muted);max-width:560px}
+  .kit-list{margin:0 0 24px 20px;color:#D6DCE8;font-size:15px}
+  .kit-list li{margin-bottom:8px}
+  .subscribe-form{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:24px 0}
+  .subscribe-form label{font-size:14px;font-weight:600}
+  .subscribe-form input{background:var(--navy2);border:1px solid var(--line);border-radius:6px;padding:12px;color:var(--ink);font-size:15px}
+  .subscribe-form button{background:var(--lime);color:var(--navy);border:none;border-radius:6px;padding:12px;font-weight:700;font-size:15px;cursor:pointer}
+  .subscribe-form input:disabled,.subscribe-form button:disabled{opacity:.5;cursor:not-allowed}
+  .form-note{color:var(--muted);font-size:13px}
+  .alt{color:var(--muted);font-size:14px}
+  .nf{padding:120px 0;text-align:center}
+  .nf h2{margin-bottom:12px}
+  .nf p{color:var(--muted);margin-bottom:24px}
+  code{font-family:'JetBrains Mono',monospace;background:var(--navy2);padding:2px 6px;border-radius:4px;font-size:13px}
+  `;
+
+  function pageShell({ path: pagePath, title, desc, body }) {
+    const abs = SITE_URL + pagePath;
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<meta name="description" content="${desc}">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${desc}">
+<meta property="og:url" content="${abs}">
+<meta property="og:type" content="website">
+<link rel="canonical" href="${abs}">
+<link rel="stylesheet" href="/site.css">
+<style>${innerCSS}</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/">${chevronMark({ w: 22, h: 17 })} Act Without Asking</a>
+    <div class="nav-ctas">${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}</div>
+  </div>
+</header>
+
+<main id="top">
+${body}
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Act Without Asking · A show from Axela</span>
+    <div class="foot-ctas">${footerCTAs}</div>
+  </div>
+</footer>
+${subscribeBar}
+</body>
+</html>
+`;
+  }
+
+  // Privacy page — copy passed by Stephanie's proxy review 31 Aug (gate cleared).
+  // The contact address is a marked placeholder until the domain lands; once the
+  // real domain is set, a leftover placeholder FAILS the build (domain-gate).
+  const privacyBody = `
+  <section class="legal">
+    <div class="wrap narrow">
+      <p class="kicker">Privacy</p>
+      <h2>Everything we collect, and why.</h2>
+      <p class="updated">Last updated: 31 August 2026.</p>
+
+      <h3>Who we are</h3>
+      <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request — access, correction, or deletion of your data — email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
+
+      <h3>The email list</h3>
+      <p>When you subscribe, we collect your email address. That's it — no name required, no other fields.</p>
+      <ul>
+        <li><strong>What you get:</strong> new episodes, and "The Harness Kit" (checklists and templates from the show) after you confirm.</li>
+        <li><strong>Double opt-in:</strong> you subscribe, we send a confirmation email, you're on the list only after you click it. No confirmation, no emails — we never add anyone who didn't ask.</li>
+        <li><strong>Who sends the emails:</strong> our newsletter is handled by MailerLite, an email service. They send our emails and store the list on our instructions. They don't get to use your address for anything else.</li>
+        <li><strong>Consent record:</strong> when you confirm, we store your email address, the time, and the page you subscribed from. Nothing else. This is our proof you asked.</li>
+        <li><strong>Unsubscribe:</strong> every email has an unsubscribe link. One click, immediate, no "are you sure" games.</li>
+      </ul>
+      <p><strong>We do not sell, rent, or share your email address. Ever.</strong></p>
+
+      <h3>Analytics</h3>
+      <p>The site runs self-hosted, first-party analytics (Umami). No Google Analytics, no ad trackers, no third-party cookies. We see page counts and referrers — not you.</p>
+
+      <h3>The twins (when live)</h3>
+      <p>If you chat with the Robin and Tobi twins on this site, we store what you send them so we can make them better. We store no more than you type. Retention limits are stated on the twins page.</p>
+
+      <h3>YouTube</h3>
+      <p>The site embeds YouTube videos. YouTube's own privacy policy applies to what they see when a video plays.</p>
+
+      <h3>Changes</h3>
+      <p>If this page changes, we date the change at the top. Material changes to how we handle your email get emailed to the list.</p>
+    </div>
+  </section>`;
+
+  // Subscribe page — form ships DISABLED until the MailerLite group exists
+  // (Stephanie owns). Nothing collects before the privacy page is live and the
+  // vendor is wired; the disabled state is the honest interim.
+  const subscribeBody = `
+  <section class="legal">
+    <div class="wrap narrow">
+      <p class="kicker">Subscribe</p>
+      <h2>New episodes, straight to your inbox.</h2>
+      <p class="sub-left">Get every episode and <strong>The Harness Kit</strong> — the checklists and templates we use on the show — free, after you confirm.</p>
+      <ul class="kit-list">
+        <li>New episode alerts — nothing else, no filler</li>
+        <li>The Harness Kit: checklists and templates from the show</li>
+        <li>One click to unsubscribe, any time</li>
+      </ul>
+      <form class="subscribe-form" data-pending="true" aria-disabled="true" onsubmit="return false">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" disabled>
+        <button type="submit" disabled>Subscribe</button>
+        <p class="form-note">Email capture opens with our list provider this week — the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
+      </form>
+      <p class="alt">Not into email? <a href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a> instead.</p>
+    </div>
+  </section>`;
+
+  const notFoundBody = `
+  <section class="nf">
+    <div class="wrap">
+      <p class="kicker">404</p>
+      <h2>That page doesn't exist.</h2>
+      <p>The episode you're after is probably on the homepage.</p>
+      <a class="btn" href="/">Back to the show</a>
+    </div>
+  </section>`;
+
+  // Twins Phase A: widget goes site-wide on the homepage (injected before the
+  // gate loop below so the host/contact gates scan it too), /twins page ships
+  // with its own embedded widget.
   const twins = await buildTwins(data);
-  const homepageHtml = html.replace("</body>", `${twins.widget}\n</body>`);
+  const homepageHtml = html.replace("</body>", `${twins.widget}\n${subscribeBar}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
-  await writeFile(path.join(DIST, "index.html"), homepageHtml);
+  const pages = [
+    ["index.html", homepageHtml],
+    ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe — Act Without Asking", desc: "Get new episodes and The Harness Kit — checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
+    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: email list, analytics, and nothing hidden.", body: privacyBody })],
+    ["404.html", pageShell({ path: "/404.html", title: "Page not found — Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
+    ["robots.txt", `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`],
+  ];
+
+  // Hardcoded-host gate (arch v1 §2): no absolute URL to a placeholder host may
+  // appear in any emitted page — internal absolutes derive from SITE_URL only.
+  for (const [name, content] of pages) {
+    for (const host of PLACEHOLDER_HOSTS) {
+      if (content.includes(host)) throw new Error(`[host-gate] ${name} hardcodes ${host} — derive from SITE_URL`);
+    }
+    if (REAL_DOMAIN_LANDED && content.includes("CONTACT_ADDRESS_PENDING_DOMAIN")) {
+      throw new Error(`[domain-gate] ${name} still carries the contact placeholder after the domain landed — set the real address`);
+    }
+  }
+
+  const buildDate = new Date().toISOString().slice(0, 10);
+  const sitemapPaths = ["/", "/subscribe/", "/privacy/"];
+  const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${buildDate}</lastmod></url>`).join("\n")}
+</urlset>
+`;
+  pages.push(["sitemap.xml", sitemapXml]);
+
+  await mkdir(DIST, { recursive: true });
+  await mkdir(path.join(DIST, "subscribe"), { recursive: true });
+  await mkdir(path.join(DIST, "privacy"), { recursive: true });
+  for (const [name, content] of pages) {
+    const out = path.join(DIST, name);
+    await mkdir(path.dirname(out), { recursive: true });
+    await writeFile(out, content);
+  }
+  await writeFile(path.join(DIST, "site.css"), SITE_CSS);
   await mkdir(path.join(DIST, "twins"), { recursive: true });
   await writeFile(path.join(DIST, "twins", "index.html"), twins.twinsPage);
-  console.log(`[build] wrote dist/index.html (${data.episodes.length} episodes, ${data.shorts.length} shorts, ${ARTICLES.length} articles, stale=${isStale})`);
-  console.log(`[build] wrote dist/twins/index.html + netlify/functions/ask-data.json (twins gates passed)`);
+  console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html (twins gates passed; stale=${isStale})`);
 }
 
 main().catch((err) => {
