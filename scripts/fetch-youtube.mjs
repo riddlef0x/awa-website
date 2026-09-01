@@ -104,10 +104,10 @@ async function classify(uploadEntries) {
     } else if (epMatch) {
       episodes.push({ ...toRecord(e, { isShort: false }), episodeNumber: Number(epMatch[1]) });
     } else {
-      // Neither a confirmed Short nor "Episode N" titled — e.g. the unresolved
-      // Grok Bot cut, or any future guest-numbered special. Never guessed into
-      // a slot (channel rule against inventing episode numbers) — but logged,
-      // per Oksana's note, so nothing vanishes without a trace.
+      // Neither a confirmed Short nor pinned nor "Episode N"-titled. Per
+      // Oksana's ruling (1 Sep 2026) this is a RED BUILD upstream in main(),
+      // not a warn line: collected here so the offender list (videoId +
+      // title) can fail the build loudly.
       dropped.push({ videoId: e.videoId, title: e.title });
     }
   }
@@ -123,13 +123,6 @@ async function classify(uploadEntries) {
   episodes.sort((a, b) => a.episodeNumber - b.episodeNumber);
   shorts.sort((a, b) => new Date(b.published) - new Date(a.published));
 
-  if (dropped.length > 0) {
-    console.warn(
-      `[fetch-youtube] ${dropped.length} upload(s) classified as neither episode nor short — ` +
-        `not shown on site, not silently lost: ${dropped.map((d) => `"${d.title}" (${d.videoId})`).join("; ")}`
-    );
-  }
-
   return { episodes, shorts, dropped, shortsSourceNote };
 }
 
@@ -143,27 +136,24 @@ async function loadExisting() {
 }
 
 async function main() {
+  // Last-known-good is loaded BEFORE the fetch (Oksana delta spec, 1 Sep 2026):
+  // it now serves two purposes — fail-soft fallback AND recovery source for
+  // pinned episodes that rolled out of the live uploads feed window (~15 entries).
+  const existing = await loadExisting();
   let data;
+  let classified = null;
   try {
     const uploadEntries = await fetchFeed(UPLOADS_FEED_URL);
     if (uploadEntries.length === 0) throw new Error("uploads feed parsed to zero entries");
-    const { episodes, shorts, dropped, shortsSourceNote } = await classify(uploadEntries);
-    if (episodes.length === 0) throw new Error("no episodes classified from feed");
-    data = {
-      fetchedAt: new Date().toISOString(),
-      source: "live",
-      shortsSource: shortsSourceNote,
-      episodes,
-      shorts,
-      droppedCount: dropped.length,
-    };
+    const c = await classify(uploadEntries);
+    if (c.episodes.length === 0) throw new Error("no episodes classified from feed");
+    classified = { ...c, uploadEntries };
     console.log(
-      `[fetch-youtube] live fetch OK — ${episodes.length} episodes, ${shorts.length} shorts ` +
-        `(shorts source: ${shortsSourceNote}), ${dropped.length} dropped/unclassified`
+      `[fetch-youtube] live fetch OK — ${c.episodes.length} episodes, ${c.shorts.length} shorts ` +
+        `(shorts source: ${c.shortsSourceNote}), ${c.dropped.length} dropped/unclassified`
     );
   } catch (err) {
     console.warn(`[fetch-youtube] live fetch failed (${err.message}) — falling back to last-known-good`);
-    const existing = await loadExisting();
     if (!existing) {
       throw new Error(
         "[fetch-youtube] no live data AND no committed fallback in data/youtube.json — cannot build. " +
@@ -178,6 +168,52 @@ async function main() {
       );
     }
     data = { ...existing, source: "fallback-stale" };
+  }
+
+  if (classified) {
+    const { episodes, shorts, dropped, shortsSourceNote, uploadEntries } = classified;
+
+    // Census hard-fail (Oksana ruling 1 Sep 2026): an unclassified non-short
+    // upload is a RED build — print videoId + title, collect all offenders,
+    // exit non-zero. Never a quiet shrink behind a green build.
+    if (dropped.length > 0) {
+      throw new Error(
+        `[fetch-youtube] ${dropped.length} upload(s) could not be classified as episode or short — refusing to build. ` +
+          `Offenders: ${dropped.map((d) => `"${d.title}" (${d.videoId})`).join("; ")}. ` +
+          `Fix: pin the videoId in KNOWN_EPISODE_IDS or correct the title/classifier.`
+      );
+    }
+
+    // Pin-census union. NOTE: this block sits OUTSIDE the fail-soft try — a
+    // census problem here must RED-BUILD, never silently fall back to stale
+    // data (a fallback would look like a green build while an episode is gone).
+    const liveIds = new Set(uploadEntries.map((e) => e.videoId));
+    const missingPins = Object.keys(KNOWN_EPISODE_IDS).filter((id) => !liveIds.has(id));
+    for (const id of missingPins) {
+      const recovered = (existing?.episodes ?? []).find((x) => x.videoId === id);
+      if (!recovered) {
+        throw new Error(
+          `[fetch-youtube] pinned episode ${KNOWN_EPISODE_IDS[id]} (${id}) is absent from the live uploads feed ` +
+            `AND from last-known-good data — deleted or privated on the channel? Refusing to build a site that ` +
+            `quietly drops a published episode. Missing videoIds: ${missingPins.join(", ")}`
+        );
+      }
+      episodes.push(recovered);
+      console.warn(
+        `[fetch-youtube] pinned episode ${KNOWN_EPISODE_IDS[id]} (${id}) outside live feed window — ` +
+          `recovered from last-known-good (display title may be stale)`
+      );
+    }
+    episodes.sort((a, b) => a.episodeNumber - b.episodeNumber);
+
+    data = {
+      fetchedAt: new Date().toISOString(),
+      source: "live",
+      shortsSource: shortsSourceNote,
+      episodes,
+      shorts,
+      droppedCount: dropped.length,
+    };
   }
 
   await mkdir(path.dirname(DATA_PATH), { recursive: true });
