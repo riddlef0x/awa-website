@@ -580,7 +580,7 @@ ${subscribeBar}
   // Twins Phase A: widget goes site-wide on the homepage (injected before the
   // gate loop below so the host/contact gates scan it too), /twins page ships
   // with its own embedded widget.
-  const twins = await buildTwins(data);
+  const twins = await buildTwins(data, SITE_URL);
   const homepageHtml = html.replace("</body>", `${twins.widget}\n${subscribeBar}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
 

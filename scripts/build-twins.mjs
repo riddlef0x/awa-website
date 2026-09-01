@@ -134,7 +134,8 @@ export function buildWidget(pool) {
 <script>${ASK_SCRIPT}</script>`;
 }
 
-export async function buildTwins(data) {
+export async function buildTwins(data, siteUrl) {
+  if (!siteUrl) throw new Error("[twins-gate] buildTwins requires SITE_URL — canonical must derive from the one domain constant, never a hardcoded host");
   const pool = JSON.parse(await readFile(path.join(ROOT, "data", "twins", "pool.json"), "utf8"));
   const episodes = new Map(data.episodes.map((e) => [e.episodeNumber, e]));
   const fail = (msg) => {
@@ -199,10 +200,10 @@ export async function buildTwins(data) {
   };
   await writeFile(path.join(ROOT, "netlify", "functions", "ask-data.json"), JSON.stringify(askData, null, 2));
 
-  return { widget: buildWidget(pool), twinsPage: renderTwinsPage(pool, out, buildWidget(pool)) };
+  return { widget: buildWidget(pool), twinsPage: renderTwinsPage(pool, out, buildWidget(pool), siteUrl) };
 }
 
-function renderTwinsPage(pool, entries, widgetMarkup) {
+function renderTwinsPage(pool, entries, widgetMarkup, siteUrl) {
   const cards = entries
     .map((e) => {
       const lines = e.lines
@@ -225,7 +226,7 @@ function renderTwinsPage(pool, entries, widgetMarkup) {
 <meta name="description" content="Scripted AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
 <meta property="og:title" content="The twins — Act Without Asking">
 <meta property="og:description" content="Two scripted AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
-<style>
+<link rel="canonical" href="${siteUrl}/twins/"><style>
 body{margin:0;background:#0A1628;color:#F4F7FB;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
 .wrap{max-width:760px;margin:0 auto;padding:48px 20px 96px}
 .kicker{color:#C8FF3D;text-transform:uppercase;letter-spacing:.14em;font-size:12px;margin:0 0 8px}
