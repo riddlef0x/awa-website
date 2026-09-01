@@ -532,7 +532,7 @@ ${subscribeBar}
       <h3>Analytics</h3>
       <p>The site runs self-hosted, first-party analytics (Umami). No Google Analytics, no ad trackers, no third-party cookies. We see page counts and referrers — not you.</p>
 
-      <h3>The twins (when live)</h3>
+      <h3>The twins</h3>
       <p>If you chat with the Robin and Tobi twins on this site, we do not store your questions or their answers — nothing you type is kept. We log aggregate counts only (how many questions are asked, which handoff links get clicked) so we can make the twins better. No question text, nothing that identifies you. The twins page says the same thing: no question text is stored.</p>
 
       <h3>YouTube</h3>
