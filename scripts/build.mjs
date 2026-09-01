@@ -27,6 +27,22 @@ const LINKEDIN_URL = null; // e.g. "https://www.linkedin.com/company/..."
 const YOUTUBE_CHANNEL = "https://www.youtube.com/@actwithoutaskingpod";
 const YOUTUBE_SUBSCRIBE = `${YOUTUBE_CHANNEL}?sub_confirmation=1`;
 
+// Tracking-links pass (2 Sept): rendered outbound YouTube links carry UTM
+// params so YouTube analytics attributes site-driven traffic. Mirrors the
+// twins citation convention already in this build: utm_source=awa_site,
+// utm_medium=surface, utm_campaign=intent, utm_content=locator. Rendered
+// <a href> only — JSON-LD/canonical/sitemap URLs stay clean, and the twins
+// seed citations arrive pre-tagged. Internal links are never tagged.
+function ytUtm(url, { medium, campaign, content = null }) {
+  if (!url) return url;
+  const u = new URL(url);
+  u.searchParams.set("utm_source", "awa_site");
+  u.searchParams.set("utm_medium", medium);
+  u.searchParams.set("utm_campaign", campaign);
+  if (content) u.searchParams.set("utm_content", content);
+  return u.toString();
+}
+
 // A2 "Listen on" block (DoD v2): YouTube ONLY tonight — show is not on
 // Apple/Spotify (verified via iTunes Search API, 1 Sep 2026). Data-driven so
 // platform deep links slot in on distribution day without touching markup:
@@ -36,7 +52,7 @@ const LISTEN_PLATFORMS = [
 ];
 function listenOnBlock({ compact = false } = {}) {
   const links = LISTEN_PLATFORMS.map(
-    (p) => `<a class="cta-btn ${compact ? "ghost" : "primary"}" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.name)}</a>`
+    (p) => `<a class="cta-btn ${compact ? "ghost" : "primary"}" href="${escapeHtml(ytUtm(p.url, { medium: "listen", campaign: "channel" }))}" target="_blank" rel="noopener">${escapeHtml(p.name)}</a>`
   ).join("\n      ");
   return `<div class="listen-on${compact ? " compact" : ""}">
       <span class="listen-label">Listen on</span>
@@ -235,9 +251,9 @@ const ARTICLES = [
 //   { 1: { transcriptHtml, showNotesHtml }, ... }
 const EPISODE_EXTRAS = {};
 
-function markCTA({ label, href, kind = "primary" }) {
+function markCTA({ label, href, kind = "primary", utm = null }) {
   const isPending = href == null;
-  const finalHref = isPending ? "#" : href;
+  const finalHref = isPending ? "#" : (utm ? ytUtm(href, utm) : href);
   const bg = kind === "primary" ? LIME : "transparent";
   const color = kind === "primary" ? NAVY : INK;
   const border = kind === "primary" ? "none" : `1px solid ${LINE}`;
@@ -324,7 +340,7 @@ function shortCard(s) {
     year: "numeric",
   });
   return `
-    <a class="short-card" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">
+    <a class="short-card" href="${escapeHtml(ytUtm(s.url, { medium: "shorts_wall", campaign: "watch", content: (String(s.url).match(/shorts\/([\w-]+)/) || [])[1] }))}" target="_blank" rel="noopener">
       <div class="short-thumb"><img src="${escapeHtml(s.thumbnail)}" alt="${escapeHtml(s.title)}" loading="lazy"></div>
       <p class="short-title">${escapeHtml(s.title.replace(/#shorts/i, "").trim())}</p>
       <p class="short-date">${dateStr}</p>
@@ -333,7 +349,7 @@ function shortCard(s) {
 
 function articleBlock(article, episodesByNumber) {
   const ep = episodesByNumber.get(article.episodeNumber);
-  const linked = ep ? `<a class="article-watch" href="${escapeHtml(ep.url)}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a>` : "";
+  const linked = ep ? `<a class="article-watch" href="${escapeHtml(ytUtm(ep.url, { medium: "article", campaign: "watch", content: article.slug }))}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a>` : "";
   return `
     <article class="article" id="article-${article.episodeNumber}">
       <div class="article-head">
@@ -381,10 +397,10 @@ async function main() {
     .join("\n");
 
   const headerCTAs = `
-      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}`;
+      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}`;
 
   const footerCTAs = `
-        ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}`;
+        ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "footer", campaign: "subscribe" } })}`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -434,8 +450,8 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
     <h1>ACT WITHOUT<br>ASKING</h1>
     <p class="sub">AI agents doing real work — and the moment you stop supervising them.</p>
     <p class="hero-ctas">${latestEp
-      ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
-      : `<a class="btn" href="${YOUTUBE_SUBSCRIBE}">Watch on YouTube</a>`}</p>
+      ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
+      : `<a class="btn" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}">Watch on YouTube</a>`}</p>
     <p class="byline">Hosted by Robin Leonard and Tobi Webster — two operators who run real businesses on AI agents.</p>
     ${listenOnBlock({ compact: true })}
 ${latestEp ? featuredPlayer(latestEp) : ""}
@@ -491,7 +507,7 @@ ${articleBlocks}
       <p class="strip-sub">Get The Harness Kit — the checklists and templates we use on the show, free after you confirm.</p>
       <div class="strip-ctas">
         <a class="cta-btn primary" href="/subscribe/">Get the Harness Kit</a>
-        <a class="cta-btn ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a>
+        <a class="cta-btn ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_bar", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a>
       </div>
     </div>
   </section>
@@ -518,7 +534,7 @@ ${articleBlocks}
     <span>New episodes as they land — no hype, just the real work.</span>
     <div class="sb-actions">
       <a class="sb-btn" href="/subscribe/">Get the Harness Kit</a>
-      <a class="sb-ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">YouTube</a>
+      <a class="sb-ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_bar", campaign: "subscribe" })}" target="_blank" rel="noopener">YouTube</a>
     </div>
   </div>
 </div>`;
@@ -609,7 +625,7 @@ ${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script
     <div class="nav-ctas">
       <a class="cta-btn ghost" href="/episodes/">Episodes</a>
       <a class="cta-btn ghost" href="/about/">About</a>
-      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}
+      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}
     </div>
   </div>
 </header>
@@ -689,7 +705,7 @@ ${subscribeBar}
         <button type="submit" disabled>Subscribe</button>
         <p class="form-note">Email capture opens with our list provider this week — the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
       </form>
-      <p class="alt">Not into email? <a href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a> instead.</p>
+      <p class="alt">Not into email? <a href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_page", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a> instead.</p>
       ${listenOnBlock({ compact: true })}
     </div>
   </section>`;
@@ -763,7 +779,7 @@ ${subscribeBar}
       <p class="ep-meta">${fmtDate(ep.published)} · Robin Leonard and Tobi Webster</p>
       <img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail`)}">
       <p class="dek">${escapeHtml(epDek(ep))}</p>
-      <a class="btn" href="${escapeHtml(ep.url)}" target="_blank" rel="noopener">Watch on YouTube</a>
+      <a class="btn" href="${escapeHtml(ytUtm(ep.url, { medium: "episode_page", campaign: "watch", content: slug }))}" target="_blank" rel="noopener">Watch on YouTube</a>
       ${articleSection}
       ${transcriptSlot}
     </div>
@@ -802,7 +818,7 @@ ${subscribeBar}
   function articleRoute(article) {
     const ep = episodesByNumber.get(article.episodeNumber);
     const watch = ep
-      ? `<p><a class="article-watch" href="${escapeHtml(ep.url)}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a></p>`
+      ? `<p><a class="article-watch" href="${escapeHtml(ytUtm(ep.url, { medium: "article", campaign: "watch", content: article.slug }))}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a></p>`
       : "";
     const body = `
   <section class="article-page legal">
@@ -869,7 +885,7 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
         <strong>Tobi Webster — co-host</strong>
         <span>Robin's consulting partner at Axela, their AI-first consulting practice. Brings the business and operations side of every conversation.</span>
       </div>
-      <p>New episodes on <a href="${YOUTUBE_CHANNEL}" target="_blank" rel="noopener">YouTube</a> — and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
+      <p>New episodes on <a href="${ytUtm(YOUTUBE_CHANNEL, { medium: "about_page", campaign: "channel" })}" target="_blank" rel="noopener">YouTube</a> — and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
     </div>
   </section>`;
 
