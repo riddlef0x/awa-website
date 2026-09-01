@@ -764,6 +764,7 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
   const sitemapPaths = [
     "/",
     "/episodes/",
+    "/twins/",
     "/about/",
     "/subscribe/",
     "/privacy/",
