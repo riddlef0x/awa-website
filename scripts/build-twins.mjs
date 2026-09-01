@@ -200,10 +200,10 @@ export async function buildTwins(data, siteUrl) {
   };
   await writeFile(path.join(ROOT, "netlify", "functions", "ask-data.json"), JSON.stringify(askData, null, 2));
 
-  return { widget: buildWidget(pool), twinsPage: renderTwinsPage(pool, out, buildWidget(pool), siteUrl) };
+  return { widget: buildWidget(pool), twinsPage: renderTwinsPage(pool, out, buildWidget(pool), siteUrl, data.episodes.length ? data.episodes[data.episodes.length - 1].thumbnail : "") };
 }
 
-function renderTwinsPage(pool, entries, widgetMarkup, siteUrl) {
+function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
   const cards = entries
     .map((e) => {
       const lines = e.lines
@@ -226,6 +226,11 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl) {
 <meta name="description" content="Scripted AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
 <meta property="og:title" content="The twins — Act Without Asking">
 <meta property="og:description" content="Two scripted AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<meta property="og:image" content="${ogImage}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The twins — Act Without Asking">
+<meta name="twitter:description" content="Two scripted AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<meta name="twitter:image" content="${ogImage}">
 <link rel="canonical" href="${siteUrl}/twins/">
 <meta property="og:url" content="${siteUrl}/twins/">
 <style>

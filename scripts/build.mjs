@@ -61,6 +61,9 @@ const SITE_CSS = `
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+  a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--lime);outline-offset:2px;border-radius:2px}
+  .strip a:focus-visible{outline-color:var(--navy)}
   body{background:var(--navy);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
   a{color:var(--lime)}
   .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
@@ -79,7 +82,21 @@ const SITE_CSS = `
   .hero h1{font-size:clamp(40px,7vw,84px);line-height:1.02;letter-spacing:-.02em;margin:20px 0;font-weight:700}
   .hero .sub{color:var(--muted);max-width:600px;margin:0 auto 28px;font-size:18px}
   .hero .btn{display:inline-block;background:var(--lime);color:var(--navy);font-weight:700;text-decoration:none;padding:15px 30px;border-radius:8px;font-size:15px}
-  .hero .byline{margin-top:20px;color:#5A6478;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
+  .hero .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .hero .btn.ghost:hover{border-color:var(--lime);color:var(--lime)}
+  .hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:0 0 8px}
+  .featured{max-width:760px;margin:32px auto 0;aspect-ratio:16/9;position:relative}
+  .featured.playing{border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .featured-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--navy2);cursor:pointer;overflow:hidden;display:block}
+  .featured-facade img{width:100%;height:100%;object-fit:cover;display:block;opacity:.55;transition:opacity .15s ease}
+  .featured-facade:hover img{opacity:.75}
+  .featured-facade::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,.05),rgba(10,22,40,.65))}
+  .featured-label{position:absolute;left:16px;right:64px;bottom:12px;z-index:2;color:var(--ink);font-size:14px;font-weight:600;text-align:left;line-height:1.35}
+  .featured-label .ep-num{display:block;margin-bottom:2px}
+  .featured-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:64px;height:64px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(200,255,61,.18);transition:transform .15s ease}
+  .featured-facade:hover .featured-play{transform:translate(-50%,-50%) scale(1.06)}
+  .featured-facade .featured-play svg{margin-left:3px}
+  .hero .byline{margin-top:20px;color:#8B97AB;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
   section{padding:72px 0}
   .kicker{color:var(--lime);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-align:center}
   h2{font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin-bottom:8px;text-align:center;font-weight:600}
@@ -217,6 +234,44 @@ function episodeSlug(ep) {
     .replace(/^-+|-+$/g, "");
 }
 
+// DoD #1: latest episode playable above the fold. Click-to-play facade — the
+// page ships only the thumbnail (fast, no third-party runtime dependency on
+// load); the YouTube iframe (privacy-enhanced nocookie domain) is injected on
+// click. Consistent with the arch ruling: static build output, no runtime
+// fetch until the visitor asks to play.
+function youtubeId(ep) {
+  const m = String(ep.url).match(/[?&]v=([\w-]+)/);
+  return m ? m[1] : null;
+}
+
+function featuredPlayer(ep) {
+  const videoId = youtubeId(ep);
+  if (!videoId) return "";
+  const cleanTitle = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
+  const label = `Play the latest episode — Episode ${ep.episodeNumber}: ${cleanTitle}`;
+  return `<div class="featured">
+  <button class="featured-facade" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(label)}">
+    <img src="${escapeHtml(ep.thumbnail)}" alt="" loading="lazy">
+    <span class="featured-label"><span class="ep-num">Latest — Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
+    <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
+  </button>
+</div>
+<script>
+document.querySelectorAll(".featured-facade").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    var wrap = btn.parentElement;
+    var iframe = document.createElement("iframe");
+    iframe.src = "https://www.youtube-nocookie.com/embed/" + btn.getAttribute("data-yt") + "?autoplay=1&rel=0";
+    iframe.title = btn.getAttribute("aria-label");
+    iframe.allow = "accelerometer; autoplay; encrypted-media; picture-in-picture";
+    iframe.allowFullscreen = true;
+    wrap.classList.add("playing");
+    wrap.replaceChildren(iframe);
+  });
+});
+</script>`;
+}
+
 function episodeCard(ep, { internal = false } = {}) {
   const cleanTitle = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
   const dateStr = new Date(ep.published).toLocaleDateString("en-AU", {
@@ -271,6 +326,10 @@ async function main() {
   const dataRaw = await readFile(path.join(ROOT, "data", "youtube.json"), "utf8");
   const data = JSON.parse(dataRaw);
   const episodesByNumber = new Map(data.episodes.map((e) => [e.episodeNumber, e]));
+  // Feed runs Ep 1→N in order, so the latest episode is the LAST element —
+  // not episodes[0] (Kate's flag: the homepage og:image was sharing Ep 1).
+  const latestEp = data.episodes.length ? data.episodes[data.episodes.length - 1] : null;
+  const DEFAULT_OG = latestEp?.thumbnail ?? null;
 
   const ageDays = (Date.now() - new Date(data.fetchedAt).getTime()) / 86400000;
   const isStale = data.source !== "live" || ageDays > 14;
@@ -295,10 +354,14 @@ async function main() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Act Without Asking — The agentic AI podcast</title>
-<meta name="description" content="Act Without Asking is a podcast about AI agents doing real work, and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<meta name="description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta property="og:title" content="Act Without Asking — The agentic AI podcast">
 <meta property="og:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
-<meta property="og:image" content="${escapeHtml(data.episodes[0]?.thumbnail ?? "")}">
+<meta property="og:image" content="${escapeHtml(DEFAULT_OG ?? "")}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Act Without Asking — The agentic AI podcast">
+<meta name="twitter:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<meta name="twitter:image" content="${escapeHtml(DEFAULT_OG ?? "")}">
 <meta property="og:url" content="${SITE_URL}/">
 <meta property="og:type" content="website">
 <link rel="canonical" href="${SITE_URL}/">
@@ -332,14 +395,17 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
     <p class="kicker">The Agentic AI Podcast</p>
     <h1>ACT WITHOUT<br>ASKING</h1>
     <p class="sub">AI agents doing real work — and the moment you stop supervising them.</p>
-    <a class="btn" href="${YOUTUBE_SUBSCRIBE}">Subscribe now</a>
-    <p class="byline">Robin Leonard, with Tobi Webster</p>
+    <p class="hero-ctas">${latestEp
+      ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
+      : `<a class="btn" href="${YOUTUBE_SUBSCRIBE}">Watch on YouTube</a>`}</p>
+    <p class="byline">Hosted by Robin Leonard and Tobi Webster</p>
+${latestEp ? featuredPlayer(latestEp) : ""}
   </div>
 
   <section id="episodes">
     <div class="wrap">
       <div class="section-head">
-        <p class="kicker">Now Playing</p>
+        <p class="kicker">Full episodes</p>
         <h2>Episodes</h2>
       </div>
       <div class="eps">
@@ -364,7 +430,7 @@ ${shortCards}
     <div class="wrap">
       <div class="section-head">
         <p class="kicker">Read</p>
-        <h2>One article per episode</h2>
+        <h2>Every episode, in writing.</h2>
       </div>
       <div class="articles">
 ${articleBlocks}
@@ -374,14 +440,14 @@ ${articleBlocks}
 
   <section class="quote">
     <div class="wrap">
-      <blockquote>"The show about AI agents that actually get things done — not the demos, the real work."</blockquote>
+      <blockquote>We hand real agents real responsibility — and tell you exactly what happens next.</blockquote>
       <p>No hype, no scripts. Just two hosts figuring out — live, in public — what it actually looks like to hand an agent the keys.</p>
     </div>
   </section>
 
   <section class="strip">
     <div class="wrap">
-      <h2>New episodes, straight to your feed.</h2>
+      <h2>New episodes as they land.</h2>
       <div class="strip-ctas">${footerCTAs}</div>
     </div>
   </section>
@@ -404,7 +470,7 @@ ${articleBlocks}
   const subscribeBar = `
 <div class="subscribe-bar">
   <div class="wrap sb-inner">
-    <span>New episodes weekly — no hype, just the real work.</span>
+    <span>New episodes as they land — no hype, just the real work.</span>
     <div class="sb-actions">
       <a class="sb-btn" href="/subscribe/">Get the Harness Kit</a>
       <a class="sb-ghost" href="${YOUTUBE_SUBSCRIBE}" target="_blank" rel="noopener">YouTube</a>
@@ -416,6 +482,8 @@ ${articleBlocks}
   .wrap.narrow{max-width:720px}
   .legal{padding:64px 0 96px}
   .legal h2{text-align:left;margin-bottom:6px}
+  h1.legal-title{font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin-bottom:6px;font-weight:600;text-align:left}
+  .ep-page h1.legal-title,.article-page h1.legal-title,.about h1.legal-title,.nf h1.legal-title{margin-bottom:12px}
   .legal h3{margin:28px 0 8px;font-size:19px}
   .legal p{color:#D6DCE8;margin-bottom:12px;font-size:15px}
   .legal ul{margin:0 0 14px 20px;color:#D6DCE8;font-size:15px}
@@ -459,8 +527,17 @@ ${articleBlocks}
   .about .host span{color:var(--muted);font-size:14px}
   `;
 
-  function pageShell({ path: pagePath, title, desc, body, jsonLd = null }) {
+  function pageShell({ path: pagePath, title, desc, body, jsonLd = null, ogImage = null }) {
     const abs = SITE_URL + pagePath;
+    // DoD #5: every page shares a real og:image. Per-page where the page has a
+    // natural image (episode/article thumbnails); everywhere else the latest
+    // episode thumbnail as the branded default. Twitter card follows the same
+    // image — summary_large_image for big episode art, summary fallback if no
+    // image exists.
+    const image = ogImage ?? DEFAULT_OG;
+    const ogImageTags = image
+      ? `<meta property="og:image" content="${escapeHtml(image)}">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="${escapeHtml(title)}">\n<meta name="twitter:description" content="${escapeHtml(desc)}">\n<meta name="twitter:image" content="${escapeHtml(image)}">`
+      : `<meta name="twitter:card" content="summary">`;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -472,6 +549,7 @@ ${articleBlocks}
 <meta property="og:description" content="${escapeHtml(desc)}">
 <meta property="og:url" content="${abs}">
 <meta property="og:type" content="website">
+${ogImageTags}
 <link rel="canonical" href="${abs}">
 ${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script>\n` : ""}<link rel="stylesheet" href="/site.css">
 <style>${innerCSS}</style>
@@ -512,7 +590,7 @@ ${subscribeBar}
   <section class="legal">
     <div class="wrap narrow">
       <p class="kicker">Privacy</p>
-      <h2>Everything we collect, and why.</h2>
+      <h1 class="legal-title">Everything we collect, and why.</h1>
       <p class="updated">Last updated: 31 August 2026.</p>
 
       <h3>Who we are</h3>
@@ -550,7 +628,7 @@ ${subscribeBar}
   <section class="legal">
     <div class="wrap narrow">
       <p class="kicker">Subscribe</p>
-      <h2>New episodes, straight to your inbox.</h2>
+      <h1 class="legal-title">New episodes, straight to your inbox.</h1>
       <p class="sub-left">Get every episode and <strong>The Harness Kit</strong> — the checklists and templates we use on the show — free, after you confirm.</p>
       <ul class="kit-list">
         <li>New episode alerts — nothing else, no filler</li>
@@ -571,7 +649,7 @@ ${subscribeBar}
   <section class="nf">
     <div class="wrap">
       <p class="kicker">404</p>
-      <h2>That page doesn't exist.</h2>
+      <h1 class="legal-title">That page doesn't exist.</h1>
       <p>The episode you're after is probably on the homepage.</p>
       <a class="btn" href="/">Back to the show</a>
     </div>
@@ -619,8 +697,8 @@ ${subscribeBar}
     <div class="wrap narrow">
       <p class="crumb"><a href="/episodes/">← All episodes</a></p>
       <p class="kicker">Episode ${String(ep.episodeNumber).padStart(2, "0")}</p>
-      <h2>${escapeHtml(cleanEpTitle(ep))}</h2>
-      <p class="ep-meta">${fmtDate(ep.published)} · Hosted by Robin Leonard, with Tobi Webster</p>
+      <h1 class="legal-title">${escapeHtml(cleanEpTitle(ep))}</h1>
+      <p class="ep-meta">${fmtDate(ep.published)} · Robin Leonard and Tobi Webster</p>
       <img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail`)}">
       <p class="dek">${escapeHtml(epDek(ep))}</p>
       <a class="btn" href="${escapeHtml(ep.url)}" target="_blank" rel="noopener">Watch on YouTube</a>
@@ -654,6 +732,7 @@ ${subscribeBar}
         desc: epDek(ep),
         body,
         jsonLd,
+        ogImage: ep.thumbnail,
       }),
     ];
   }
@@ -668,7 +747,7 @@ ${subscribeBar}
     <div class="wrap narrow">
       <p class="crumb"><a href="/episodes/${ep ? episodeSlug(ep) : ""}/">← ${ep ? `Episode ${article.episodeNumber}` : "All episodes"}</a></p>
       <p class="kicker">Read · Episode ${String(article.episodeNumber).padStart(2, "0")}</p>
-      <h2>${article.title}</h2>
+      <h1 class="legal-title">${article.title}</h1>
       <p class="dek">${article.dek}</p>
       ${article.body.map((p) => `<p>${p}</p>`).join("\n      ")}
       ${watch}
@@ -697,6 +776,7 @@ ${subscribeBar}
         desc: article.dek,
         body,
         jsonLd,
+        ogImage: ep?.thumbnail ?? null,
       }),
     ];
   }
@@ -705,7 +785,7 @@ ${subscribeBar}
   <section class="legal">
     <div class="wrap">
       <p class="kicker">Episodes</p>
-      <h2>Every episode, in order.</h2>
+      <h1 class="legal-title">Every episode, in order.</h1>
       <div class="eps" style="margin-top:32px">
 ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
       </div>
@@ -716,18 +796,18 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
   <section class="about legal">
     <div class="wrap narrow">
       <p class="kicker">About</p>
-      <h2>Act Without Asking.</h2>
-      <p>AI agents doing real work — and the moment you stop supervising them. No hype, no scripts. Just two hosts figuring out — live, in public — what it actually looks like to hand an agent the keys.</p>
-      <p>The name is the ethos: bias toward action. Stop waiting for permission. Just do the thing.</p>
+      <h1 class="legal-title">Two operators. No demos.</h1>
+      <p>Act Without Asking is hosted by Robin Leonard and Tobi Webster — two operators who run AI agents inside real businesses every day. Not demos, not slide decks: keys handed over, inboxes connected, decisions made without us in the room.</p>
+      <p>The name is the ethos: bias toward action. Stop waiting for permission. Just do the thing. But the moment you hand an agent real work, acting without asking stops being a slogan and becomes a decision: how much rope do you give it? What is it allowed to do on its own — and when it gets it wrong, whose fault is it? We don't have final answers. We have the experiment: run it on ourselves, live, in public, and tell you what actually happened.</p>
       <div class="host">
         <strong>Robin Leonard — host</strong>
-        <span>Serial builder and consultant. Runs real businesses on AI agents, and shows the unglamorous plumbing on the show — the keys, the memory limits, the prompt-injection risks nobody has solved yet.</span>
+        <span>Serial builder. Runs real businesses on AI agents, and shows the plumbing on the show — the access keys, the memory limits, the prompt-injection risks nobody has fully solved yet.</span>
       </div>
       <div class="host">
         <strong>Tobi Webster — co-host</strong>
-        <span>Robin's consulting partner at Axela, an AI-first consulting practice. Brings the operational and business-building side of every conversation.</span>
+        <span>Robin's consulting partner at Axela, their AI-first consulting practice. Brings the business and operations side of every conversation.</span>
       </div>
-      <p>A show from Axela. New episodes on <a href="${YOUTUBE_CHANNEL}" target="_blank" rel="noopener">YouTube</a> — and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
+      <p>New episodes on <a href="${YOUTUBE_CHANNEL}" target="_blank" rel="noopener">YouTube</a> — and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
     </div>
   </section>`;
 
