@@ -87,7 +87,7 @@ const SITE_CSS = `
   header{position:sticky;top:0;background:rgba(10,22,40,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
   .nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:.02em}
-  .nav-ctas{display:flex;gap:10px}
+  .nav-ctas{display:flex;gap:10px;flex-wrap:wrap}
   .cta-btn{display:inline-block;font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
   .cta-btn.primary{background:var(--lime);color:var(--navy)}
   .cta-btn.primary:hover{filter:brightness(1.08)}
