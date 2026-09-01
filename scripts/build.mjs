@@ -91,6 +91,8 @@ const SITE_CSS = `
   .article-dek{color:var(--muted);font-size:15px;margin-bottom:16px}
   .article p{margin-bottom:14px;font-size:15px;color:#D6DCE8}
   .article-watch{display:inline-block;margin-top:6px;font-weight:600;font-size:14px}
+  .article h3 a.article-title-link{color:inherit;text-decoration:none}
+  .article h3 a.article-title-link:hover{color:var(--lime)}
   .quote{text-align:center;max-width:700px;margin:0 auto}
   .quote blockquote{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:clamp(22px,3vw,30px);margin-bottom:20px}
   .quote p{color:var(--muted);font-size:16px}
@@ -125,6 +127,7 @@ const SITE_CSS = `
 const ARTICLES = [
   {
     episodeNumber: 1,
+    slug: "ai-harness-over-model",
     title: "What is an AI harness — and why does it matter more than picking a model?",
     dek: "Robin Leonard and Tobi Webster open Act Without Asking on the shift companies keep missing.",
     body: [
@@ -135,6 +138,7 @@ const ARTICLES = [
   },
   {
     episodeNumber: 2,
+    slug: "multiplayer-agents",
     title: "Multiplayer agents: what changes when AI works as a teammate, not a chat window",
     dek: "One agent answering questions is a demo. A team of named agents working alongside you — and your colleagues — is a different operating model.",
     body: [
@@ -145,6 +149,7 @@ const ARTICLES = [
   },
   {
     episodeNumber: 3,
+    slug: "agent-memory",
     title: "The Brain: what happens when an agent runs out of memory",
     dek: "Robin's own agent started producing garbled output when it hit a hard memory limit — this episode is the story of building it a real memory system.",
     body: [
@@ -155,6 +160,7 @@ const ARTICLES = [
   },
   {
     episodeNumber: 4,
+    slug: "we-moved-onto-buzz",
     title: "We moved our business onto Buzz. Here's what actually happened.",
     dek: "Jack Dorsey's Block launched an agent-native chat platform for teams of people and agents. Robin and Tobi run their real company on it — and talk about what that's actually like.",
     body: [
@@ -165,6 +171,13 @@ const ARTICLES = [
     ],
   },
 ];
+
+// Transcript + show-notes slots per episode. GATED (arch rule: transcripts
+// precede episode-page content): Kate's four passes land Wed 2 Sept midday ICT.
+// Until then this stays EMPTY and episode pages render an honest "coming soon"
+// slot — fill ONLY with Kate's passed copy, keyed by episodeNumber:
+//   { 1: { transcriptHtml, showNotesHtml }, ... }
+const EPISODE_EXTRAS = {};
 
 function markCTA({ label, href, kind = "primary" }) {
   const isPending = href == null;
@@ -180,20 +193,32 @@ function chevronMark({ w = 26, h = 20, opacity = 1 } = {}) {
   return `<svg width="${w}" height="${h}" viewBox="0 0 60 40" aria-hidden="true" style="opacity:${opacity}"><g fill="${LIME}"><path d="M0 0 L16 20 L0 40 L12 40 L28 20 L12 0 Z"/><path d="M20 0 L36 20 L20 40 L32 40 L48 20 L32 0 Z"/><path d="M40 0 L56 20 L40 40 L52 40 L60 28 L60 12 Z" opacity=".55"/></g></svg>`;
 }
 
-function episodeCard(ep) {
+function episodeSlug(ep) {
+  const clean = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
+  return clean
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function episodeCard(ep, { internal = false } = {}) {
   const cleanTitle = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
   const dateStr = new Date(ep.published).toLocaleDateString("en-AU", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+  const href = internal ? `/episodes/${episodeSlug(ep)}/` : ep.url;
+  const external = internal ? "" : ` target="_blank" rel="noopener"`;
+  const cta = internal ? "Episode page" : "Watch on YouTube";
   return `
-    <a class="ep-card" href="${ep.url}" target="_blank" rel="noopener">
+    <a class="ep-card" href="${href}"${external}>
       <div class="ep-thumb"><img src="${ep.thumbnail}" alt="${cleanTitle} — Episode ${ep.episodeNumber}" loading="lazy"></div>
       <div class="ep-body">
         <span class="ep-num">Episode ${String(ep.episodeNumber).padStart(2, "0")}</span>
         <h3>${cleanTitle}</h3>
-        <p>${dateStr} · Watch on YouTube</p>
+        <p>${dateStr} · ${cta}</p>
       </div>
     </a>`;
 }
@@ -220,7 +245,7 @@ function articleBlock(article, episodesByNumber) {
       <div class="article-head">
         <span class="ep-num">Episode ${String(article.episodeNumber).padStart(2, "0")}</span>
       </div>
-      <h3>${article.title}</h3>
+      <h3><a class="article-title-link" href="/articles/${article.slug}/">${article.title}</a></h3>
       <p class="article-dek">${article.dek}</p>
       ${article.body.map((p) => `<p>${p}</p>`).join("\n      ")}
       ${linked}
@@ -235,7 +260,7 @@ async function main() {
   const ageDays = (Date.now() - new Date(data.fetchedAt).getTime()) / 86400000;
   const isStale = data.source !== "live" || ageDays > 14;
 
-  const episodeCards = data.episodes.map(episodeCard).join("\n");
+  const episodeCards = data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n");
   const shortCards = data.shorts.length
     ? data.shorts.map(shortCard).join("\n")
     : `<p class="empty-note">No Shorts published yet — this section fills in automatically as they go live.</p>`;
@@ -395,9 +420,31 @@ ${articleBlocks}
   .nf h2{margin-bottom:12px}
   .nf p{color:var(--muted);margin-bottom:24px}
   code{font-family:'JetBrains Mono',monospace;background:var(--navy2);padding:2px 6px;border-radius:4px;font-size:13px}
+  .crumb{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .crumb a{color:var(--muted)}
+  .crumb a:hover{color:var(--lime)}
+  .ep-page h2{text-align:left}
+  .ep-meta{color:var(--muted);font-size:14px;margin:6px 0 20px}
+  .ep-hero{width:100%;border-radius:10px;border:1px solid var(--line);display:block;margin-bottom:24px;background:var(--navy2)}
+  .ep-page .dek{color:var(--muted);font-size:16px;margin-bottom:20px}
+  .transcript-slot{margin-top:36px;border-top:1px solid var(--line);padding-top:24px}
+  .transcript-slot h3{font-size:19px;margin-bottom:10px}
+  .articles-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+  .article-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px;text-decoration:none;color:var(--ink);display:block;transition:transform .15s ease,border-color .15s ease}
+  .article-card:hover{transform:translateY(-3px);border-color:var(--lime)}
+  .article-card h3{font-size:17px;margin:8px 0 6px;line-height:1.35}
+  .article-card p{color:var(--muted);font-size:13px}
+  .article-page h2{text-align:left}
+  .article-page .dek{color:var(--muted);font-size:16px;margin-bottom:20px}
+  .article-page p{color:#D6DCE8;margin-bottom:14px;font-size:15px}
+  .about h2{text-align:left}
+  .about p{color:#D6DCE8;margin-bottom:14px;font-size:15px}
+  .about .host{margin-bottom:22px}
+  .about .host strong{display:block;font-size:17px;margin-bottom:4px}
+  .about .host span{color:var(--muted);font-size:14px}
   `;
 
-  function pageShell({ path: pagePath, title, desc, body }) {
+  function pageShell({ path: pagePath, title, desc, body, jsonLd = null }) {
     const abs = SITE_URL + pagePath;
     return `<!DOCTYPE html>
 <html lang="en">
@@ -411,7 +458,7 @@ ${articleBlocks}
 <meta property="og:url" content="${abs}">
 <meta property="og:type" content="website">
 <link rel="canonical" href="${abs}">
-<link rel="stylesheet" href="/site.css">
+${jsonLd ? `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>\n` : ""}<link rel="stylesheet" href="/site.css">
 <style>${innerCSS}</style>
 </head>
 <body>
@@ -419,7 +466,11 @@ ${articleBlocks}
 <header>
   <div class="wrap nav">
     <a class="brand" href="/">${chevronMark({ w: 22, h: 17 })} Act Without Asking</a>
-    <div class="nav-ctas">${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}</div>
+    <div class="nav-ctas">
+      <a class="cta-btn ghost" href="/episodes/">Episodes</a>
+      <a class="cta-btn ghost" href="/about/">About</a>
+      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE })}
+    </div>
   </div>
 </header>
 
@@ -517,8 +568,162 @@ ${subscribeBar}
   const twins = await buildTwins(data);
   const homepageHtml = html.replace("</body>", `${twins.widget}\n${subscribeBar}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
+
+  // ---- Multi-page routes (arch v1: /episodes, /episodes/[slug],
+  // /articles/[slug], /about). Transcript slots stay gated until Kate's four
+  // passes land Wed 2 Sept midday — episode pages ship with an honest
+  // "coming soon" slot until then, same pass fills them, no second merge. ----
+  const articlesByEpisode = new Map(ARTICLES.map((a) => [a.episodeNumber, a]));
+  const podcastSeriesRef = { "@type": "PodcastSeries", name: "Act Without Asking", url: SITE_URL };
+  const cleanEpTitle = (ep) => ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
+  const epDek = (ep) =>
+    articlesByEpisode.get(ep.episodeNumber)?.dek ??
+    `Episode ${ep.episodeNumber} of Act Without Asking — AI agents doing real work.`;
+  const fmtDate = (iso) =>
+    new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+
+  function episodeRoute(ep) {
+    const slug = episodeSlug(ep);
+    const article = articlesByEpisode.get(ep.episodeNumber);
+    const extras = EPISODE_EXTRAS[ep.episodeNumber] ?? {};
+    const articleSection = article
+      ? `
+      <div class="transcript-slot">
+        <h3>What this episode covers</h3>
+        ${article.body.map((p) => `<p>${p}</p>`).join("\n        ")}
+        <p><a href="/articles/${article.slug}/">Read the full article →</a></p>
+      </div>`
+      : "";
+    const transcriptSlot = `
+      <div class="transcript-slot">
+        <h3>Transcript</h3>
+        ${extras.transcriptHtml ?? `<p class="empty-note">The full transcript is coming soon.</p>`}
+      </div>`;
+    const body = `
+  <section class="ep-page legal">
+    <div class="wrap narrow">
+      <p class="crumb"><a href="/episodes/">← All episodes</a></p>
+      <p class="kicker">Episode ${String(ep.episodeNumber).padStart(2, "0")}</p>
+      <h2>${cleanEpTitle(ep)}</h2>
+      <p class="ep-meta">${fmtDate(ep.published)} · Hosted by Robin Leonard, with Tobi Webster</p>
+      <img class="ep-hero" src="${ep.thumbnail}" alt="${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail">
+      <p class="dek">${epDek(ep)}</p>
+      <a class="btn" href="${ep.url}" target="_blank" rel="noopener">Watch on YouTube</a>
+      ${articleSection}
+      ${transcriptSlot}
+    </div>
+  </section>`;
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "PodcastEpisode",
+      url: `${SITE_URL}/episodes/${slug}/`,
+      name: cleanEpTitle(ep),
+      description: epDek(ep),
+      datePublished: ep.published,
+      episodeNumber: ep.episodeNumber,
+      image: ep.thumbnail,
+      associatedMedia: {
+        "@type": "VideoObject",
+        name: ep.title,
+        url: ep.url,
+        thumbnailUrl: ep.thumbnail,
+        uploadDate: ep.published,
+      },
+      partOfSeries: podcastSeriesRef,
+    };
+    return [
+      `episodes/${slug}/index.html`,
+      pageShell({
+        path: `/episodes/${slug}/`,
+        title: `${cleanEpTitle(ep)} — Act Without Asking, Episode ${ep.episodeNumber}`,
+        desc: epDek(ep),
+        body,
+        jsonLd,
+      }),
+    ];
+  }
+
+  function articleRoute(article) {
+    const ep = episodesByNumber.get(article.episodeNumber);
+    const watch = ep
+      ? `<p><a class="article-watch" href="${ep.url}" target="_blank" rel="noopener">Watch Episode ${article.episodeNumber} →</a></p>`
+      : "";
+    const body = `
+  <section class="article-page legal">
+    <div class="wrap narrow">
+      <p class="crumb"><a href="/episodes/${ep ? episodeSlug(ep) : ""}/">← ${ep ? `Episode ${article.episodeNumber}` : "All episodes"}</a></p>
+      <p class="kicker">Read · Episode ${String(article.episodeNumber).padStart(2, "0")}</p>
+      <h2>${article.title}</h2>
+      <p class="dek">${article.dek}</p>
+      ${article.body.map((p) => `<p>${p}</p>`).join("\n      ")}
+      ${watch}
+    </div>
+  </section>`;
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: article.title,
+      description: article.dek,
+      image: ep?.thumbnail,
+      datePublished: ep?.published,
+      author: [
+        { "@type": "Person", name: "Robin Leonard" },
+        { "@type": "Person", name: "Tobi Webster" },
+      ],
+      publisher: { "@type": "Organization", name: "Act Without Asking" },
+      mainEntityOfPage: `${SITE_URL}/articles/${article.slug}/`,
+      isPartOf: podcastSeriesRef,
+    };
+    return [
+      `articles/${article.slug}/index.html`,
+      pageShell({
+        path: `/articles/${article.slug}/`,
+        title: `${article.title} — Act Without Asking`,
+        desc: article.dek,
+        body,
+        jsonLd,
+      }),
+    ];
+  }
+
+  const episodesIndexBody = `
+  <section class="legal">
+    <div class="wrap">
+      <p class="kicker">Episodes</p>
+      <h2>Every episode, in order.</h2>
+      <div class="eps" style="margin-top:32px">
+${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
+      </div>
+    </div>
+  </section>`;
+
+  const aboutBody = `
+  <section class="about legal">
+    <div class="wrap narrow">
+      <p class="kicker">About</p>
+      <h2>Act Without Asking.</h2>
+      <p>AI agents doing real work — and the moment you stop supervising them. No hype, no scripts. Just two hosts figuring out — live, in public — what it actually looks like to hand an agent the keys.</p>
+      <p>The name is the ethos: bias toward action. Stop waiting for permission. Just do the thing.</p>
+      <div class="host">
+        <strong>Robin Leonard — host</strong>
+        <span>Serial builder and consultant. Runs real businesses on AI agents, and shows the unglamorous plumbing on the show — the keys, the memory limits, the prompt-injection risks nobody has solved yet.</span>
+      </div>
+      <div class="host">
+        <strong>Tobi Webster — co-host</strong>
+        <span>Robin's consulting partner at Axela, an AI-first consulting practice. Brings the operational and business-building side of every conversation.</span>
+      </div>
+      <p>A show from Axela. New episodes on <a href="${YOUTUBE_CHANNEL}" target="_blank" rel="noopener">YouTube</a> — and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
+    </div>
+  </section>`;
+
+  const articleRoutes = ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber))
+    .map(articleRoute);
   const pages = [
     ["index.html", homepageHtml],
+    ["episodes/index.html", pageShell({ path: "/episodes/", title: "Episodes — Act Without Asking", desc: "Every episode of Act Without Asking: harnesses, multiplayer agents, agent memory, and Buzz — AI agents doing real work.", body: episodesIndexBody })],
+    ...data.episodes.map(episodeRoute),
+    ...articleRoutes,
+    ["about/index.html", pageShell({ path: "/about/", title: "About — Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action — no hype, no scripts.", body: aboutBody })],
     ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe — Act Without Asking", desc: "Get new episodes and The Harness Kit — checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
     ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: email list, analytics, and nothing hidden.", body: privacyBody })],
     ["404.html", pageShell({ path: "/404.html", title: "Page not found — Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
@@ -537,7 +742,15 @@ ${subscribeBar}
   }
 
   const buildDate = new Date().toISOString().slice(0, 10);
-  const sitemapPaths = ["/", "/subscribe/", "/privacy/"];
+  const sitemapPaths = [
+    "/",
+    "/episodes/",
+    "/about/",
+    "/subscribe/",
+    "/privacy/",
+    ...data.episodes.map((ep) => `/episodes/${episodeSlug(ep)}/`),
+    ...articleRoutes.map(([name]) => `/${name.replace(/index\.html$/, "")}`),
+  ];
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${buildDate}</lastmod></url>`).join("\n")}
@@ -548,6 +761,8 @@ ${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${buildDate
   await mkdir(DIST, { recursive: true });
   await mkdir(path.join(DIST, "subscribe"), { recursive: true });
   await mkdir(path.join(DIST, "privacy"), { recursive: true });
+  await mkdir(path.join(DIST, "episodes"), { recursive: true });
+  await mkdir(path.join(DIST, "articles"), { recursive: true });
   for (const [name, content] of pages) {
     const out = path.join(DIST, name);
     await mkdir(path.dirname(out), { recursive: true });
@@ -556,7 +771,7 @@ ${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${buildDate
   await writeFile(path.join(DIST, "site.css"), SITE_CSS);
   await mkdir(path.join(DIST, "twins"), { recursive: true });
   await writeFile(path.join(DIST, "twins", "index.html"), twins.twinsPage);
-  console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html (twins gates passed; stale=${isStale})`);
+  console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html (routes: /, /episodes, ${data.episodes.length} episode pages, ${articleRoutes.length} article pages, /about, /subscribe, /privacy, 404, robots, sitemap; twins gates passed; stale=${isStale})`);
 }
 
 main().catch((err) => {
