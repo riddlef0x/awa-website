@@ -624,6 +624,7 @@ ${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script
     <a class="brand" href="/">${chevronMark({ w: 22, h: 17 })} Act Without Asking</a>
     <div class="nav-ctas">
       <a class="cta-btn ghost" href="/episodes/">Episodes</a>
+      <a class="cta-btn ghost" href="/articles/">Blog</a>
       <a class="cta-btn ghost" href="/about/">About</a>
       ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}
     </div>
@@ -889,11 +890,33 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
     </div>
   </section>`;
 
+  const articlesIndexBody = `
+  <section class="legal">
+    <div class="wrap">
+      <p class="kicker">Blog</p>
+      <h1 class="legal-title">Every episode, in writing.</h1>
+      <div class="articles-list" style="margin-top:32px">
+${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
+  const ep = episodesByNumber.get(a.episodeNumber);
+  const date = ep?.published
+    ? new Date(ep.published).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
+    : "";
+  return `        <a class="article-card" href="/articles/${a.slug}/">
+          <span class="ep-num">Episode ${String(a.episodeNumber).padStart(2, "0")}</span>
+          <h3>${a.title}</h3>
+          <p>${a.dek}</p>${date ? `\n          <p class="article-date">${date}</p>` : ""}
+        </a>`;
+}).join("\n")}
+      </div>
+    </div>
+  </section>`;
+
   const articleRoutes = ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber))
     .map(articleRoute);
   const pages = [
     ["index.html", homepageHtml],
     ["episodes/index.html", pageShell({ path: "/episodes/", title: "Episodes — Act Without Asking", desc: "Every episode of Act Without Asking: harnesses, multiplayer agents, agent memory, and Buzz — AI agents doing real work.", body: episodesIndexBody })],
+    ["articles/index.html", pageShell({ path: "/articles/", title: "Blog — Act Without Asking", desc: "Every episode of Act Without Asking in writing — harnesses, multiplayer agents, agent memory, and what moved us onto Buzz.", body: articlesIndexBody })],
     ...data.episodes.map(episodeRoute),
     ...articleRoutes,
     ["about/index.html", pageShell({ path: "/about/", title: "About — Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action — no hype, no scripts.", body: aboutBody, jsonLd: {
@@ -929,6 +952,7 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
   const sitemapPaths = [
     "/",
     "/episodes/",
+    "/articles/",
     "/twins/",
     "/about/",
     "/subscribe/",
