@@ -440,7 +440,7 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
 <header>
   <div class="wrap nav">
     <a class="brand" href="#top">${chevronMark()} Act Without Asking</a>
-    <div class="nav-ctas">${headerCTAs}</div>
+    <div class="nav-ctas"><a class="cta-btn ghost" href="/articles/">Blog</a>${headerCTAs}</div>
   </div>
 </header>
 
@@ -580,6 +580,7 @@ ${articleBlocks}
   .article-card:hover{transform:translateY(-3px);border-color:var(--lime)}
   .article-card h3{font-size:17px;margin:8px 0 6px;line-height:1.35}
   .article-card p{color:var(--muted);font-size:13px}
+  .article-card .article-date{font-size:12px;margin-top:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
   .article-page h2{text-align:left}
   .article-page .dek{color:var(--muted);font-size:16px;margin-bottom:20px}
   .article-page p{color:#D6DCE8;margin-bottom:14px;font-size:15px}
