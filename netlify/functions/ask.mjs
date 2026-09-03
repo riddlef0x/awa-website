@@ -4,27 +4,15 @@
 // backend swap). ask-data.json is generated at BUILD time by scripts/build.mjs
 // (handoff URLs resolved against data/youtube.json — unresolvable = build fails).
 import { readFileSync } from "node:fs";
+import { createLimiter } from "./rate-limit.mjs";
 
 const data = JSON.parse(readFileSync(new URL("./ask-data.json", import.meta.url), "utf8"));
 const { entries, fallbackLines, fallbackHandoff, disagreementIds } = data;
 const byId = new Map(entries.map((e) => [e.id, e]));
 
 const MAX_QUESTION = 280;
-const RATE_LIMIT = 10; // per window per IP
-const RATE_WINDOW_MS = 60_000;
 
-// Per-instance rate limiting (documented Phase A limitation: lambda instances
-// are ephemeral, so this is best-effort until Phase B revisits shared state).
-const hits = new Map();
-
-function limited(ip) {
-  const now = Date.now();
-  const list = (hits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
-  list.push(now);
-  hits.set(ip, list);
-  if (hits.size > 5000) hits.clear(); // crude memory bound
-  return list.length > RATE_LIMIT;
-}
+const limited = createLimiter();
 
 function normalize(s) {
   return s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
@@ -164,7 +152,7 @@ export default async (req) => {
     if (!question || question.length > MAX_QUESTION) {
       return handoffResponse(400, `Keep questions under ${MAX_QUESTION} characters — the twins are scripted, not infinite.`);
     }
-    if (limited(ip)) {
+    if (await limited(ip)) {
       return handoffResponse(429, "Easy — ten questions a minute. The humans said the same thing in every episode.");
     }
 
