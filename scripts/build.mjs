@@ -674,7 +674,7 @@ ${subscribeBar}
       <p><strong>We do not sell, rent, or share your email address. Ever.</strong></p>
 
       <h3>Analytics</h3>
-      <p>The site runs self-hosted, first-party analytics (Umami). No Google Analytics, no ad trackers, no third-party cookies. We see page counts and referrers — not you.</p>
+      <p>No Google Analytics, no ad trackers, no third-party cookies. If we ever add analytics, it will be self-hosted and first-party — and this page will say exactly what we collect before it turns on.</p>
 
       <h3>The twins</h3>
       <p>If you chat with the Robin and Tobi twins on this site, we do not store your questions or their answers — nothing you type is kept. We log aggregate counts only (how many questions are asked, which handoff links get clicked) so we can make the twins better. No question text, nothing that identifies you. The twins page says the same thing: no question text is stored.</p>
@@ -929,7 +929,7 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
       ],
     } })],
     ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe — Act Without Asking", desc: "Get new episodes and The Harness Kit — checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
-    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: email list, analytics, and nothing hidden.", body: privacyBody })],
+    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: your email if you subscribe, aggregate twins counts, and nothing hidden.", body: privacyBody })],
     ["404.html", pageShell({ path: "/404.html", title: "Page not found — Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
     ["robots.txt", `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`],
   ];
