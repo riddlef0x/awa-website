@@ -1,6 +1,7 @@
 // Episode transcripts for EPISODE_EXTRAS (build.mjs). GENERATED from Kate's
-// site-pass files (RESEARCH/AWA_EP{1..4}_SITE_PASS_KATE_20260831.md) — do not
-// hand-edit; regenerate via .scratch/awa_make_transcripts.mjs.
+// site-pass files (RESEARCH/AWA_EP{1..4}_SITE_PASS_KATE_20260831.md — producer
+// workspace, outside this repo) — do not hand-edit; regenerate in-repo via
+// scripts/make-episode-transcripts.mjs.
 // Conversion rules per Kate (AWA channel, 3 Sept): trims applied, cut
 // annotations and inline *[...]* flags never render, "Host" labels kept,
 // spoken claims kept as delivered.
@@ -518,7 +519,7 @@ export const EPISODE_TRANSCRIPTS = {
 </blockquote>
   <h4>Air gaps and the mailroom rule [19:40] — Robin</h4>
 <blockquote>
-  <p><strong>Robin:</strong> Yeah. Like you and I, we have personal agents. I used to set up another independent agent for "Xeller" , and having that kind of separation is very important. Because what we have seen is that even if you train them and spend a lot of time on them, they occasionally slip up and share some information. I think there need to be air gaps in various use cases in our lives. You may have an air-gap agent that just deals with your finances — that has no access to your other agents, and there's no sharing of private information. And maybe you don't have them in chats where they're publicly accessible either. That's where delineation and identity between agents is really important.</p>
+  <p><strong>Robin:</strong> Yeah. Like you and I, we have personal agents. I used to set up another independent agent for Axela, and having that kind of separation is very important. Because what we have seen is that even if you train them and spend a lot of time on them, they occasionally slip up and share some information. I think there need to be air gaps in various use cases in our lives. You may have an air-gap agent that just deals with your finances — that has no access to your other agents, and there's no sharing of private information. And maybe you don't have them in chats where they're publicly accessible either. That's where delineation and identity between agents is really important.</p>
   <p>Companies have to think about the same thing. If I'm using agents in my Salesforce development lifecycle — which is something that is starting to become very common — I may give them access to a sandbox instance of Salesforce, but I don't give them access to production. It would be a lot easier if they had access to production, 'cause I could see what's going on there, but I don't want them to change production. I have to have this air gap with how they interact with different systems. Same with Buzz. Stephanie, my homey, has got a lot of access, but Micah — who's a project manager in one of my threads — doesn't have any access to do anything. She is really just there to be a product manager. The real risk is if Micah injects a prompt into Stephanie and manipulates her. That is a real threat that I think hasn't been solved yet.</p>
   <p>Those kinds of things are the limitation in moving this into enterprise. It's just analogous to a human environment, right? The new kid in the mailroom is not going to have the same access to the company data that the CEO is. There's going to be this structure — essentially, to simplify it, like an org chart — different levels of access to information and access to actioning tasks.</p>
 </blockquote>
