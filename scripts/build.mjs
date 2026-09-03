@@ -137,6 +137,37 @@ const SITE_CSS = `
   .eps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
   .ep-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--ink);display:block;transition:transform .15s ease,border-color .15s ease}
   .ep-card:hover{transform:translateY(-3px);border-color:var(--lime)}
+  /* ---- Motion layer v1 (arch V1 §1 hover polish). Compositor-only:
+     transform/opacity keyframes, no layout properties animated. The global
+     prefers-reduced-motion kill switch above disables every rule here;
+     the tilt script also self-guards (pointer:fine + reduced-motion). ---- */
+  .hero-motes{position:absolute;inset:0;pointer-events:none}
+  .hero-motes i{position:absolute;bottom:-8px;width:3px;height:3px;border-radius:50%;background:rgba(200,255,61,.35);opacity:0;animation:moteDrift 9s linear infinite;will-change:transform,opacity}
+  .hero-motes i:nth-child(1){left:5%;animation-duration:11s;animation-delay:0s}
+  .hero-motes i:nth-child(2){left:13%;animation-duration:13s;animation-delay:2.1s}
+  .hero-motes i:nth-child(3){left:22%;animation-duration:9s;animation-delay:4.4s}
+  .hero-motes i:nth-child(4){left:31%;animation-duration:12s;animation-delay:.8s}
+  .hero-motes i:nth-child(5){left:39%;animation-duration:10s;animation-delay:3.2s}
+  .hero-motes i:nth-child(6){left:47%;animation-duration:14s;animation-delay:5.5s}
+  .hero-motes i:nth-child(7){left:55%;animation-duration:9.5s;animation-delay:1.6s}
+  .hero-motes i:nth-child(8){left:63%;animation-duration:12.5s;animation-delay:3.9s}
+  .hero-motes i:nth-child(9){left:71%;animation-duration:10.5s;animation-delay:6.2s}
+  .hero-motes i:nth-child(10){left:79%;animation-duration:13.5s;animation-delay:.4s}
+  .hero-motes i:nth-child(11){left:86%;animation-duration:9.8s;animation-delay:4.9s}
+  .hero-motes i:nth-child(12){left:92%;animation-duration:11.5s;animation-delay:2.7s}
+  .hero-motes i:nth-child(13){left:9%;animation-duration:12.2s;animation-delay:7s}
+  .hero-motes i:nth-child(14){left:76%;animation-duration:10.8s;animation-delay:5.1s}
+  @keyframes moteDrift{0%{transform:translate3d(0,0,0);opacity:0}12%{opacity:.65}82%{opacity:.18}100%{transform:translate3d(26px,-520px,0);opacity:0}}
+  @media (max-width:640px){.hero-motes i:nth-child(n+8){display:none}.hero-motes i{animation-duration:14s}}
+  .ep-thumb{position:relative}
+  .wave{position:absolute;right:10px;bottom:10px;display:flex;gap:3px;align-items:flex-end;height:16px;opacity:.85}
+  .wave i{width:3px;height:16px;background:var(--lime);border-radius:1px;transform:scaleY(.3);transform-origin:bottom;transition:transform .2s ease}
+  .ep-card:hover .wave i{animation:wavebar 1s ease-in-out infinite}
+  .ep-card:hover .wave i:nth-child(2){animation-delay:.15s}
+  .ep-card:hover .wave i:nth-child(3){animation-delay:.3s}
+  .ep-card:hover .wave i:nth-child(4){animation-delay:.45s}
+  .ep-card:hover .wave i:nth-child(5){animation-delay:.6s}
+  @keyframes wavebar{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
   .ep-thumb img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--navy2)}
   .ep-body{padding:18px}
   .ep-num{color:var(--lime);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
@@ -324,7 +355,7 @@ function episodeCard(ep, { internal = false } = {}) {
   const cta = internal ? "Episode page" : "Watch on YouTube";
   return `
     <a class="ep-card" href="${escapeHtml(href)}"${external}>
-      <div class="ep-thumb"><img src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanTitle} — Episode ${ep.episodeNumber}`)}" loading="lazy"></div>
+      <div class="ep-thumb"><img src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanTitle} — Episode ${ep.episodeNumber}`)}" loading="lazy"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
       <div class="ep-body">
         <span class="ep-num">Episode ${String(ep.episodeNumber).padStart(2, "0")}</span>
         <h3>${escapeHtml(cleanTitle)}</h3>
@@ -446,6 +477,7 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
 
 <main id="top">
   <div class="hero">
+    <div class="hero-motes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <p class="kicker">The Agentic AI Podcast</p>
     <h1>ACT WITHOUT<br>ASKING</h1>
     <p class="sub">AI agents doing real work — and the moment you stop supervising them.</p>
@@ -591,6 +623,26 @@ ${articleBlocks}
   .about .host span{color:var(--muted);font-size:14px}
   `;
 
+  const MOTION_TILT_JS = `<script>
+/* Motion layer v1 - card tilt. Self-guarding: pointer-fine devices only,
+   disabled under prefers-reduced-motion. Compositor-only transform; the
+   inline transform preserves the CSS hover lift while tilting. */
+(function () {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!window.matchMedia("(pointer: fine)").matches) return;
+  var MAX = 3;
+  document.querySelectorAll(".ep-card").forEach(function (card) {
+    card.addEventListener("mousemove", function (e) {
+      var r = card.getBoundingClientRect();
+      var dx = (e.clientX - r.left) / r.width - 0.5;
+      var dy = (e.clientY - r.top) / r.height - 0.5;
+      card.style.transform = "translateY(-3px) perspective(600px) rotateX(" + (-dy * MAX).toFixed(2) + "deg) rotateY(" + (dx * MAX).toFixed(2) + "deg)";
+    });
+    card.addEventListener("mouseleave", function () { card.style.transform = ""; });
+  });
+})();
+</scr` + `ipt>`;
+
   function pageShell({ path: pagePath, title, desc, body, jsonLd = null, ogImage = null }) {
     const abs = SITE_URL + pagePath;
     // DoD #5: every page shares a real og:image. Per-page where the page has a
@@ -644,6 +696,7 @@ ${body}
   </div>
 </footer>
 ${subscribeBar}
+${MOTION_TILT_JS}
 </body>
 </html>
 `;
@@ -726,7 +779,7 @@ ${subscribeBar}
   // gate loop below so the host/contact gates scan it too), /twins page ships
   // with its own embedded widget.
   const twins = await buildTwins(data, SITE_URL);
-  const homepageHtml = html.replace("</body>", `${twins.widget}\n${subscribeBar}\n</body>`);
+  const homepageHtml = html.replace("</body>", `${twins.widget}\n${subscribeBar}\n${MOTION_TILT_JS}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
 
   // ---- Multi-page routes (arch v1: /episodes, /episodes/[slug],
