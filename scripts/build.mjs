@@ -3,6 +3,7 @@
 // AWA channel, 30 Aug 2026: build-time static, not a runtime dependency).
 import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { buildTwins } from "./build-twins.mjs";
+import { EPISODE_TRANSCRIPTS } from "./episode-transcripts.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -275,12 +276,16 @@ const ARTICLES = [
   },
 ];
 
-// Transcript + show-notes slots per episode. GATED (arch rule: transcripts
-// precede episode-page content): Kate's four passes land Wed 2 Sept midday ICT.
-// Until then this stays EMPTY and episode pages render an honest "coming soon"
-// slot — fill ONLY with Kate's passed copy, keyed by episodeNumber:
-//   { 1: { transcriptHtml, showNotesHtml }, ... }
-const EPISODE_EXTRAS = {};
+// Transcript + show-notes slots per episode. Arch gate condition satisfied
+// (Kate's four passes landed 3 Sept): transcripts filled data-only from
+// scripts/episode-transcripts.mjs (GENERATED from Kate's site-pass files;
+// conversion rules in its header — trims applied, cut annotations and inline
+// flag markers never render, "Host" labels kept, spoken claims kept).
+// Show notes stay per-episode gated (Ep 2's HELD until that episode
+// publishes) and nothing renders showNotesHtml yet, so transcripts only:
+const EPISODE_EXTRAS = Object.fromEntries(
+  Object.entries(EPISODE_TRANSCRIPTS).map(([n, t]) => [n, { transcriptHtml: t.transcriptHtml }])
+);
 
 function markCTA({ label, href, kind = "primary", utm = null }) {
   const isPending = href == null;
