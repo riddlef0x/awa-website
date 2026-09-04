@@ -12,7 +12,14 @@
 export const TOP_K = 4;
 export const SCORE_THRESHOLD = 1; // distinct content-word matches required
 
-const STOPWORDS = new Set(["the", "a", "an", "of", "to", "is", "are", "was", "were", "be", "been", "am", "it", "its", "in", "on", "at", "and", "or", "for", "with", "what", "how", "who", "whats", "do", "does", "did", "me", "my", "your", "you", "this", "that", "they", "them", "their", "we", "us", "our", "so", "if", "will", "can", "get", "got", "about", "like", "just", "really", "some", "any"]);
+// Query-side synonym expansion: the show says "memory" (Ep 3 is memory
+// architecture per Kate's site pass), but visitors ask about "context" (and
+// vice versa). One synonym match counts once, same as a direct token match —
+// score semantics (distinct concept overlaps) are unchanged. Data-driven:
+// only pairs listed here expand; nothing is inferred.
+export const SYNONYMS = new Map([["context", ["memory"]]]); // one-way: "memory" must NOT expand to "context" — Ep 1's harness "context layer" passage would otherwise out-score Ep 3's actual memory sections
+
+const STOPWORDS = new Set(["the", "a", "an", "of", "to", "is", "are", "was", "were", "be", "been", "am", "it", "its", "in", "on", "at", "and", "or", "for", "with", "what", "how", "who", "whats", "do", "does", "did", "me", "my", "your", "you", "this", "that", "they", "them", "their", "we", "us", "our", "so", "if", "will", "can", "get", "got", "about", "like", "just", "really", "some", "any", "when", "out"]); // "when"/"out" added 4 Sep: filler tokens that inflated long-prose excerpts over topic sections
 
 export function tokenize(s) {
   return String(s).toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !STOPWORDS.has(w));
@@ -30,8 +37,11 @@ export function retrieve(question, excerpts, { topK = TOP_K, threshold = SCORE_T
     const hay = `${e.section || ""} ${e.text || ""}`.toLowerCase();
     let score = 0;
     for (const t of tokens) {
-      const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(s|es)?\\b`);
-      if (re.test(hay)) score += 1;
+      const esc = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(`\\b${esc}(s|es)?\\b`);
+      if (re.test(hay)) { score += 1; continue; }
+      const alts = SYNONYMS.get(t);
+      if (alts && alts.some((a) => new RegExp(`\\b${a}(s|es)?\\b`).test(hay))) score += 1;
     }
     if (score === 0) continue;
     scored.push({ excerpt: e, score });
