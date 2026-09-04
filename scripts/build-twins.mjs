@@ -274,7 +274,10 @@ h2{font-size:20px;margin:32px 0 12px}
   <section class="t-ask">
     <h2>Ask the twins</h2>
     ${askRootMarkup()}
-    <p class="t-note">Scripted Phase A: keyword matching over a curated exchange pool. No question text is stored.</p>
+    <p class="t-note">Answers are drafted with the help of an AI service —
+    grounded in the show, with the episode cited. No question text is stored
+    on our side; see the <a href="/privacy/">privacy page</a> for exactly
+    what happens to your question.</p>
   </section>
   <section>
     <h2>Best exchanges</h2>

@@ -721,7 +721,7 @@ ${MOTION_TILT_JS}
     <div class="wrap narrow">
       <p class="kicker">Privacy</p>
       <h1 class="legal-title">Everything we collect, and why.</h1>
-      <p class="updated">Last updated: 31 August 2026.</p>
+      <p class="updated">Last updated: 4 September 2026.</p>
 
       <h3>Who we are</h3>
       <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request — access, correction, or deletion of your data — email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
@@ -741,7 +741,27 @@ ${MOTION_TILT_JS}
       <p>No Google Analytics, no ad trackers, no third-party cookies. If we ever add analytics, it will be self-hosted and first-party — and this page will say exactly what we collect before it turns on.</p>
 
       <h3>The twins</h3>
-      <p>If you chat with the Robin and Tobi twins on this site, we do not store your questions or their answers — nothing you type is kept. We log aggregate counts only (how many questions are asked, which handoff links get clicked) so we can make the twins better. No question text, nothing that identifies you. The twins page says the same thing: no question text is stored.</p>
+      <p>When you ask the twins a question, here is exactly what happens to it.
+      Your question — and nothing else about you — is sent to an AI service that
+      helps write the answer. We never send your name, email, or IP address to
+      the AI service. Our server sees the bare technical data every website
+      sees and uses it only to stop abuse — it is never stored with your
+      question. The AI service processes your question to
+      do its job and keeps its own records under its own privacy policy; this
+      site does not store your questions or the answers on our side.</p>
+      <p>Every answer is grounded in the show itself: it points to the episode
+      and moment it comes from. If the show doesn't back an answer, the twins
+      say so and hand you an episode instead of making something up. If the AI
+      service is unavailable, the twins automatically fall back to pre-written
+      answers — same behaviour, different engine.</p>
+      <p>The twins are AI impressions of Robin and Tobi, not Robin and Tobi.
+      They may be wrong — check anything that matters against the actual
+      episodes.</p>
+      <p>We log aggregate counts only — how many questions are asked, which
+      episode links get clicked, and coarse timing and size buckets. No question
+      text, no IP, nothing that identifies you or reconstructs what you asked.
+      These counts contain nothing personal, so we keep them indefinitely —
+      there is nothing in them to delete. The twins page says the same thing.</p>
 
       <h3>YouTube</h3>
       <p>The site embeds YouTube videos. YouTube's own privacy policy applies to what they see when a video plays.</p>
