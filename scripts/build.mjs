@@ -448,6 +448,7 @@ async function main() {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Act Without Asking — The agentic AI podcast</title>
 <meta name="description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
@@ -669,6 +670,7 @@ ${articleBlocks}
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(desc)}">
@@ -1096,6 +1098,9 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
   pages.push(["llms.txt", llmsTxt]);
 
   await mkdir(DIST, { recursive: true });
+  // favicon AFTER mkdir — an early copy here would ENOENT on a clean checkout
+  // (DIST does not exist yet) and the .catch would silently drop the file.
+  await copyFile(path.join(ROOT, "assets", "favicon.ico"), path.join(DIST, "favicon.ico"));
   await mkdir(path.join(DIST, "subscribe"), { recursive: true });
   await mkdir(path.join(DIST, "privacy"), { recursive: true });
   await mkdir(path.join(DIST, "episodes"), { recursive: true });

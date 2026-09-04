@@ -236,6 +236,7 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The twins — Act Without Asking</title>
 <meta name="description" content="AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
