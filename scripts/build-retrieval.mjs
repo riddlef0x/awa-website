@@ -51,12 +51,20 @@ function excerptText(blockHtml) {
 }
 
 export function buildRetrievalIndex({ episodes }) {
-  // episode number → videoId, parsed from "… | Episode N" titles (same source
-  // ask-data handoffs resolve against; missing = build fails, never guessed).
+  // episode number → videoId. Primary source: episodeNumber, which
+  // fetch-youtube assigns from the KNOWN_EPISODE_IDS pin map (titles are
+  // YouTube-editable and did drop their "Episode N" suffixes on 4 Sep —
+  // title parsing alone broke the prod build that day). Title regex kept as
+  // fallback; neither present = build fails, never guessed.
   const videoByEpisode = new Map();
   for (const ep of episodes || []) {
     const m = /Episode\s+(\d+)/i.exec(ep.title || "");
-    if (ep.videoId && m) videoByEpisode.set(parseInt(m[1], 10), ep.videoId);
+    const num = Number.isInteger(ep.episodeNumber)
+      ? ep.episodeNumber
+      : m
+        ? parseInt(m[1], 10)
+        : null;
+    if (num !== null && ep.videoId) videoByEpisode.set(num, ep.videoId);
   }
 
   const excerpts = [];
