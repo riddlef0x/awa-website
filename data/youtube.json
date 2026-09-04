@@ -1,11 +1,11 @@
 {
-  "fetchedAt": "2026-09-01T01:12:58.448Z",
+  "fetchedAt": "2026-09-04T15:01:17.594Z",
   "source": "live",
   "shortsSource": "playlist-feed",
   "episodes": [
     {
       "videoId": "IT1CxSch6x4",
-      "title": "What is a harness? | Episode 1",
+      "title": "What is an AI Harness?",
       "published": "2026-08-10T12:27:21+00:00",
       "url": "https://www.youtube.com/watch?v=IT1CxSch6x4",
       "thumbnail": "https://i.ytimg.com/vi/IT1CxSch6x4/hqdefault.jpg",
@@ -13,7 +13,7 @@
     },
     {
       "videoId": "-cv48twm9Kw",
-      "title": "Multiplayer agents |  Episode 2",
+      "title": "Multiplayer AI Agents",
       "published": "2026-08-12T12:55:21+00:00",
       "url": "https://www.youtube.com/watch?v=-cv48twm9Kw",
       "thumbnail": "https://i.ytimg.com/vi/-cv48twm9Kw/hqdefault.jpg",
@@ -21,7 +21,7 @@
     },
     {
       "videoId": "qp1zBerxoaE",
-      "title": "The Brain | Episode 3",
+      "title": "Building an Agent's Brain | Episode 3",
       "published": "2026-08-19T11:39:24+00:00",
       "url": "https://www.youtube.com/watch?v=qp1zBerxoaE",
       "thumbnail": "https://i.ytimg.com/vi/qp1zBerxoaE/hqdefault.jpg",
@@ -37,6 +37,27 @@
     }
   ],
   "shorts": [
+    {
+      "videoId": "mPHKAjKa_v0",
+      "title": "AI REVOLUTIONIZES CLIENT MANAGEMENT: UNLOCKING BUSINESS SUPERPOWERS! #shorts",
+      "published": "2026-09-03T23:03:48+00:00",
+      "url": "https://www.youtube.com/shorts/mPHKAjKa_v0",
+      "thumbnail": "https://i.ytimg.com/vi/mPHKAjKa_v0/hqdefault.jpg"
+    },
+    {
+      "videoId": "5An1E_I5adI",
+      "title": "AI Doom: Businesses Ignoring Tech Are Doomed! Exponential Change Ahead! #shorts",
+      "published": "2026-09-02T21:31:28+00:00",
+      "url": "https://www.youtube.com/shorts/5An1E_I5adI",
+      "thumbnail": "https://i.ytimg.com/vi/5An1E_I5adI/hqdefault.jpg"
+    },
+    {
+      "videoId": "V2UFPEZ1q24",
+      "title": "CEOs Don't Want to Replace You! AI Gives Superpowers #shorts",
+      "published": "2026-09-01T21:03:35+00:00",
+      "url": "https://www.youtube.com/shorts/V2UFPEZ1q24",
+      "thumbnail": "https://i.ytimg.com/vi/V2UFPEZ1q24/hqdefault.jpg"
+    },
     {
       "videoId": "pYR-C6kMycQ",
       "title": "AI-Native: The Future of Business Communication is Here! #shorts",
