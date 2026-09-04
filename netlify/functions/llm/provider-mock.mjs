@@ -16,7 +16,7 @@ export function mockProvider({ fixture = "valid", excerpts = [] } = {}) {
     case "valid":
       return { answer: `Robin-twin: ${line}\n\nTobi-twin: And that is exactly why we said it on the show.`, citations };
     case "too-long":
-      return { answer: ("x".repeat(481)), citations };
+      return { answer: ("x".repeat(641)), citations }; // one over the 640-char hard gate (§1)
     case "too-many-lines":
       return { answer: "one\ntwo\nthree\nfour", citations };
     case "no-citations":

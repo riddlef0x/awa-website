@@ -37,10 +37,25 @@ for (const [fx, reason] of Object.entries(EXPECT)) {
 }
 console.log("PASS 2: all failure fixtures rejected with correct reasons");
 
-// 3. Contract constants match spec §1.
-assert.strictEqual(MAX_ANSWER_CHARS, 480);
+// 3. Contract constants match spec §1 (hard gate 640; prompt target stays 480).
+assert.strictEqual(MAX_ANSWER_CHARS, 640);
 assert.strictEqual(MAX_ANSWER_LINES, 3);
-console.log("PASS 3: contract constants match spec (480 chars / 3 lines)");
+console.log("PASS 3: contract constants match spec (hard gate 640 chars / 3 lines)");
+
+// 3b. Length-gate boundary (length-lottery ruling 2026-09-04): a grounded
+// 2-line answer over the 480 prompt target but under the 640 hard gate must
+// PASS; one char over the hard gate must still FAIL CLOSED.
+{
+  const filler = "Grounded banter about the memory wall from Episode 3. ";
+  const okAnswer = `Robin-twin: ${filler.repeat(6).slice(0, 299)}\nTobi-twin: ${filler.repeat(6).slice(0, 299)}`; // 2 lines, ~600 chars
+  assert.ok(okAnswer.length > 480 && okAnswer.length <= 640, `boundary setup: answer is ${okAnswer.length} chars, must be in (480, 640]`);
+  assert.strictEqual(okAnswer.split("\n").length, 2);
+  const vOk = validateAnswer({ answer: okAnswer, citations: ALLOWED, allowedCitations: ALLOWED });
+  assert.strictEqual(vOk.ok, true, `600-class grounded 2-line answer must pass: ${vOk.reason}`);
+  const vOver = validateAnswer({ answer: "x".repeat(641), citations: ALLOWED, allowedCitations: ALLOWED });
+  assert.deepStrictEqual(vOver, { ok: false, reason: "answer-too-long" }, "641-char answer must fail closed");
+  console.log(`PASS 3b: length gate boundary — ${okAnswer.length}-char grounded 2-line answer passes, 641-char answer fails closed`);
+}
 
 // 4. Provider call: aborts on timeout, throws on non-OK, no header leakage.
 {
