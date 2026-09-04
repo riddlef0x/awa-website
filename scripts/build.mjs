@@ -424,7 +424,11 @@ async function main() {
   // privacy, 404). Homepage/episodes/articles/twins keep real episode
   // thumbnails per the DoD v2 ruling.
   const BRAND_OG = `${SITE_URL}/og-card.png`;
-  await copyFile(path.join(ROOT, "assets", "og-card.png"), path.join(DIST, "og-card.png")).catch(() => {});
+  // og-card.png is copied to dist AFTER mkdir(DIST) below (4 Sep 2026, Oksana):
+  // the copy previously ran before dist existed, ENOENTed on any clean build,
+  // and the .catch(() => {}) silently dropped it — prod only kept serving the
+  // card via a build-environment quirk (Jenny's flag, favicon PR 1f3a9a4).
+  // No .catch: a missing committed asset must FAIL the build loudly.
   const DEFAULT_OG = BRAND_OG;
 
   const ageDays = (Date.now() - new Date(data.fetchedAt).getTime()) / 86400000;
@@ -1101,6 +1105,7 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
   // favicon AFTER mkdir — an early copy here would ENOENT on a clean checkout
   // (DIST does not exist yet) and the .catch would silently drop the file.
   await copyFile(path.join(ROOT, "assets", "favicon.ico"), path.join(DIST, "favicon.ico"));
+  await copyFile(path.join(ROOT, "assets", "og-card.png"), path.join(DIST, "og-card.png"));
   await mkdir(path.join(DIST, "subscribe"), { recursive: true });
   await mkdir(path.join(DIST, "privacy"), { recursive: true });
   await mkdir(path.join(DIST, "episodes"), { recursive: true });
