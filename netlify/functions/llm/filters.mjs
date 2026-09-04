@@ -3,7 +3,7 @@
 // Every LLM answer passes these BEFORE it may reach a visitor; any rejection
 // routes to the scripted fallback (no grounding → no answer from the LLM).
 
-export const MAX_ANSWER_CHARS = 480; // §1 contract
+export const MAX_ANSWER_CHARS = 640; // §1 contract — hard gate sits ABOVE the 480-char prompt target (length-lottery ruling 2026-09-04)
 export const MAX_ANSWER_LINES = 3;   // §1 contract
 
 // Starter bio-fact patterns (§5 biographical-facts rule, response-filter half;

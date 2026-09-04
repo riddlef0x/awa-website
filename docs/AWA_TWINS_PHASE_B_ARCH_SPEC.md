@@ -23,7 +23,9 @@ RED verdict of record: event `3e3cb45d` (3 Sep).
 
 - **A backend swap behind the frozen contract.** `POST /api/ask` request and
   response shapes are UNCHANGED (v1 spec §3): `{question ≤280}` →
-  `{answer ≤480 ≤3 lines, speaker, citations[], handoff, poolId}`. The UI
+  `{answer ≤640 ≤3 lines, speaker, citations[], handoff, poolId}` (hard gate
+  640; the prompt's soft target stays 480 — 2026-09-04 length-lottery
+  ruling). The UI
   does not know which backend served it. `citations[]` and `handoff` stay
   REQUIRED in every response. **One additive field for QA visibility:**
   every response carries `mode` — `"llm"` | `"pool"` | `"fallback"` — so
@@ -31,7 +33,8 @@ RED verdict of record: event `3e3cb45d` (3 Sep).
   existing fields keep byte-identical semantics.
 - **Stateless.** One question, one answer. No visitor chat history is
   retained server-side; multi-turn is a post-sprint decision through me.
-- **No streaming.** Answers stay ≤480 chars — streaming buys nothing and
+- **No streaming.** Answers stay ≤640 chars at the hard gate (prompt soft
+  target 480) — streaming buys nothing and
   would trigger the framework escape hatch in arch V1 §1. Not revisited.
 - **No visitor PII ever** (unchanged): the request carries question text
   only — no identity, no email, no cookies consumed.
