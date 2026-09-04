@@ -14,7 +14,12 @@ import { EPISODE_TRANSCRIPTS } from "./episode-transcripts.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const MAX_EXCERPT_CHARS = 1400; // truncate long sections at a sentence boundary
+// 2800 (4 Sep 2026, Oksana — ep3-memory launch gate): 1400 cut the Episode-3
+// "Every harness hits the wall" section (2665 chars) mid-way, hiding the
+// long-term-memory / vector-search material that answers "runs out of
+// memory"-class questions. 9 of 87 sections still truncate; the cap keeps
+// prompt size bounded (~11K chars worst case at top-4).
+const MAX_EXCERPT_CHARS = 2800; // truncate long sections at a sentence boundary
 
 // "Cold open [00:00] — Host" → "Cold open"; "[19:54]" → "19:54"
 function parseHeading(h) {

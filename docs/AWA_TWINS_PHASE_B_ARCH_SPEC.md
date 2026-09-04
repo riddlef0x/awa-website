@@ -47,6 +47,15 @@ RED verdict of record: event `3e3cb45d` (3 Sep).
    the question text, retention of twin logs, and the "AI — may be wrong"
    stance. The live page currently promises aggregate-only behavior; a flip
    without the amendment makes the live privacy page FALSE.
+   **AMENDMENT (3 Sep, ruling event f77322bb):** "retention of twin logs" is
+   satisfied by naming the log contents per the frozen §7 text-free schema
+   PLUS the explicit indefinite-retention sentence ("These counts contain
+   nothing personal, so we keep them indefinitely — there is nothing in them
+   to delete."). No duration window: the logs hold no personal data, so any
+   purge promise would be an unenforced one; the claim stays welded to the
+   schema freeze (any schema change re-enters review + privacy amendment in
+   the same unit). Landed in this repo copy on 4 Sep with the ep3
+   retrieval-fix data touch (rider of record, event 86a20302 thread).
 3. **This spec reviewed and stamped by me** (any material deviation re-enters
    my review), and **Kaeo QA pass** on the swapped backend incl. fallback
    paths.
