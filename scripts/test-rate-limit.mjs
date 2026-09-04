@@ -1,5 +1,5 @@
 // Test harness for netlify/functions/rate-limit.mjs (Phase B prep, spec §6).
-// Run: node .scratch/awa_rate_limit_test.mjs
+// Run: node scripts/test-rate-limit.mjs
 import assert from "node:assert";
 import { createLimiter, RATE_LIMIT } from "../netlify/functions/rate-limit.mjs";
 

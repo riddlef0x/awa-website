@@ -3,6 +3,7 @@
 // AWA channel, 30 Aug 2026: build-time static, not a runtime dependency).
 import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { buildTwins } from "./build-twins.mjs";
+import { writeRetrievalIndex } from "./build-retrieval.mjs";
 import { EPISODE_TRANSCRIPTS } from "./episode-transcripts.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -72,6 +73,11 @@ const SITE_URL = "https://awa-website.netlify.app"; // interim host until the re
 const PLACEHOLDER_HOSTS = ["actwithoutasking.com", "awa-website.netlify.app"].filter(
   (h) => h !== new URL(SITE_URL).host
 );
+
+// Key-shaped literal detector (spec §4): catches a secret pasted into any
+// emitted asset. OpenRouter (sk-or-v1-…), Anthropic (sk-ant-…), OpenAI
+// (sk-proj-…/sk-svcacct-…), and generic 30+ char sk- tokens.
+const KEY_SHAPE = /sk-(?:ant|or-v1|proj|svcacct)-[A-Za-z0-9_-]{16,}|sk-[A-Za-z0-9]{30,}/;
 
 // Arch condition A (event 36f1e546): escape feed-derived strings (youtube.json
 // titles/URLs) in every HTML context — the multi-page rewrite multiplies the
@@ -784,6 +790,10 @@ ${MOTION_TILT_JS}
   // gate loop below so the host/contact gates scan it too), /twins page ships
   // with its own embedded widget.
   const twins = await buildTwins(data, SITE_URL);
+  // Retrieval corpus for the Phase B LLM path (spec §5): repo transcripts only,
+  // build-generated. Episode without a videoId FAILS the build — an ungrounded
+  // citation must never be possible.
+  const retrieval = await writeRetrievalIndex({ episodes: data.episodes, writeFile });
   const homepageHtml = html.replace("</body>", `${twins.widget}\n${subscribeBar}\n${MOTION_TILT_JS}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
 
@@ -1001,6 +1011,15 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
     if (REAL_DOMAIN_LANDED && content.includes("CONTACT_ADDRESS_PENDING_DOMAIN")) {
       throw new Error(`[domain-gate] ${name} still carries the contact placeholder after the domain landed — set the real address`);
     }
+    // Key-custody gate (spec §4, flip day): no key-shaped literal and no
+    // twins-LLM env var name may reach emitted assets — the key lives in
+    // site-scoped env only, never the repo, never build output.
+    if (KEY_SHAPE.test(content)) {
+      throw new Error(`[key-gate] ${name} carries a key-shaped literal`);
+    }
+    if (/TWINS_LLM_(KEY|MODEL)/.test(content)) {
+      throw new Error(`[key-gate] ${name} carries a twins LLM env var name — env vars live in site-scoped config, never in build output`);
+    }
   }
 
   // Arch condition B (event 36f1e546): sitemap lastmod must be content-true.
@@ -1076,7 +1095,7 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
   // function itself healthy). A _redirects file in the publish dir is
   // processed on every deploy type, so the rewrite cannot be lost again.
   await writeFile(path.join(DIST, "_redirects"), "/api/ask  /.netlify/functions/ask  200\n");
-  console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html + _redirects (routes: /, /episodes, ${data.episodes.length} episode pages, ${articleRoutes.length} article pages, /about, /subscribe, /privacy, 404, robots, sitemap; twins gates passed; stale=${isStale})`);
+  console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html + _redirects (routes: /, /episodes, ${data.episodes.length} episode pages, ${articleRoutes.length} article pages, /about, /subscribe, /privacy, 404, robots, sitemap; twins gates passed; retrieval=${retrieval.excerpts.length} excerpts; stale=${isStale})`);
 }
 
 main().catch((err) => {

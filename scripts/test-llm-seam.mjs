@@ -1,10 +1,13 @@
-// Test harness for the Phase B LLM seam prep (provider.mjs, filters.mjs,
-// provider-mock.mjs). Zero keys, zero egress — fetch is stubbed.
-// Run: node .scratch/awa_llm_seam_test.mjs
+// Test harness for the Phase B LLM seam (provider.mjs, filters.mjs,
+// provider-mock.mjs, retrieval.mjs, guard.mjs). Zero keys, zero egress —
+// fetch is stubbed.
+// Run: node scripts/test-llm-seam.mjs
 import assert from "node:assert";
 import { callProvider } from "../netlify/functions/llm/provider.mjs";
 import { validateAnswer, MAX_ANSWER_CHARS, MAX_ANSWER_LINES } from "../netlify/functions/llm/filters.mjs";
 import { mockProvider, FIXTURES } from "../netlify/functions/llm/provider-mock.mjs";
+import { retrieve } from "../netlify/functions/llm/retrieval.mjs";
+import { createGuard } from "../netlify/functions/llm/guard.mjs";
 
 const ALLOWED = [{ episode: 1, videoId: "abc123", timestamp: "12:34" }];
 const EXCERPTS = [{ text: "We argued about whether agents need memory or just better notes.", citation: ALLOWED[0] }];
@@ -76,4 +79,60 @@ console.log("PASS 3: contract constants match spec (480 chars / 3 lines)");
 // 5. Fixtures list is exactly the documented set.
 assert.deepStrictEqual([...FIXTURES].sort(), ["bio-fact", "injection", "no-citations", "too-long", "too-many-lines", "uncited", "valid"]);
 console.log("PASS 5: fixture registry complete");
+
+// 6. Citation key-order tripwire (Oksana stamp, watch-item 1): citation
+// traceability compares via JSON.stringify, so the SAME citation object with
+// reordered keys must FAIL CLOSED to the scripted fallback — never a
+// wrong-but-passing answer. Pinned here so the behavior cannot drift silently;
+// the wiring normalizes key order only if the §8 shadow run shows mass fallback.
+{
+  const reordered = { timestamp: ALLOWED[0].timestamp, videoId: ALLOWED[0].videoId, episode: ALLOWED[0].episode };
+  const { answer } = mockProvider({ fixture: "valid", excerpts: EXCERPTS });
+  assert.deepStrictEqual([reordered], [ALLOWED[0]], "sanity: reordered citation carries identical DATA");
+  assert.strictEqual(JSON.stringify(reordered) !== JSON.stringify(ALLOWED[0]), true, "sanity: byte-level comparison DOES differ on key order");
+  // The real-world shape of this risk: composition code that re-serializes or
+  // rebuilds a citation (e.g. provider output parsed back) — identical data,
+  // different key order. In the wiring both sides are the same objects from
+  // ask-retrieval.json, so exact match holds; this pins the filter's
+  // fail-closed behavior if any future composition path rebuilds a citation.
+  const v = validateAnswer({ answer, citations: [reordered], allowedCitations: ALLOWED });
+  assert.strictEqual(v.ok, false, `key-order permutation must fail closed (got: ${v.ok}, reason ${v.reason})`);
+  assert.strictEqual(v.reason, "uncited-claim");
+  console.log("PASS 6: key-order permutation fails CLOSED to fallback (pinned)");
+}
+
+// 7. Retrieval: grounded question picks the right excerpt; zero overlap
+// returns an EMPTY set (the wiring then never calls the provider).
+{
+  const corpus = [
+    { section: "What is a harness", text: "A harness is the connector that connects your data, the agents and the platforms together.", citation: { episode: 1, timestamp: "10:20", videoId: "abc" }, handoff: { episode: 1 } },
+    { section: "Local models", text: "Run an LLM locally on your own server for sensitive sovereign data.", citation: { episode: 1, timestamp: "16:36", videoId: "abc" }, handoff: { episode: 1 } },
+    { section: "Multiplayer agents", text: "We argued about whether agents need memory or just better notes.", citation: { episode: 2, timestamp: "12:00", videoId: "def" }, handoff: { episode: 2 } },
+  ];
+  const grounded = retrieve("what is an AI harness for a business?", corpus);
+  assert.strictEqual(grounded.length, 1);
+  assert.strictEqual(grounded[0].section, "What is a harness");
+  const ungrounded = retrieve("who won the football last night?", corpus);
+  assert.deepStrictEqual(ungrounded, [], "no corpus overlap → empty set → no provider call");
+  console.log("PASS 7: retrieval grounds matching sections; ungrounded questions get an empty set");
+}
+
+// 8. Guard (§6 fallback-rate KPI): below sample → never tripped; ≥10 samples
+// with >20% fallbacks → tripped; recover-by-hour = new key resets.
+{
+  const kv = new Map();
+  const store = { get: async (k) => kv.get(k) ?? null, setJSON: async (k, v) => { kv.set(k, JSON.stringify(v)); } };
+  let t = 1_000 * 3_600_000; // a fixed hour
+  const guard = createGuard({ store, now: () => t });
+  for (let i = 0; i < 9; i++) await guard.record(true);
+  await guard.record(false);
+  assert.strictEqual(await guard.tripped(), false, "1/10 fallbacks must not trip");
+  await guard.record(false);
+  await guard.record(false); // 9 ok / 3 fb = 25% > 20%, sample 12
+  assert.strictEqual(await guard.tripped(), true, "25% fallback rate at ≥10 samples must trip");
+  t += 3_600_000; // next hour → fresh window
+  assert.strictEqual(await guard.tripped(), false, "circuit resets with the hour");
+  console.log("PASS 8: fallback-rate circuit trips at the §6 threshold, resets each hour");
+}
+
 console.log("ALL LLM-SEAM TESTS PASS");
