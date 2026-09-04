@@ -238,13 +238,13 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The twins — Act Without Asking</title>
-<meta name="description" content="Scripted AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
+<meta name="description" content="AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
 <meta property="og:title" content="The twins — Act Without Asking">
-<meta property="og:description" content="Two scripted AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<meta property="og:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
 <meta property="og:image" content="${ogImage}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The twins — Act Without Asking">
-<meta name="twitter:description" content="Two scripted AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<meta name="twitter:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
 <meta name="twitter:image" content="${ogImage}">
 <link rel="canonical" href="${siteUrl}/twins/">
 <meta property="og:url" content="${siteUrl}/twins/">
@@ -269,7 +269,7 @@ h2{font-size:20px;margin:32px 0 12px}
 <main class="wrap">
   <p class="kicker">Act Without Asking</p>
   <h1>The twins</h1>
-  <p class="dek">Two AI twins, built from the show's own arguments. Robin-twin is dry and opinionated. Tobi-twin starts fights. Neither is live AI — Phase A is a curated script with a matching function, which is exactly as honest as we know how to be.</p>
+  <p class="dek">Two AI twins, built from the show's own arguments. Robin-twin is dry and opinionated. Tobi-twin starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
   <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode — that link is the product.</p>
   <section class="t-ask">
     <h2>Ask the twins</h2>
