@@ -184,6 +184,17 @@ const SITE_CSS = `
   .short-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--ink);display:block}
   .short-card:hover{border-color:var(--lime)}
   .short-thumb img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:var(--navy2)}
+  .short-video{position:relative;aspect-ratio:9/16;background:var(--navy2)}
+  .short-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:var(--navy2);cursor:pointer;display:block}
+  .short-facade img{width:100%;height:100%;object-fit:cover;display:block}
+  .facade-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:52px;height:52px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(200,255,61,.18);transition:transform .15s ease}
+  .facade-play svg{margin-left:3px}
+  .short-facade:hover .facade-play,.ep-facade:hover .facade-play{transform:translate(-50%,-50%) scale(1.06)}
+  .short-facade .facade-play{width:40px;height:40px;box-shadow:0 0 0 4px rgba(200,255,61,.18)}
+  .short-facade .facade-play svg{width:16px;height:16px}
+  .short-video iframe,.ep-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .short-yt{display:block;padding:0 10px 12px;font-size:11px;color:var(--muted);text-decoration:none}
+  .short-yt:hover{color:var(--lime);text-decoration:underline}
   .short-title{font-size:12px;padding:10px 10px 2px;color:var(--ink)}
   .short-date{font-size:11px;padding:0 10px 10px;color:var(--muted)}
   .empty-note{text-align:center;color:var(--muted);font-size:14px}
@@ -326,20 +337,14 @@ function youtubeId(ep) {
   return m ? m[1] : null;
 }
 
-function featuredPlayer(ep) {
-  const videoId = youtubeId(ep);
-  if (!videoId) return "";
-  const cleanTitle = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
-  const label = `Play the latest episode — Episode ${ep.episodeNumber}: ${cleanTitle}`;
-  return `<div class="featured">
-  <button class="featured-facade" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(label)}">
-    <img src="${escapeHtml(ep.thumbnail)}" alt="" loading="lazy">
-    <span class="featured-label"><span class="ep-num">Latest — Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
-    <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
-  </button>
-</div>
+// Click-to-play binding for every facade on the page. Idempotent per button
+// (data-yt-bound guard) so a page that carries the script more than once can
+// never double-bind. The iframe uses the privacy-enhanced nocookie domain.
+const FACADE_SCRIPT = `
 <script>
-document.querySelectorAll(".featured-facade").forEach(function (btn) {
+document.querySelectorAll("[data-yt]").forEach(function (btn) {
+  if (btn.dataset.ytBound) return;
+  btn.dataset.ytBound = "1";
   btn.addEventListener("click", function () {
     var wrap = btn.parentElement;
     var iframe = document.createElement("iframe");
@@ -352,6 +357,35 @@ document.querySelectorAll(".featured-facade").forEach(function (btn) {
   });
 });
 </script>`;
+
+function shortVideoId(s) {
+  const m = String(s.url).match(/shorts\/([\w-]+)/);
+  return m ? m[1] : null;
+}
+
+// Portrait/landscape click-to-play facade. Ships only the thumbnail; the
+// YouTube iframe is injected on click (same arch ruling as the featured
+// player: no third-party runtime dependency until the visitor asks to play).
+function videoFacade({ videoId, thumbnail, ariaLabel, className }) {
+  if (!videoId) return "";
+  return `<button class="${className}" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(ariaLabel)}">
+    <img src="${escapeHtml(thumbnail)}" alt="" loading="lazy">
+    <span class="facade-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
+  </button>`;
+}
+
+function featuredPlayer(ep) {
+  const videoId = youtubeId(ep);
+  if (!videoId) return "";
+  const cleanTitle = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
+  const label = `Play the latest episode — Episode ${ep.episodeNumber}: ${cleanTitle}`;
+  return `<div class="featured">
+  <button class="featured-facade" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(label)}">
+    <img src="${escapeHtml(ep.thumbnail)}" alt="" loading="lazy">
+    <span class="featured-label"><span class="ep-num">Latest — Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
+    <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
+  </button>
+</div>`;
 }
 
 function episodeCard(ep, { internal = false } = {}) {
@@ -381,12 +415,22 @@ function shortCard(s) {
     month: "long",
     year: "numeric",
   });
+  const cleanTitle = s.title.replace(/#shorts/i, "").trim();
+  const videoId = shortVideoId(s);
+  const ytHref = escapeHtml(ytUtm(s.url, { medium: "shorts_wall", campaign: "watch", content: videoId ?? "" }));
+  // Click-to-play facade keeps the visitor on the site (embedded views still
+  // count as views + watch time); the "Watch on YouTube" link preserves the
+  // outbound path for likes/comments/subscribes.
+  const player = videoId
+    ? videoFacade({ videoId, thumbnail: s.thumbnail, ariaLabel: `Play short: ${cleanTitle}`, className: "short-facade" })
+    : `<a class="short-thumb" href="${ytHref}" target="_blank" rel="noopener"><img src="${escapeHtml(s.thumbnail)}" alt="${escapeHtml(cleanTitle)}" loading="lazy"></a>`;
   return `
-    <a class="short-card" href="${escapeHtml(ytUtm(s.url, { medium: "shorts_wall", campaign: "watch", content: (String(s.url).match(/shorts\/([\w-]+)/) || [])[1] }))}" target="_blank" rel="noopener">
-      <div class="short-thumb"><img src="${escapeHtml(s.thumbnail)}" alt="${escapeHtml(s.title)}" loading="lazy"></div>
-      <p class="short-title">${escapeHtml(s.title.replace(/#shorts/i, "").trim())}</p>
+    <div class="short-card">
+      <div class="short-video">${player}</div>
+      <p class="short-title">${escapeHtml(cleanTitle)}</p>
       <p class="short-date">${dateStr}</p>
-    </a>`;
+      <a class="short-yt" href="${ytHref}" target="_blank" rel="noopener">Watch on YouTube →</a>
+    </div>`;
 }
 
 function articleBlock(article, episodesByNumber) {
@@ -529,6 +573,7 @@ ${shortCards}
       </div>
     </div>
   </section>
+${FACADE_SCRIPT}
 
   <section class="quote">
     <div class="wrap">
@@ -606,7 +651,11 @@ ${shortCards}
   .crumb a:hover{color:var(--lime)}
   .ep-page h2{text-align:left}
   .ep-meta{color:var(--muted);font-size:14px;margin:6px 0 20px}
-  .ep-hero{width:100%;border-radius:10px;border:1px solid var(--line);display:block;margin-bottom:24px;background:var(--navy2)}
+  .ep-player{position:relative;aspect-ratio:16/9;width:100%;border-radius:10px;border:1px solid var(--line);display:block;margin-bottom:24px;background:var(--navy2);overflow:hidden}
+  .ep-player.playing{border-radius:10px}
+  .ep-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:var(--navy2);cursor:pointer;display:block}
+  .ep-facade img{width:100%;height:100%;object-fit:cover;display:block}
+  .ep-hero{width:100%;border-radius:10px;border:1px solid var(--line);display:block;background:var(--navy2);aspect-ratio:16/9;object-fit:cover}
   .ep-page .dek{color:var(--muted);font-size:16px;margin-bottom:20px}
   .transcript-slot{margin-top:36px;border-top:1px solid var(--line);padding-top:24px}
   .transcript-slot h3{font-size:19px;margin-bottom:10px}
@@ -868,9 +917,10 @@ ${MOTION_TILT_JS}
       <p class="kicker">Episode ${String(ep.episodeNumber).padStart(2, "0")}</p>
       <h1 class="legal-title">${escapeHtml(cleanEpTitle(ep))}</h1>
       <p class="ep-meta">${fmtDate(ep.published)} · Robin Leonard and Tobi Webster</p>
-      <img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail`)}">
+      <div class="ep-player">${videoFacade({ videoId: youtubeId(ep), thumbnail: ep.thumbnail, ariaLabel: `Play Episode ${ep.episodeNumber}: ${cleanEpTitle(ep)}`, className: "ep-facade" }) || `<img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail`)}">`}</div>
       <p class="dek">${escapeHtml(epDek(ep))}</p>
       <a class="btn" href="${escapeHtml(ytUtm(ep.url, { medium: "episode_page", campaign: "watch", content: slug }))}" target="_blank" rel="noopener">Watch on YouTube</a>
+      ${FACADE_SCRIPT}
       ${articleSection}
       ${transcriptSlot}
     </div>
