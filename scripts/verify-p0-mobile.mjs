@@ -97,6 +97,21 @@ for (const [name, width, height] of [["iPhone 390px", 390, 844], ["Android 360px
   if (expanded === "true") pass(`${name}: keyboard Enter opens the panel`);
   else fail(`${name}: keyboard Enter did not open panel (aria-expanded=${expanded})`);
 
+  // 5a. Affirmative measured visibility (Oksana gate amendment, 5 Sep):
+  // non-intersection alone passes a zero-height dead panel — the open panel
+  // must also be TALL enough and CONTAIN the ask input (measured geometry).
+  const vis = await page.evaluate(() => {
+    const panel = document.querySelector("#twinsWidget .twins-ask");
+    const r = panel.getBoundingClientRect();
+    const input = panel.querySelector(".twins-input");
+    const ir = input ? input.getBoundingClientRect() : null;
+    const inside = i => !!i && i.width > 0 && i.height > 0 &&
+      i.top >= r.top && i.bottom <= r.bottom + 1 && i.left >= r.left && i.right <= r.right + 1;
+    return { h: Math.round(r.height), hasInput: !!input, inputInside: inside(ir) };
+  });
+  if (vis.h >= 100 && vis.hasInput && vis.inputInside) pass(`${name}: open panel affirmatively visible (height ${vis.h}px >= 100, contains ask input)`);
+  else fail(`${name}: open panel visibility assertion failed: ${JSON.stringify(vis)}`);
+
   // Nine scroll positions per the consolidated receipt standard (Oksana, 5 Sep).
   for (const scrollY of [0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200]) {
     await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), scrollY);

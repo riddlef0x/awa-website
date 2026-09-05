@@ -45,7 +45,8 @@ const ASK_STYLES = `
 /* Desktop: floating pill as built.
    Mobile (≤640px — Jane ruling 5 Sep, Kate's design, within Oksana's seam):
    COLLAPSED the widget is a docked bar above the subscribe bar — one ticker
-   line, always visible, twins reachable on every page. The dock's height is
+   line, always visible on the pages where the widget is present (homepage;
+   /twins has the full ask surface). The dock's height is
    RESERVED on <body> by the script (same pattern as the subscribe bar's own
    58px padding), so end-of-page content is never permanently hidden.
    EXPANDED the widget UN-DOCKS into its seat in the document flow (build.mjs
