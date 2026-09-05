@@ -30,7 +30,7 @@ const ASK_STYLES = `
 .twins-cite{font-size:11px;color:#9AA7BA}
 .twins-handoff{display:inline-block;margin:6px 0 10px;padding:7px 12px;border-radius:8px;background:#C8FF3D;color:#0A1628;font-weight:700;font-size:13px;text-decoration:none}
 .twins-row{display:flex;gap:6px;padding:10px 12px 12px}
-.twins-input{flex:1;background:#0A1628;border:1px solid #22304A;border-radius:8px;color:#F4F7FB;padding:8px 10px;font-size:13px;min-width:0}
+.twins-input{flex:1;background:#0A1628;border:1px solid #22304A;border-radius:8px;color:#F4F7FB;padding:8px 10px;font-size:16px;min-width:0}
 .twins-go{background:#C8FF3D;border:0;border-radius:8px;color:#0A1628;font-weight:700;padding:8px 12px;cursor:pointer}
 .twins-err{color:#FFB86B;font-size:12px;margin:0 12px 10px}
 .twins-tag{display:inline-block;font-size:11px;letter-spacing:.02em;color:#C8FF3D;background:rgba(200,255,61,.08);border:1px solid rgba(200,255,61,.25);border-radius:6px;padding:4px 8px;margin:10px 12px 0}
