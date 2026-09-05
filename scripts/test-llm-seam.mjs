@@ -47,7 +47,7 @@ console.log("PASS 3: contract constants match spec (hard gate 640 chars / 3 line
 // PASS; one char over the hard gate must still FAIL CLOSED.
 {
   const filler = "Grounded banter about the memory wall from Episode 3. ";
-  const okAnswer = `Robin-twin: ${filler.repeat(6).slice(0, 299)}\nTobi-twin: ${filler.repeat(6).slice(0, 299)}`; // 2 lines, ~600 chars
+  const okAnswer = `Robin: ${filler.repeat(6).slice(0, 299)}\nTobi: ${filler.repeat(6).slice(0, 299)}`; // 2 lines, ~600 chars
   assert.ok(okAnswer.length > 480 && okAnswer.length <= 640, `boundary setup: answer is ${okAnswer.length} chars, must be in (480, 640]`);
   assert.strictEqual(okAnswer.split("\n").length, 2);
   const vOk = validateAnswer({ answer: okAnswer, citations: ALLOWED, allowedCitations: ALLOWED });

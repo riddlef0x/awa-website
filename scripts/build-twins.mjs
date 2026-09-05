@@ -262,7 +262,7 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
   const cards = entries
     .map((e) => {
       const lines = e.lines
-        .map((l) => `<p class="t-line"><strong>${l.speaker === "robin-twin" ? "Robin-twin" : "Tobi-twin"}:</strong> ${l.text}</p>`)
+        .map((l) => `<p class="t-line"><strong>${l.speaker === "robin-twin" ? "Robin" : "Tobi"}:</strong> ${l.text}</p>`)
         .join("\n      ");
       const cite = e.citations[0];
       const href = `${e.handoff.url}&utm_source=awa_site&utm_medium=twins&utm_campaign=archive&utm_content=${e.id}`;
@@ -310,7 +310,7 @@ h2{font-size:20px;margin:32px 0 12px}
 <main class="wrap">
   <p class="kicker">Act Without Asking</p>
   <h1>The twins</h1>
-  <p class="dek">Two AI twins, built from the show's own arguments. Robin-twin is dry and opinionated. Tobi-twin starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
+  <p class="dek">Two AI twins, built from the show's own arguments. Robin is dry and opinionated. Tobi starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
   <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode — that link is the product.</p>
   <section class="t-ask">
     <h2>Ask the twins</h2>
