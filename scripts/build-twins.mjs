@@ -42,7 +42,22 @@ const ASK_STYLES = `
 .twins-open .twins-panel{display:block}
 .twins-hidden{display:none}
 @media (prefers-reduced-motion: reduce){.twins-ask *{transition:none!important;animation:none!important}}
-@media (max-width:640px){.twins-widget{left:16px;right:16px;bottom:108px;max-width:none}.twins-widget .twins-ask{max-height:70vh;overflow-y:auto}}
+/* Desktop: floating pill as built.
+   Mobile (≤640px — Jane ruling 5 Sep, Kate's design, within Oksana's seam):
+   COLLAPSED the widget is a docked bar above the subscribe bar — one ticker
+   line, always visible, twins reachable on every page. The dock's height is
+   RESERVED on <body> by the script (same pattern as the subscribe bar's own
+   58px padding), so end-of-page content is never permanently hidden.
+   EXPANDED the widget UN-DOCKS into its seat in the document flow (build.mjs
+   injects it between the quote and the subscribe strip): the open panel is
+   reserved space, so it never geometrically covers readable text at any
+   scroll position. Closing re-docks. Seam untouched: same markup, same
+   /api/ask contract, same keyboard open/close. */
+@media (max-width:640px){
+  .twins-widget{position:fixed;left:12px;right:12px;bottom:108px;max-width:none;margin:0;z-index:9998}
+  .twins-widget.twins-undocked{position:static;margin:0 20px 40px}
+  .twins-widget .twins-ask{max-height:none;overflow:visible}
+}
 `;
 
 const ASK_SCRIPT = `
@@ -92,9 +107,25 @@ const ASK_SCRIPT = `
   function next(){if(paused||!tickerLines.length)return;idx=(idx+1)%tickerLines.length;ticker.textContent=tickerLines[idx];}
   ticker.textContent=tickerLines[0]||"";
   function setOpen(o){card.classList.toggle("twins-open",o);bar.setAttribute("aria-expanded",o?"true":"false");
-    if(o){paused=true;clearInterval(timer);var i=widget.querySelector(".twins-input");if(i)setTimeout(function(){i.focus();},0);}}
+    if(docked.matches){
+      // Jane ruling 5 Sep: expanded = un-dock into the in-flow seat (reserved
+      // space, never an overlay); collapsed = re-dock above the bottom bar.
+      widgetEl.classList.toggle("twins-undocked",o);
+      if(o){setTimeout(function(){widgetEl.scrollIntoView({block:"center"});},30);}
+    }
+    if(o){paused=true;clearInterval(timer);var i=widget.querySelector(".twins-input");if(i)setTimeout(function(){i.focus();},60);}}
+  var docked=window.matchMedia("(max-width: 640px)");
   bar.addEventListener("click",function(){setOpen(!card.classList.contains("twins-open"));});
   bar.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(!card.classList.contains("twins-open"));}});
+  // Yoshi gate #2 (5 Sep): Escape closes the open panel — keyboard close,
+  // not just tap. Listener on document so Escape works from input focus too;
+  // scoped to this widget only.
+  document.addEventListener("keydown",function(e){
+    if(e.key!=="Escape")return;
+    if(!card.classList.contains("twins-open"))return;
+    setOpen(false);
+    bar.focus();
+  });
   card.addEventListener("mouseenter",function(){paused=true;});
   card.addEventListener("mouseleave",function(){paused=!card.classList.contains("twins-open");});
   // Keep the widget above the fixed subscribe bar at every width — the bar
@@ -108,6 +139,14 @@ const ASK_SCRIPT = `
     if(!widgetEl)return;
     var barEl=document.querySelector(".subscribe-bar");
     widgetEl.style.bottom=barEl?(barEl.offsetHeight+14)+"px":"";
+    // Reserve the dock's height on <body> (Jane ruling 5 Sep): the docked
+    // collapsed bar occupies real space at the page end, exactly like the
+    // subscribe bar's own padding — never overlays end-of-page content.
+    if(docked.matches && !widgetEl.classList.contains("twins-undocked")){
+      var base=barEl?(barEl.offsetHeight+14):0;
+      var h=widgetEl.offsetHeight||0;
+      document.body.style.paddingBottom=(base+h)+"px";
+    }
   }
   window.addEventListener("resize",sizeToBar);
   window.addEventListener("load",sizeToBar);
