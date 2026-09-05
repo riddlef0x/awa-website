@@ -438,15 +438,16 @@ async function main() {
   const shortCards = data.shorts.length
     ? data.shorts.map(shortCard).join("\n")
     : `<p class="empty-note">No Shorts published yet — this section fills in automatically as they go live.</p>`;
-  const articleBlocks = ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber))
-    .map((a) => articleBlock(a, episodesByNumber))
-    .join("\n");
+  // P0 mobile (Robin, 5 Sep): the header carries nav links only — the hero
+  // holds the ONE "Subscribe on YouTube" CTA and the listen-on block is the
+  // persistent one.
+  const headerCTAs = ``;
 
-  const headerCTAs = `
-      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}`;
-
-  const footerCTAs = `
-        ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "footer", campaign: "subscribe" } })}`;
+  // P0 mobile (Robin, 5 Sep + Yoshi gate #5): the hero holds the ONE
+  // "Subscribe on YouTube" CTA; the footer listen-on block is the persistent
+  // listen surface. No subscribe CTA in footer CTAs — the listen-on block
+  // carries the YouTube link there on every page.
+  const footerCTAs = ``;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -487,7 +488,7 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
 <header>
   <div class="wrap nav">
     <a class="brand" href="#top">${chevronMark()} Act Without Asking</a>
-    <div class="nav-ctas"><a class="cta-btn ghost" href="/articles/">Blog</a>${headerCTAs}</div>
+    <div class="nav-ctas"><a class="cta-btn ghost" href="/episodes/">Episodes</a><a class="cta-btn ghost" href="/articles/">Blog</a><a class="cta-btn ghost" href="/about/">About</a>${headerCTAs}</div>
   </div>
 </header>
 
@@ -501,7 +502,6 @@ ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt
       ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
       : `<a class="btn" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}">Watch on YouTube</a>`}</p>
     <p class="byline">Hosted by Robin Leonard and Tobi Webster — two operators who run real businesses on AI agents.</p>
-    ${listenOnBlock({ compact: true })}
 ${latestEp ? featuredPlayer(latestEp) : ""}
   </div>
 
@@ -510,7 +510,7 @@ ${latestEp ? featuredPlayer(latestEp) : ""}
       <div class="section-head">
         <p class="kicker">Full episodes</p>
         <h2>Episodes</h2>
-        <p class="start-here">New here? <a href="/episodes/${firstEp ? episodeSlug(firstEp) : ""}/">Start with Episode 1</a> — the opening argument.</p>
+        <p class="start-here">New here? <a href="/episodes/${firstEp ? episodeSlug(firstEp) : ""}/">Start with Episode 1</a> — the opening argument. Prefer reading? <a href="/articles/">Every episode, in writing.</a></p>
       </div>
       <div class="eps">
 ${episodeCards}
@@ -530,18 +530,6 @@ ${shortCards}
     </div>
   </section>
 
-  <section id="articles">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="kicker">Read</p>
-        <h2>Every episode, in writing.</h2>
-      </div>
-      <div class="articles">
-${articleBlocks}
-      </div>
-    </div>
-  </section>
-
   <section class="quote">
     <div class="wrap">
       <blockquote>We hand real agents real responsibility — and tell you exactly what happens next.</blockquote>
@@ -555,7 +543,6 @@ ${articleBlocks}
       <p class="strip-sub">Get The Harness Kit — the checklists and templates we use on the show, free after you confirm.</p>
       <div class="strip-ctas">
         <a class="cta-btn primary" href="/subscribe/">Get the Harness Kit</a>
-        <a class="cta-btn ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_bar", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a>
       </div>
     </div>
   </section>
@@ -820,7 +807,15 @@ ${MOTION_TILT_JS}
   // build-generated. Episode without a videoId FAILS the build — an ungrounded
   // citation must never be possible.
   const retrieval = await writeRetrievalIndex({ episodes: data.episodes, writeFile });
-  const homepageHtml = html.replace("</body>", `${twins.widget}\n${subscribeBar}\n${MOTION_TILT_JS}\n</body>`);
+  // P0 mobile (Robin, 5 Sep + Oksana reserved-space ruling): the widget is
+  // injected INTO the flow (between the quote and the subscribe strip), not
+  // before </body>. Desktop still renders it as the fixed pill (position:
+  // fixed ignores DOM position); on ≤640px it is position:static, so it must
+  // live in the document to be reachable without overlaying anything. The
+  // twins-gate below still proves the injection happened.
+  const homepageHtml = html
+    .replace('<section class="strip">', `${twins.widget}\n  <section class="strip">`)
+    .replace("</body>", `${subscribeBar}\n${MOTION_TILT_JS}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
 
   // ---- Multi-page routes (arch v1: /episodes, /episodes/[slug],
