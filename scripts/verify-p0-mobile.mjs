@@ -19,6 +19,11 @@ for (const [name, width, height] of [["iPhone 390px", 390, 844], ["Android 360px
   await page.goto(URL);
   await page.waitForTimeout(300);
 
+  // 0. AI entry reachable on this page (Yoshi gate #1): the twins ask
+  // surface exists here — widget bar on the homepage.
+  if ((await page.locator("#twinsWidget .twins-bar").count()) === 1) pass(`${name}: twins AI entry present`);
+  else fail(`${name}: twins AI entry missing`);
+
   // 1. Nav: Episodes, Blog, About all present and visible in header.
   for (const label of ["Episodes", "Blog", "About"]) {
     const link = page.locator("header .nav-ctas a", { hasText: label }).first();
@@ -92,7 +97,8 @@ for (const [name, width, height] of [["iPhone 390px", 390, 844], ["Android 360px
   if (expanded === "true") pass(`${name}: keyboard Enter opens the panel`);
   else fail(`${name}: keyboard Enter did not open panel (aria-expanded=${expanded})`);
 
-  for (const scrollY of [0, 800, 1600, 2400]) {
+  // Nine scroll positions per the consolidated receipt standard (Oksana, 5 Sep).
+  for (const scrollY of [0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200]) {
     await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), scrollY);
     await page.waitForTimeout(80);
     const hits = await page.evaluate(() => {
