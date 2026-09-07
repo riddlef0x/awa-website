@@ -44,6 +44,14 @@ Names: `before-<route>-{mob,desk}.png`. These are the "before" evidence set; the
 
 ## 7. File ownership map (handoff §WP01.6 — freeze announcement)
 
+**Foundation extraction landed in this commit (7 Sep):** `scripts/build.mjs` is now ORCHESTRATION ONLY (data load, twins + retrieval build, page assembly, gates, writes). The split, mechanical, verified by `diff -r dist dist-ref` byte-identical against the pre-extraction build at `c2829fa` (feed-fetched data equal in both runs):
+
+- `scripts/site/config.mjs` — SITE_URL, PLACEHOLDER_HOSTS, KEY_SHAPE, brand constants, escapeHtml/jsonLdSafe, ROOT/DIST, and `SITE_AVAILABILITY = { emailReady:false, kitReady:false }` (the one availability place, §WP01.2/§WP01.6).
+- `scripts/site/content.mjs` — ARTICLES, EPISODE_EXTRAS, ytUtm, LISTEN_PLATFORMS, episodeSlug, youtubeId, articlesByEpisode, cleanEpTitle, epDek, fmtDate.
+- `scripts/site/components.mjs` — listenOnBlock, markCTA, chevronMark, FACADE_SCRIPT, videoFacade, featuredPlayer, episodeCard, shortCard, articleBlock, shortVideoId. No filesystem writes.
+- `scripts/site/shell.mjs` — SITE_CSS, MOTION_TILT_JS, `createPageShell({defaultOg, innerCSS, footerCTAs, subscribeBar})` → pageShell. Adapted frozen interface per handoff §WP02 (renderPage contract); WP02 reshapes the signature at its redesign, the one-shared-shell contract is frozen now.
+- `scripts/site/pages.mjs` — buildHomepage, innerCSS, privacyBody, subscribeBody, notFoundBody, aboutBody, episodesIndexBody, articlesIndexBody, episodeRoute, articleRoute, pageTitle, podcastSeriesRef. Mechanical baseline WP03/WP04 redesign from.
+
 Frozen interfaces (proposed destination paths per package, adapted to this repo in the foundation change set):
 - `scripts/build.mjs` + config/orchestration: **WP01/Jenny ONLY until release merge.**
 - Shared shell/components/tokens/theme assets: WP02.
