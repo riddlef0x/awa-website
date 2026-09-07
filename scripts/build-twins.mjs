@@ -12,6 +12,14 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+// Redesign 1.1 (spec §2.2b/§3): token source of record = package foundations,
+// read verbatim; ONE named delta = @font-face src TTF→WOFF2 (§3.7 WP07).
+import { readFileSync } from "node:fs";
+const AWA_TOKENS_CSS = readFileSync(path.join(ROOT, "assets", "brand", "awa-tokens.css"), "utf8")
+  .replace(/url\("..\/fonts\/([^"]+)\.ttf"\) format\("truetype"\)/g, 'url("/fonts/$1.woff2") format("woff2")');
+const THEME_INIT_JS = readFileSync(path.join(ROOT, "assets", "brand", "awa-theme-init.js"), "utf8").trim();
+const THEME_CONTROLS_JS = readFileSync(path.join(ROOT, "assets", "brand", "awa-theme-controls.js"), "utf8").trim();
+
 // Fact gate — binding named bans from the spec + Vera's final verdicts.
 const BANNED = [
   "31%", "4.3%", "2.53", // org-chart stats; unsourced returns figure
@@ -23,22 +31,22 @@ const BANNED = [
 ];
 
 const ASK_STYLES = `
-.twins-ask{background:#131E33;border:1px solid #22304A;border-radius:12px;color:#F4F7FB;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.twins-ask{background:var(--awa-raised);border:1px solid var(--awa-divider);border-radius:12px;color:var(--awa-text);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .twins-log{max-height:300px;overflow-y:auto;padding:4px 12px 0;font-size:13px;line-height:1.45}
-.twins-q{color:#F4F7FB;margin:8px 0 2px;font-weight:600}
-.twins-a{color:#C9D4E3;margin:2px 0 8px;white-space:pre-line}
-.twins-cite{font-size:11px;color:#9AA7BA}
-.twins-handoff{display:inline-block;margin:6px 0 10px;padding:7px 12px;border-radius:8px;background:#C8FF3D;color:#0A1628;font-weight:700;font-size:13px;text-decoration:none}
+.twins-q{color:var(--awa-text);margin:8px 0 2px;font-weight:600}
+.twins-a{color:var(--awa-secondary);margin:2px 0 8px;white-space:pre-line}
+.twins-cite{font-size:11px;color:var(--awa-control)}
+.twins-handoff{display:inline-block;margin:6px 0 10px;padding:7px 12px;border-radius:8px;background:var(--awa-action);color:var(--awa-onAction);font-weight:700;font-size:13px;text-decoration:none}
 .twins-row{display:flex;gap:6px;padding:10px 12px 12px}
-.twins-input{flex:1;background:#0A1628;border:1px solid #22304A;border-radius:8px;color:#F4F7FB;padding:8px 10px;font-size:16px;min-width:0}
-.twins-go{background:#C8FF3D;border:0;border-radius:8px;color:#0A1628;font-weight:700;padding:8px 12px;cursor:pointer}
-.twins-err{color:#FFB86B;font-size:12px;margin:0 12px 10px}
-.twins-tag{display:inline-block;font-size:11px;letter-spacing:.02em;color:#C8FF3D;background:rgba(200,255,61,.08);border:1px solid rgba(200,255,61,.25);border-radius:6px;padding:4px 8px;margin:10px 12px 0}
-.twins-widget{position:fixed;right:16px;bottom:74px;z-index:9999;max-width:min(360px,calc(100vw - 32px))}
+.twins-input{flex:1;background:var(--awa-surface);border:1px solid var(--awa-divider);border-radius:8px;color:var(--awa-text);padding:8px 10px;font-size:16px;min-width:0}
+.twins-go{background:var(--awa-action);border:0;border-radius:8px;color:var(--awa-onAction);font-weight:700;padding:8px 12px;cursor:pointer}
+.twins-err{color:var(--awa-warning);font-size:12px;margin:0 12px 10px}
+.twins-tag{display:inline-block;font-size:11px;letter-spacing:.02em;color:var(--awa-accent);background:color-mix(in srgb, var(--awa-action) 8%, transparent);border:1px solid color-mix(in srgb, var(--awa-action) 25%, transparent);border-radius:6px;padding:4px 8px;margin:10px 12px 0}
+.twins-widget{position:fixed;right:16px;bottom:24px;z-index:9999;max-width:min(360px,calc(100vw - 32px))}
 .twins-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none}
-.twins-dot{width:8px;height:8px;border-radius:50%;background:#C8FF3D;flex:none}
-.twins-ticker{font-size:13px;color:#9AA7BA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.twins-panel{display:none;border-top:1px solid #22304A}
+.twins-dot{width:8px;height:8px;border-radius:50%;background:var(--awa-action);flex:none}
+.twins-ticker{font-size:13px;color:var(--awa-control);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.twins-panel{display:none;border-top:1px solid var(--awa-divider)}
 .twins-open .twins-panel{display:block}
 .twins-hidden{display:none}
 @media (prefers-reduced-motion: reduce){.twins-ask *{transition:none!important;animation:none!important}}
@@ -55,7 +63,7 @@ const ASK_STYLES = `
    scroll position. Closing re-docks. Seam untouched: same markup, same
    /api/ask contract, same keyboard open/close. */
 @media (max-width:640px){
-  .twins-widget{position:fixed;left:12px;right:12px;bottom:108px;max-width:none;margin:0;z-index:9998}
+  .twins-widget{position:fixed;left:12px;right:12px;bottom:24px;max-width:none;margin:0;z-index:9998}
   .twins-widget.twins-undocked{position:static;margin:0 20px 40px}
   .twins-widget .twins-ask{max-height:none;overflow:visible}
 }
@@ -129,10 +137,9 @@ const ASK_SCRIPT = `
   });
   card.addEventListener("mouseenter",function(){paused=true;});
   card.addEventListener("mouseleave",function(){paused=!card.classList.contains("twins-open");});
-  // Keep the widget above the fixed subscribe bar at every width — the bar
-  // wraps to two rows on phones, so a constant offset guesses wrong (QA
-  // Medium, Yoshi 1 Sep). Measure the real bar; CSS offsets are the no-JS
-  // fallback. No bar (/twins) -> clear the inline override.
+  // Redesign 1.1: the fixed subscribe bar is retired (blueprint). The
+  // measure-the-bar logic stays null-guarded so any future fixed surface
+  // composes the same way; CSS offsets are the no-JS fallback.
   var widgetEl=document.getElementById("twinsWidget");
   // NOTE: the bar is injected AFTER this script in document order, so it must
   // be queried at call time, not captured at parse time.
@@ -141,8 +148,8 @@ const ASK_SCRIPT = `
     var barEl=document.querySelector(".subscribe-bar");
     widgetEl.style.bottom=barEl?(barEl.offsetHeight+14)+"px":"";
     // Reserve the dock's height on <body> (Jane ruling 5 Sep): the docked
-    // collapsed bar occupies real space at the page end, exactly like the
-    // subscribe bar's own padding — never overlays end-of-page content.
+    // collapsed bar occupies real space at the page end — never overlays
+    // end-of-page content.
     if(docked.matches && !widgetEl.classList.contains("twins-undocked")){
       var base=barEl?(barEl.offsetHeight+14):0;
       var h=widgetEl.offsetHeight||0;
@@ -173,7 +180,7 @@ export function buildWidget(pool) {
     .map((e) => e.lines.map((l) => l.text).sort((a, b) => a.length - b.length)[0]);
   const payload = JSON.stringify({ ticker }).replace(/<\//g, "<\\/");
   return `
-<style>${ASK_STYLES}</style>
+<style>${AWA_TOKENS_CSS}${ASK_STYLES}</style>
 <div class="twins-widget" id="twinsWidget">
   <div class="twins-ask">
     <div class="twins-bar" role="button" tabindex="0" aria-expanded="false" aria-controls="twinsPanel">
@@ -275,6 +282,7 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
+<script>${THEME_INIT_JS}</script>
 <meta charset="utf-8">
 <link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -290,20 +298,21 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
 <link rel="canonical" href="${siteUrl}/twins/">
 <meta property="og:url" content="${siteUrl}/twins/">
 <style>
-body{margin:0;background:#0A1628;color:#F4F7FB;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
+${AWA_TOKENS_CSS}
+body{margin:0;background:var(--awa-surface);color:var(--awa-text);font-family:var(--awa-font-body);line-height:1.55}
 .wrap{max-width:760px;margin:0 auto;padding:48px 20px 96px}
-.kicker{color:#C8FF3D;text-transform:uppercase;letter-spacing:.14em;font-size:12px;margin:0 0 8px}
+.kicker{color:var(--awa-accent);text-transform:uppercase;letter-spacing:.14em;font-size:12px;margin:0 0 8px}
 h1{font-size:clamp(28px,5vw,40px);margin:0 0 12px}
 h2{font-size:20px;margin:32px 0 12px}
-.dek{color:#C9D4E3;font-size:17px;margin:0 0 10px}
-.t-honest{color:#FFB86B;font-size:14px;margin:0 0 8px}
+.dek{color:var(--awa-secondary);font-size:17px;margin:0 0 10px}
+.t-honest{color:var(--awa-warning);font-size:14px;margin:0 0 8px}
 .t-ask{margin:28px 0 8px}
-.t-note{color:#9AA7BA;font-size:12px;margin:10px 2px}
-.t-card{background:#131E33;border:1px solid #22304A;border-radius:12px;padding:16px 18px;margin:14px 0}
-.t-line{margin:6px 0;color:#C9D4E3}
-.t-link{display:inline-block;margin-top:10px;color:#C8FF3D;font-size:13px;font-weight:700;text-decoration:none;border:1px solid rgba(200,255,61,.35);border-radius:8px;padding:6px 10px}
-.t-link:hover{background:rgba(200,255,61,.1)}
-.t-foot{color:#9AA7BA;font-size:12px;margin-top:40px}
+.t-note{color:var(--awa-control);font-size:12px;margin:10px 2px}
+.t-card{background:var(--awa-raised);border:1px solid var(--awa-divider);border-radius:12px;padding:16px 18px;margin:14px 0}
+.t-line{margin:6px 0;color:var(--awa-secondary)}
+.t-link{display:inline-block;margin-top:10px;color:var(--awa-accent);font-size:13px;font-weight:700;text-decoration:none;border:1px solid color-mix(in srgb, var(--awa-action) 35%, transparent);border-radius:8px;padding:6px 10px}
+.t-link:hover{background:color-mix(in srgb, var(--awa-action) 10%, transparent)}
+.t-foot{color:var(--awa-control);font-size:12px;margin-top:40px}
 </style>
 </head>
 <body>
@@ -327,6 +336,7 @@ h2{font-size:20px;margin:32px 0 12px}
   <p class="t-foot">Act Without Asking — a show from Axela, hosted by Robin Leonard with Tobi Webster.</p>
 </main>
 ${widgetMarkup}
+<script defer>${THEME_CONTROLS_JS}</script>
 </body>
 </html>`;
 }

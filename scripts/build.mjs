@@ -1,7 +1,8 @@
 // Renders dist/index.html from data/youtube.json + the article drafts below.
 // Static output only — no client-side fetch to any third party (Oksana ruling,
 // AWA channel, 30 Aug 2026: build-time static, not a runtime dependency).
-import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile, readdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { buildTwins } from "./build-twins.mjs";
 import { writeRetrievalIndex } from "./build-retrieval.mjs";
 import { EPISODE_TRANSCRIPTS } from "./episode-transcripts.mjs";
@@ -12,13 +13,116 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const DIST = path.join(ROOT, "dist");
 
-const NAVY = "#0A1628";
-const NAVY_2 = "#111A2E";
-const NAVY_CARD = "#131E33";
-const LINE = "#22304A";
-const LIME = "#C8FF3D";
-const INK = "#F4F7FB";
-const MUTED = "#9AA7BA";
+// Redesign 1.1 (spec of record v1.0.6, §3): token source of record = the
+// Robin-gated handoff package foundations, read verbatim at build time from
+// assets/brand/awa-tokens.css (zip sha256 23b9ff94…a359, byte-exact with the
+// stamped amended zip). NO hex literals outside that token block survive into
+// dist (retired-palette census, PLANS/AWA_RETIRED_PALETTE_CENSUS.sh — the old
+// NAVY/LIME/INK constants and chevronMark() are retired).
+const AWA_TOKENS_CSS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-tokens.css");
+const AWA_LAYOUT_CSS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-website-layout.css");
+const THEME_INIT_JS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-theme-init.js");
+const THEME_CONTROLS_JS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-theme-controls.js");
+
+// Package bytes, verbatim. ONE named delta per spec §3.7 (WP07): the @font-face
+// src converts TTF→WOFF2 (self-hosted woff2, ≤160KB budget, license files kept
+// in fonts/). Token VALUES untouched.
+const AWA_TOKENS_CSS = readFileSync(AWA_TOKENS_CSS_PATH, "utf8")
+  .replace(/url\("\.\.\/fonts\/([^"]+)\.ttf"\) format\("truetype"\)/g, 'url("/fonts/$1.woff2") format("woff2")');
+const AWA_LAYOUT_CSS = readFileSync(AWA_LAYOUT_CSS_PATH, "utf8");
+const THEME_INIT_JS = readFileSync(THEME_INIT_JS_PATH, "utf8").trim();
+const THEME_CONTROLS_JS = readFileSync(THEME_CONTROLS_JS_PATH, "utf8").trim();
+
+// Redesign 1.1 shell (spec §4, blueprint p11): skip link, nav, Light/Dark picker,
+// mobile menu panel (Close, Escape, focus return, aria-expanded honest).
+const THEME_PICKER = `
+      <div class="awa-theme-picker" role="group" aria-label="Colour theme">
+        <button type="button" data-awa-theme-option="light" aria-pressed="true">Light</button>
+        <button type="button" data-awa-theme-option="dark" aria-pressed="false">Dark</button>
+      </div>`;
+
+const MENU_JS = `
+<script>
+(function () {
+  var trigger = document.querySelector("[data-menu-trigger]");
+  var panel = document.getElementById("awa-menu");
+  if (!trigger || !panel) return;
+  function set(open) {
+    trigger.setAttribute("aria-expanded", String(open));
+    panel.dataset.open = String(open);
+  }
+  trigger.addEventListener("click", function () {
+    set(trigger.getAttribute("aria-expanded") !== "true");
+    if (trigger.getAttribute("aria-expanded") === "true") {
+      var close = panel.querySelector("[data-menu-close]");
+      if (close) close.focus();
+    }
+  });
+  var closer = panel.querySelector("[data-menu-close]");
+  if (closer) closer.addEventListener("click", function () {
+    set(false); trigger.focus();
+  });
+  panel.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { set(false); trigger.focus(); }
+  });
+})();
+</script>`;
+
+const SKIP_LINK = `<a class="awa-skip" href="#main">Skip to content</a>`;
+
+function awaHeader({ active = "" } = {}) {
+  return `
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="Act Without Asking — home">${awaLogo()}</a>
+    <button class="menu-btn" type="button" data-menu-trigger aria-expanded="false" aria-controls="awa-menu">Menu</button>
+    <nav class="nav-links" aria-label="Main">
+      <a class="cta-btn ghost" href="/episodes/">Episodes</a>
+      <a class="cta-btn ghost" href="/articles/">Field notes</a>
+      <a class="cta-btn ghost" href="/twins/">The Twins</a>
+      <a class="cta-btn ghost" href="/about/">About</a>
+    </nav>
+    <div class="nav-end">
+      ${THEME_PICKER}
+      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}
+    </div>
+  </div>
+  <div class="awa-menu" id="awa-menu" data-open="false">
+    <div class="wrap awa-menu-inner">
+      <div class="awa-menu-head">
+        <span class="awa-menu-title">Menu</span>
+        <button class="menu-btn" type="button" data-menu-close>Close</button>
+      </div>
+      <nav class="awa-menu-links" aria-label="Mobile">
+        <a href="/episodes/">Episodes</a>
+        <a href="/articles/">Field notes</a>
+        <a href="/twins/">The Twins</a>
+        <a href="/about/">About</a>
+        <a href="/subscribe/">Subscribe</a>
+      </nav>
+      <div class="awa-menu-theme">
+        <span class="awa-menu-label">Theme</span>
+        ${THEME_PICKER}
+      </div>
+    </div>
+  </div>
+</header>`;
+}
+
+function awaFooter() {
+  return `
+<footer>
+  <div class="wrap foot">
+    <div class="foot-links">
+      <a href="${YOUTUBE_CHANNEL}" target="_blank" rel="noopener">YouTube</a>
+      <a href="/episodes/">Episodes</a>
+      <a href="/articles/">Field notes</a>
+      <a href="/privacy/">Privacy</a>
+    </div>
+    <span class="foot-copy">© 2026 Act Without Asking · A show from Axela</span>
+  </div>
+</footer>`;
+}
 
 // LinkedIn company page URL — pending from Stephanie (Jenny flagged this 30 Aug).
 // Placeholder only. Grep for LINKEDIN_URL_PENDING before treating any build as final.
@@ -95,19 +199,23 @@ const escapeHtml = (s) =>
 const jsonLdSafe = (o) => JSON.stringify(o, null, 2).replace(/</g, "\\u003c");
 
 const SITE_CSS = `
+${AWA_TOKENS_CSS}
+  /* Redesign 1.1: legacy var names aliased onto the DS 1.1 token block —
+     no hex outside the token block (spec §2.2b). Page-family styles keep the
+     old names until the pages pass renames them. */
   :root{
-    --navy:#0A1628; --navy2:#111A2E; --lime:#C8FF3D; --ink:#F4F7FB;
-    --muted:#9AA7BA; --card:#131E33; --line:#22304A;
+    --navy:var(--awa-bg); --navy2:var(--awa-raised); --lime:var(--awa-action); --ink:var(--awa-text);
+    --muted:var(--awa-control); --card:var(--awa-surface); --line:var(--awa-divider);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
   @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
-  a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--lime);outline-offset:2px;border-radius:2px}
-  .strip a:focus-visible{outline-color:var(--navy)}
-  body{background:var(--navy);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:var(--lime)}
+  a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--awa-focus);outline-offset:3px;border-radius:2px}
+  .strip a:focus-visible{outline-color:var(--awa-onAction)}
+  body{background:var(--navy);color:var(--ink);font-family:var(--awa-font-body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--awa-accent)}
   .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
-  header{position:sticky;top:0;background:rgba(10,22,40,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
+  header{position:sticky;top:0;background:color-mix(in srgb, var(--awa-bg) 92%, transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
   .nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:.02em}
   .nav-ctas{display:flex;gap:10px;flex-wrap:wrap}
@@ -117,7 +225,7 @@ const SITE_CSS = `
   .cta-btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
   .cta-btn.ghost:hover{border-color:var(--lime);color:var(--lime)}
   .cta-btn[data-pending]{opacity:.55;cursor:not-allowed}
-  .hero{padding:96px 0 64px;text-align:center;background:radial-gradient(600px 300px at 50% -50px, rgba(200,255,61,.10), transparent 70%),linear-gradient(180deg, var(--navy2), var(--navy));position:relative;overflow:hidden}
+  .hero{padding:96px 0 64px;text-align:center;background:radial-gradient(600px 300px at 50% -50px, color-mix(in srgb, var(--awa-action) 10%, transparent), transparent 70%),linear-gradient(180deg, var(--navy2), var(--navy));position:relative;overflow:hidden}
   .hero .kicker{color:var(--lime);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.18em;font-family:'JetBrains Mono',monospace}
   .hero h1{font-size:clamp(40px,7vw,84px);line-height:1.02;letter-spacing:-.02em;margin:20px 0;font-weight:700}
   .hero .sub{color:var(--muted);max-width:600px;margin:0 auto 28px;font-size:18px}
@@ -130,13 +238,13 @@ const SITE_CSS = `
   .featured-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--navy2);cursor:pointer;overflow:hidden;display:block}
   .featured-facade img{width:100%;height:100%;object-fit:cover;display:block;opacity:.55;transition:opacity .15s ease}
   .featured-facade:hover img{opacity:.75}
-  .featured-facade::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,.05),rgba(10,22,40,.65))}
+  .featured-facade::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb, var(--awa-midnight) 5%, transparent),color-mix(in srgb, var(--awa-midnight) 65%, transparent))}
   .featured-label{position:absolute;left:16px;right:64px;bottom:12px;z-index:2;color:var(--ink);font-size:14px;font-weight:600;text-align:left;line-height:1.35}
   .featured-label .ep-num{display:block;margin-bottom:2px}
-  .featured-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:64px;height:64px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(200,255,61,.18);transition:transform .15s ease}
+  .featured-play{color:var(--awa-onAction);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:64px;height:64px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px color-mix(in srgb, var(--awa-action) 18%, transparent);transition:transform .15s ease}
   .featured-facade:hover .featured-play{transform:translate(-50%,-50%) scale(1.06)}
   .featured-facade .featured-play svg{margin-left:3px}
-  .hero .byline{margin-top:20px;color:#8B97AB;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
+  .hero .byline{margin-top:20px;color:var(--awa-control);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
   section{padding:72px 0}
   .kicker{color:var(--lime);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-align:center}
   h2{font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin-bottom:8px;text-align:center;font-weight:600}
@@ -149,7 +257,7 @@ const SITE_CSS = `
      prefers-reduced-motion kill switch above disables every rule here;
      the tilt script also self-guards (pointer:fine + reduced-motion). ---- */
   .hero-motes{position:absolute;inset:0;pointer-events:none}
-  .hero-motes i{position:absolute;bottom:-8px;width:3px;height:3px;border-radius:50%;background:rgba(200,255,61,.35);opacity:0;animation:moteDrift 9s linear infinite;will-change:transform,opacity}
+  .hero-motes i{position:absolute;bottom:-8px;width:3px;height:3px;border-radius:50%;background:color-mix(in srgb, var(--awa-action) 35%, transparent);opacity:0;animation:moteDrift 9s linear infinite;will-change:transform,opacity}
   .hero-motes i:nth-child(1){left:5%;animation-duration:11s;animation-delay:0s}
   .hero-motes i:nth-child(2){left:13%;animation-duration:13s;animation-delay:2.1s}
   .hero-motes i:nth-child(3){left:22%;animation-duration:9s;animation-delay:4.4s}
@@ -187,10 +295,10 @@ const SITE_CSS = `
   .short-video{position:relative;aspect-ratio:9/16;background:var(--navy2)}
   .short-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:var(--navy2);cursor:pointer;display:block}
   .short-facade img{width:100%;height:100%;object-fit:cover;display:block}
-  .facade-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:52px;height:52px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(200,255,61,.18);transition:transform .15s ease}
+  .facade-play{color:var(--awa-onAction);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:52px;height:52px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px color-mix(in srgb, var(--awa-action) 18%, transparent);transition:transform .15s ease}
   .facade-play svg{margin-left:3px}
   .short-facade:hover .facade-play,.ep-facade:hover .facade-play{transform:translate(-50%,-50%) scale(1.06)}
-  .short-facade .facade-play{width:40px;height:40px;box-shadow:0 0 0 4px rgba(200,255,61,.18)}
+  .short-facade .facade-play{width:40px;height:40px;box-shadow:0 0 0 4px color-mix(in srgb, var(--awa-action) 18%, transparent)}
   .short-facade .facade-play svg{width:16px;height:16px}
   .short-video iframe,.ep-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .short-yt{display:block;padding:0 10px 12px;font-size:11px;color:var(--muted);text-decoration:none}
@@ -203,7 +311,7 @@ const SITE_CSS = `
   .article-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
   .article h3{font-size:22px;margin:6px 0 8px;line-height:1.3}
   .article-dek{color:var(--muted);font-size:15px;margin-bottom:16px}
-  .article p{margin-bottom:14px;font-size:15px;color:#D6DCE8}
+  .article p{margin-bottom:14px;font-size:15px;color:var(--awa-secondary)}
   .article-watch{display:inline-block;margin-top:6px;font-weight:600;font-size:14px}
   .article h3 a.article-title-link{color:inherit;text-decoration:none}
   .article h3 a.article-title-link:hover{color:var(--lime)}
@@ -221,23 +329,48 @@ const SITE_CSS = `
   .listen-on .cta-btn{font-size:13px;padding:8px 16px}
   footer .listen-on{justify-content:flex-start;margin-top:12px}
   .start-here{color:var(--muted);font-size:15px;margin-top:12px}
-  .start-here a{color:var(--lime)}
+  .start-here a{color:var(--awa-accent)}
   footer{border-top:1px solid var(--line);padding:32px 0;color:var(--muted);font-size:13px}
   footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
   footer .foot-ctas{display:flex;gap:10px}
-  .subscribe-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,22,40,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
-  .sb-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;flex-wrap:wrap}
-  .sb-inner span{color:var(--muted);font-size:13px}
-  .sb-actions{display:flex;gap:10px;flex-wrap:wrap}
-  .sb-btn{display:inline-block;background:var(--lime);color:var(--navy);font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
-  .sb-btn:hover{filter:brightness(1.08)}
-  .sb-ghost{display:inline-block;background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
-  .sb-ghost:hover{border-color:var(--lime);color:var(--lime)}
-  body{padding-bottom:58px}
+  /* Redesign 1.1: fixed subscribe-bar retired (blueprint) — body padding with it. */
   @media (max-width:820px){
     .hero{padding:72px 0 48px}
     .nav{height:auto;padding:12px 0}
   }
+
+  /* ---- Redesign 1.1 shared shell (spec §4, blueprint pp. 3, 11) ---- */
+  .brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+  .brand img{display:block;height:26px;width:auto}
+  .brand .awa-logo-dark{display:none}
+  [data-awa-theme="dark"] .brand .awa-logo-light{display:none}
+  [data-awa-theme="dark"] .brand .awa-logo-dark{display:block}
+  .nav-links{display:flex;gap:10px;flex-wrap:wrap}
+  .nav-end{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .menu-btn{display:none;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px 14px;border:1px solid var(--awa-divider);border-radius:6px;background:var(--awa-surface);color:var(--awa-text);font:700 14px/20px var(--awa-font-body);cursor:pointer}
+  .awa-menu{display:none}
+  .awa-menu[data-open="true"]{display:block;position:fixed;inset:0;z-index:60;background:var(--awa-bg);overflow:auto}
+  .awa-menu-inner{display:grid;gap:20px;padding:16px 20px 32px}
+  .awa-menu-head{display:flex;align-items:center;justify-content:space-between}
+  .awa-menu-title{font:700 18px/24px var(--awa-font-display);color:var(--awa-text)}
+  .awa-menu-head .menu-btn{display:inline-flex}
+  .awa-menu-links{display:grid}
+  .awa-menu-links a{font:700 24px/1.3 var(--awa-font-display);color:var(--awa-text);text-decoration:none;padding:14px 0;border-bottom:1px solid var(--awa-divider)}
+  .awa-menu-theme{display:grid;gap:8px}
+  .awa-menu-label{font:400 12px/16px var(--awa-font-meta);letter-spacing:.04em;color:var(--awa-accent)}
+  @media (max-width:900px){
+    .nav-links,.nav-end{display:none}
+    .menu-btn{display:inline-flex}
+    .nav{height:64px}
+  }
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:28px 0;flex-wrap:wrap;border-top:1px solid var(--awa-divider)}
+  .foot-links{display:flex;gap:18px;flex-wrap:wrap}
+  .foot-links a{color:var(--awa-text);text-decoration:none;font:600 14px/20px var(--awa-font-body)}
+  .foot-links a:hover{color:var(--awa-accent);text-decoration:underline;text-underline-offset:4px}
+  .foot-copy{color:var(--awa-secondary);font:400 13px/18px var(--awa-font-meta)}
+  .awa-skip{position:absolute;left:-9999px;top:0;z-index:100;background:var(--awa-action);color:var(--awa-onAction);padding:10px 16px;font:700 14px/20px var(--awa-font-body);text-decoration:none;border-radius:0 0 6px 0}
+  .awa-skip:focus{left:0}
+${AWA_LAYOUT_CSS}
 `;
 
 // One article per published episode. Verified facts only, sourced from episode
@@ -307,15 +440,15 @@ const EPISODE_EXTRAS = Object.fromEntries(
 function markCTA({ label, href, kind = "primary", utm = null }) {
   const isPending = href == null;
   const finalHref = isPending ? "#" : (utm ? ytUtm(href, utm) : href);
-  const bg = kind === "primary" ? LIME : "transparent";
-  const color = kind === "primary" ? NAVY : INK;
-  const border = kind === "primary" ? "none" : `1px solid ${LINE}`;
   const pendingAttr = isPending ? ` data-pending="true" aria-disabled="true" title="LinkedIn page URL pending — placeholder"` : "";
   return `<a class="cta-btn ${kind}" href="${finalHref}"${pendingAttr}>${label}${isPending ? " (link pending)" : ""}</a>`;
 }
 
-function chevronMark({ w = 26, h = 20, opacity = 1 } = {}) {
-  return `<svg width="${w}" height="${h}" viewBox="0 0 60 40" aria-hidden="true" style="opacity:${opacity}"><g fill="${LIME}"><path d="M0 0 L16 20 L0 40 L12 40 L28 20 L12 0 Z"/><path d="M20 0 L36 20 L20 40 L32 40 L48 20 L32 0 Z"/><path d="M40 0 L56 20 L40 40 L52 40 L60 28 L60 12 Z" opacity=".55"/></g></svg>`;
+// AWA 1.1 logo masters (package assets, checksums in assets/brand/asset-checksums.json).
+// Theme-variant swap per the package: awa-logo-light shows on light, awa-logo-dark on dark.
+function awaLogo({ variant = "horizontal" } = {}) {
+  return `<img class="awa-logo-light" src="/assets/brand/${variant}-black.svg" alt="Act Without Asking" width="120" height="24">` +
+         `<img class="awa-logo-dark" src="/assets/brand/${variant}-color.svg" alt="Act Without Asking" width="120" height="24">`;
 }
 
 function episodeSlug(ep) {
@@ -370,7 +503,7 @@ function videoFacade({ videoId, thumbnail, ariaLabel, className }) {
   if (!videoId) return "";
   return `<button class="${className}" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(ariaLabel)}">
     <img src="${escapeHtml(thumbnail)}" alt="" loading="lazy">
-    <span class="facade-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
+    <span class="facade-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
   </button>`;
 }
 
@@ -383,7 +516,7 @@ function featuredPlayer(ep) {
   <button class="featured-facade" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(label)}">
     <img src="${escapeHtml(ep.thumbnail)}" alt="" loading="lazy">
     <span class="featured-label"><span class="ep-num">Latest — Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
-    <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
+    <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
   </button>
 </div>`;
 }
@@ -483,15 +616,8 @@ async function main() {
     ? data.shorts.map(shortCard).join("\n")
     : `<p class="empty-note">No Shorts published yet — this section fills in automatically as they go live.</p>`;
   // P0 mobile (Robin, 5 Sep): the header carries nav links only — the hero
-  // holds the ONE "Subscribe on YouTube" CTA and the listen-on block is the
-  // persistent one.
-  const headerCTAs = ``;
-
-  // P0 mobile (Robin, 5 Sep + Yoshi gate #5): the hero holds the ONE
-  // "Subscribe on YouTube" CTA; the footer listen-on block is the persistent
-  // listen surface. No subscribe CTA in footer CTAs — the listen-on block
-  // carries the YouTube link there on every page.
-  const footerCTAs = ``;
+  // Redesign 1.1 (blueprint): fixed bottom surfaces retired — the subscribe
+  // bar is gone; subscribe lives in the nav CTA, the home strip, /subscribe.
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -525,16 +651,14 @@ ${jsonLdSafe({
 }, null, 2)}
 </script>
 ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt=${data.fetchedAt} (${ageDays.toFixed(1)} days old). This build shipped with stale/fallback data rather than failing. -->` : ""}
+<meta name="color-scheme" content="light dark">
+<script>${THEME_INIT_JS}</script>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
+${SKIP_LINK}
 
-<header>
-  <div class="wrap nav">
-    <a class="brand" href="#top">${chevronMark()} Act Without Asking</a>
-    <div class="nav-ctas"><a class="cta-btn ghost" href="/episodes/">Episodes</a><a class="cta-btn ghost" href="/articles/">Blog</a><a class="cta-btn ghost" href="/about/">About</a>${headerCTAs}</div>
-  </div>
-</header>
+${awaHeader()}
 
 <main id="top">
   <div class="hero">
@@ -593,31 +717,16 @@ ${FACADE_SCRIPT}
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <span>© 2026 Act Without Asking · A show from Axela</span>
-    <div class="foot-ctas">${footerCTAs}</div>
-    ${listenOnBlock({ compact: true })}
-  </div>
-</footer>
+${awaFooter()}
 
+<script defer>${THEME_CONTROLS_JS}</script>
+${MENU_JS}
 </body>
 </html>
 `;
 
   // ---- Phase 0 multi-page skeleton: shared shell, inner pages, SEO artifacts ----
   const REAL_DOMAIN_LANDED = !PLACEHOLDER_HOSTS.includes("actwithoutasking.com");
-
-  const subscribeBar = `
-<div class="subscribe-bar">
-  <div class="wrap sb-inner">
-    <span>New episodes as they land — no hype, just the real work.</span>
-    <div class="sb-actions">
-      <a class="sb-btn" href="/subscribe/">Get the Harness Kit</a>
-      <a class="sb-ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_bar", campaign: "subscribe" })}" target="_blank" rel="noopener">YouTube</a>
-    </div>
-  </div>
-</div>`;
 
   const innerCSS = `
   .wrap.narrow{max-width:720px}
@@ -720,35 +829,24 @@ ${FACADE_SCRIPT}
 <meta property="og:type" content="website">
 ${ogImageTags}
 <link rel="canonical" href="${abs}">
-${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script>\n` : ""}<link rel="stylesheet" href="/site.css">
+${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script>\n` : ""}<meta name="color-scheme" content="light dark">
+<script>${THEME_INIT_JS}</script>
+<link rel="stylesheet" href="/site.css">
 <style>${innerCSS}</style>
 </head>
 <body>
+${SKIP_LINK}
 
-<header>
-  <div class="wrap nav">
-    <a class="brand" href="/">${chevronMark({ w: 22, h: 17 })} Act Without Asking</a>
-    <div class="nav-ctas">
-      <a class="cta-btn ghost" href="/episodes/">Episodes</a>
-      <a class="cta-btn ghost" href="/articles/">Blog</a>
-      <a class="cta-btn ghost" href="/about/">About</a>
-      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}
-    </div>
-  </div>
-</header>
+${awaHeader()}
 
 <main id="top">
 ${body}
 </main>
 
-<footer>
-  <div class="wrap">
-    <span>© 2026 Act Without Asking · A show from Axela</span>
-    <div class="foot-ctas">${footerCTAs}</div>
-    ${listenOnBlock({ compact: true })}
-  </div>
-</footer>
-${subscribeBar}
+${awaFooter()}
+
+<script defer>${THEME_CONTROLS_JS}</script>
+${MENU_JS}
 ${MOTION_TILT_JS}
 </body>
 </html>
@@ -864,7 +962,7 @@ ${MOTION_TILT_JS}
   // twins-gate below still proves the injection happened.
   const homepageHtml = html
     .replace('<section class="strip">', `${twins.widget}\n  <section class="strip">`)
-    .replace("</body>", `${subscribeBar}\n${MOTION_TILT_JS}\n</body>`);
+    .replace("</body>", `${MOTION_TILT_JS}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
 
   // ---- Multi-page routes (arch v1: /episodes, /episodes/[slug],
@@ -1170,6 +1268,17 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
   // function itself healthy). A _redirects file in the publish dir is
   // processed on every deploy type, so the rewrite cannot be lost again.
   await writeFile(path.join(DIST, "_redirects"), "/api/ask  /.netlify/functions/ask  200\n");
+  // Redesign 1.1 assets: self-hosted WOFF2 fonts (§3.7, OFL licenses ride along)
+  // + the four AWA 1.1 logo masters (§3.3) + package foundation files.
+  await mkdir(path.join(DIST, "fonts"), { recursive: true });
+  for (const f of await readdir(path.join(ROOT, "fonts"))) {
+    if (f.endsWith(".ttf")) continue; // WOFF2 only ships (§3.7); TTF sources stay in-repo
+    await copyFile(path.join(ROOT, "fonts", f), path.join(DIST, "fonts", f));
+  }
+  await mkdir(path.join(DIST, "assets", "brand"), { recursive: true });
+  for (const f of await readdir(path.join(ROOT, "assets", "brand"))) {
+    await copyFile(path.join(ROOT, "assets", "brand", f), path.join(DIST, "assets", "brand", f));
+  }
   console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html + _redirects (routes: /, /episodes, ${data.episodes.length} episode pages, ${articleRoutes.length} article pages, /about, /subscribe, /privacy, 404, robots, sitemap; twins gates passed; retrieval=${retrieval.excerpts.length} excerpts; stale=${isStale})`);
 }
 

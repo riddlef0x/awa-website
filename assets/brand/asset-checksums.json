@@ -1,0 +1,18 @@
+[
+  {
+    "file": "assets/symbol-color.svg",
+    "sha256": "01c65ca61d2e1b7e2b1d26840c401cad29e2306391011ab816fdc442aac8da2d"
+  },
+  {
+    "file": "assets/horizontal-black.svg",
+    "sha256": "1507d4f1823960c92aaf8ccb68d9fc2481c5791045d596fe8c08e339721c0e2e"
+  },
+  {
+    "file": "assets/symbol-black.svg",
+    "sha256": "75f699a1c92f9d83383e54f2871eff29795b70698bcfc59fb4f8731187a4a1fe"
+  },
+  {
+    "file": "assets/horizontal-color.svg",
+    "sha256": "33de17a7efd3d5d12ce8549b3aba4c9f75977d1e5ba15ae1fbef0ae3f7da016a"
+  }
+]

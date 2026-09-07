@@ -1,0 +1,156 @@
+{
+  "version": "1.1.0",
+  "status": "Approved identity / Original Repaired",
+  "brand": "Act Without Asking",
+  "logo": {
+    "source": "Round 3 / 01 Original Repaired",
+    "chevrons": 3,
+    "wordmark": "Manrope SemiBold, outlined approved master",
+    "changePolicy": "Use canonical artwork; never reconstruct with typed arrows or CSS"
+  },
+  "color": {
+    "base": "#081525",
+    "panel": "#111F34",
+    "raised": "#192B45",
+    "white": "#F4F7FC",
+    "muted": "#A9B6C9",
+    "line": "#30425C",
+    "lime": "#C7FF35",
+    "teal": "#43D7B2",
+    "pure": "#FFFFFF",
+    "black": "#07111E",
+    "error": "#FF9AAB",
+    "warning": "#FFD36E"
+  },
+  "semantic": {
+    "bg": "theme.bg",
+    "surface": "theme.surface",
+    "raised": "theme.raised",
+    "text": "theme.text",
+    "secondary": "theme.secondary",
+    "divider": "theme.divider",
+    "control": "theme.control",
+    "accent": "theme.accent",
+    "focus": "theme.focus",
+    "error": "theme.error",
+    "warning": "theme.warning",
+    "action": "theme.action",
+    "onAction": "theme.onAction",
+    "actionBorder": "theme.actionBorder"
+  },
+  "font": {
+    "display": "Space Grotesk",
+    "body": "Manrope",
+    "metadata": "IBM Plex Mono"
+  },
+  "type": {
+    "heroDesktop": [
+      72,
+      76
+    ],
+    "heroMobile": [
+      44,
+      48
+    ],
+    "h2Desktop": [
+      40,
+      46
+    ],
+    "h2Mobile": [
+      30,
+      36
+    ],
+    "body": [
+      18,
+      29
+    ],
+    "article": [
+      20,
+      32
+    ],
+    "control": [
+      16,
+      22
+    ],
+    "metadata": [
+      12,
+      16
+    ]
+  },
+  "space": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48,
+    64,
+    96
+  ],
+  "radius": {
+    "control": 6,
+    "card": 8,
+    "media": 12
+  },
+  "layout": {
+    "maxWidth": 1200,
+    "readingWidth": 680,
+    "desktopGutter": 24,
+    "mobileMargin": 20,
+    "desktopColumns": 12,
+    "mobileColumns": 4
+  },
+  "motion": {
+    "uiMs": 180,
+    "graphicMs": 400,
+    "logoStingMs": 1200,
+    "reducedMotion": "Static final state"
+  },
+  "defaultTheme": "light",
+  "availableThemes": [
+    "light",
+    "dark"
+  ],
+  "themes": {
+    "light": {
+      "bg": "#F7F9FC",
+      "surface": "#FFFFFF",
+      "raised": "#EAF0F6",
+      "text": "#081525",
+      "secondary": "#4B5C70",
+      "divider": "#D5DEE8",
+      "control": "#68798D",
+      "accent": "#006F58",
+      "focus": "#006F58",
+      "error": "#B4233B",
+      "warning": "#875400",
+      "action": "#C7FF35",
+      "onAction": "#081525",
+      "actionBorder": "#081525"
+    },
+    "dark": {
+      "bg": "#081525",
+      "surface": "#111F34",
+      "raised": "#192B45",
+      "text": "#F4F7FC",
+      "secondary": "#A9B6C9",
+      "divider": "#30425C",
+      "control": "#A9B6C9",
+      "accent": "#43D7B2",
+      "focus": "#C7FF35",
+      "error": "#FF9AAB",
+      "warning": "#FFD36E",
+      "action": "#C7FF35",
+      "onAction": "#081525",
+      "actionBorder": "#C7FF35"
+    }
+  },
+  "themePolicy": {
+    "firstVisit": "light",
+    "explicitChoice": "light or dark",
+    "persistence": "localStorage awa-theme, when available",
+    "systemAppearance": "Does not override the explicit light default",
+    "artwork": "Media images and embedded video retain their designed colors; never CSS-invert them"
+  }
+}
