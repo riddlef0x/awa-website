@@ -7,7 +7,7 @@
 // ORCHESTRATION ONLY: data load, twins + retrieval build, page assembly, gates,
 // writes. Output is byte-identical to the pre-extraction build at c2829fa.
 // Owner: WP01 (Jenny, integration) — shared-file requests go through WP01.
-import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile, cp } from "node:fs/promises";
 import { buildTwins } from "./build-twins.mjs";
 import { writeRetrievalIndex } from "./build-retrieval.mjs";
 import path from "node:path";
@@ -209,6 +209,11 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
   // (DIST does not exist yet) and the .catch would silently drop the file.
   await copyFile(path.join(ROOT, "assets", "favicon.ico"), path.join(DIST, "favicon.ico"));
   await copyFile(path.join(ROOT, "assets", "og-card.png"), path.join(DIST, "og-card.png"));
+  // WP02 redesign foundation: shared theme assets + brand fonts ship from
+  // assets/web/ and assets/fonts/. awa-tokens.css references ../fonts/ so the
+  // dist layout (web/ beside fonts/) must stay exactly this way.
+  await cp(path.join(ROOT, "assets", "web"), path.join(DIST, "web"), { recursive: true });
+  await cp(path.join(ROOT, "assets", "fonts"), path.join(DIST, "fonts"), { recursive: true });
   await mkdir(path.join(DIST, "subscribe"), { recursive: true });
   await mkdir(path.join(DIST, "privacy"), { recursive: true });
   await mkdir(path.join(DIST, "episodes"), { recursive: true });
