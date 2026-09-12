@@ -1191,11 +1191,27 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
     }
   }
 
-  // Arch condition B (event 36f1e546): sitemap lastmod must be content-true.
-  // Derive from youtube.json fetchedAt — changes only when the feed data
-  // changes, not on every rebuild. A missing lastmod is honest; a build-date
-  // one lies.
-  const contentDate = data.fetchedAt.slice(0, 10);
+  // Arch condition B (event 36f1e546) + Robin launch brief P0-1 (12 Sep):
+  // sitemap lastmod must be the page's real content date, never a build or
+  // fetch date. Episode pages carry the episode's YouTube publish date;
+  // article pages the date of the episode they cover; home and the indexes
+  // carry the newest real date they contain. Pages with no per-page content
+  // date (twins, about, subscribe, privacy) ship NO lastmod — a missing
+  // lastmod is honest; a fabricated one lies.
+  const epDate = (ep) => (ep && ep.published ? ep.published.slice(0, 10) : null);
+  const newestContentDate =
+    data.episodes
+      .map(epDate)
+      .filter(Boolean)
+      .sort()
+      .pop() || null;
+  const lastmodFor = Object.fromEntries([
+    ...data.episodes.map((ep) => [`/episodes/${episodeSlug(ep)}/`, epDate(ep)]),
+    ...ARTICLES.map((a) => [`/articles/${a.slug}/`, epDate(episodesByNumber.get(a.episodeNumber))]),
+    ["/", newestContentDate],
+    ["/episodes/", newestContentDate],
+    ["/articles/", newestContentDate],
+  ]);
   const sitemapPaths = [
     "/",
     "/episodes/",
@@ -1209,7 +1225,13 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
   ];
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${contentDate}</lastmod></url>`).join("\n")}
+${sitemapPaths
+    .map((p) =>
+      lastmodFor[p]
+        ? `  <url><loc>${SITE_URL}${p}</loc><lastmod>${lastmodFor[p]}</lastmod></url>`
+        : `  <url><loc>${SITE_URL}${p}</loc></url>`,
+    )
+    .join("\n")}
 </urlset>
 `;
   pages.push(["sitemap.xml", sitemapXml]);
