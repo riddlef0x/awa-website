@@ -74,7 +74,7 @@ function awaHeader({ active = "" } = {}) {
   return `
 <header>
   <div class="wrap nav">
-    <a class="brand" href="/" aria-label="Act Without Asking — home">${awaLogo()}</a>
+    <a class="brand" href="/" aria-label="Act Without Asking – home">${awaLogo()}</a>
     <button class="menu-btn" type="button" data-menu-trigger aria-expanded="false" aria-controls="awa-menu">Menu</button>
     <nav class="nav-links" aria-label="Main">
       <a class="cta-btn ghost" href="/episodes/">Episodes</a>
@@ -382,46 +382,46 @@ const ARTICLES = [
   {
     episodeNumber: 1,
     slug: "ai-harness-over-model",
-    title: "What is an AI harness — and why does it matter more than picking a model?",
+    title: "What is an AI harness – and why does it matter more than picking a model?",
     dek: "Robin Leonard and Tobi Webster open Act Without Asking on the shift companies keep missing.",
     body: [
-      "Every AI conversation right now starts with the model. Robin and Tobi's opening argument is that the model is the least interesting decision left to make — it's a commodity, and everyone has access to the same handful of frontier options. The decision that actually determines whether AI does anything useful inside a business is the harness: the scaffolding that connects a model to your data, your tools, and the permission to act.",
-      "The episode traces the shift from \"AI-enabled\" (a chatbot bolted onto existing workflows) to \"AI-native\" (a business rebuilt around agents that can actually do the work). That distinction sets up the rest of the show — later episodes about multiplayer agents and agent memory both build on the harness idea introduced here.",
-      "They also get into cloud vs on-prem hosting and data sovereignty — questions Robin and Tobi argue every director should already be asking before an agent touches customer data, not after.",
+      "Every AI conversation right now starts with the model. Robin and Tobi's opening argument is that the model is the least interesting decision left to make – it's a commodity, and everyone has access to the same handful of frontier options. The decision that actually determines whether AI does anything useful inside a business is the harness: the scaffolding that connects a model to your data, your tools, and the permission to act.",
+      "The episode traces the shift from \"AI-enabled\" (a chatbot bolted onto existing workflows) to \"AI-native\" (a business rebuilt around agents that can actually do the work). That distinction sets up the rest of the show – later episodes about multiplayer agents and agent memory both build on the harness idea introduced here.",
+      "They also get into cloud vs on-prem hosting and data sovereignty – questions Robin and Tobi argue every director should already be asking before an agent touches customer data, not after.",
     ],
   },
   {
     episodeNumber: 2,
     slug: "multiplayer-agents",
     title: "Multiplayer agents: what changes when AI works as a teammate, not a chat window",
-    dek: "One agent answering questions is a demo. A team of named agents working alongside you — and your colleagues — is a different operating model.",
+    dek: "One agent answering questions is a demo. A team of named agents working alongside you – and your colleagues – is a different operating model.",
     body: [
-      "\"The LLM models, they're a commodity. Everyone's got access to them. No one has more access than anyone else right now. The actual moat is having the harness work with the intelligence APIs.\" That's the frame Robin opens with, and it's the thread that runs through the whole episode: multiplayer agents aren't a bigger chatbot, they're agents with names, profiles, and tasks, living inside the same WhatsApp, Slack, or Teams thread your team already uses — talking to your colleagues, not just to you.",
-      "Tobi and Robin also dig into who can actually afford to take that risk. Their read: small, nimble companies have a real advantage here — a \"David and Goliath\" dynamic where larger, more risk-averse organisations move slower precisely because they have more to protect. Solopreneurs and SMBs can install, test, and iterate on multiplayer agent platforms in a way most enterprise teams can't yet.",
-      "It's an early, honest look at where the two hosts see this heading — closer to something like a genuinely present digital teammate than the clunky first-generation version most people are using today.",
+      "\"The LLM models, they're a commodity. Everyone's got access to them. No one has more access than anyone else right now. The actual moat is having the harness work with the intelligence APIs.\" That's the frame Robin opens with, and it's the thread that runs through the whole episode: multiplayer agents aren't a bigger chatbot, they're agents with names, profiles, and tasks, living inside the same WhatsApp, Slack, or Teams thread your team already uses – talking to your colleagues, not just to you.",
+      "Tobi and Robin also dig into who can actually afford to take that risk. Their read: small, nimble companies have a real advantage here – a \"David and Goliath\" dynamic where larger, more risk-averse organisations move slower precisely because they have more to protect. Solopreneurs and SMBs can install, test, and iterate on multiplayer agent platforms in a way most enterprise teams can't yet.",
+      "It's an early, honest look at where the two hosts see this heading – closer to something like a genuinely present digital teammate than the clunky first-generation version most people are using today.",
     ],
   },
   {
     episodeNumber: 3,
     slug: "agent-memory",
     title: "The Brain: what happens when an agent runs out of memory",
-    dek: "Robin's own agent started producing garbled output when it hit a hard memory limit — this episode is the story of building it a real memory system.",
+    dek: "Robin's own agent started producing garbled output when it hit a hard memory limit – this episode is the story of building it a real memory system.",
     body: [
-      "This episode opens somewhere unexpected — Robin's trip to a blockchain and AI conference in Manila, and a discussion of how differently AI adoption is moving across the US, Europe, Asia, and Australia — before landing on its real subject: what it actually takes to give an AI agent a working memory.",
-      "The story: Robin's own Hermes-based agent hit a hard 2,000-character limit on its persistent memory and started producing garbled text. The fix he walks through on the show is a proper memory architecture — a vector-database \"world model,\" a wiki-style knowledge base, and a nightly processing job (he calls it \"REM sleep\") that consolidates what the agent learned that day. On top of that sits a four-tier classification for what the agent is allowed to remember, from public information through to strictly personal.",
-      "It's a rare look at the unglamorous infrastructure problem behind every AI agent that seems to \"know\" you — memory doesn't happen for free, and this episode is the most concrete build-log the show has done so far.",
+      "This episode opens somewhere unexpected – Robin's trip to a blockchain and AI conference in Manila, and a discussion of how differently AI adoption is moving across the US, Europe, Asia, and Australia – before landing on its real subject: what it actually takes to give an AI agent a working memory.",
+      "The story: Robin's own Hermes-based agent hit a hard 2,000-character limit on its persistent memory and started producing garbled text. The fix he walks through on the show is a proper memory architecture – a vector-database \"world model,\" a wiki-style knowledge base, and a nightly processing job (he calls it \"REM sleep\") that consolidates what the agent learned that day. On top of that sits a four-tier classification for what the agent is allowed to remember, from public information through to strictly personal.",
+      "It's a rare look at the unglamorous infrastructure problem behind every AI agent that seems to \"know\" you – memory doesn't happen for free, and this episode is the most concrete build-log the show has done so far.",
     ],
   },
   {
     episodeNumber: 4,
     slug: "we-moved-onto-buzz",
     title: "We moved our business onto Buzz. Here's what actually happened.",
-    dek: "Jack Dorsey's Block launched an agent-native chat platform for teams of people and agents. Robin and Tobi run their real company on it — and talk about what that's actually like.",
+    dek: "Jack Dorsey's Block launched an agent-native chat platform for teams of people and agents. Robin and Tobi run their real company on it – and talk about what that's actually like.",
     body: [
-      "Block launched Buzz on 21 July 2026 — an open-source, Nostr-based group chat platform built, in Dorsey's own words, \"for teams of people and agents of all sizes.\" Robin and Tobi didn't just review it — they moved their own business onto it, and this episode is the honest account of what that took. <a href=\"https://block.xyz/inside/introducing-buzz-where-humans-and-agents-work-together\" target=\"_blank\" rel=\"noopener\">Source: Block's launch announcement, 21 July 2026</a>.",
-      "The setup pain is real and specific: keys, environment variables, access control — the unglamorous plumbing that comes before any of the upside shows up. Once it's running, auto-transcribing every voice note changes how a team actually talks to each other, and the hosts get into how agents end up spreading bottom-up inside larger companies, one team at a time, well before any formal rollout.",
-      "They don't skip the hard part either: the prompt-injection risk that nobody in this space has fully solved yet. Robin's answer for why he stays on Buzz anyway comes down to one thing — sovereignty over his own data and AI infrastructure, even against easier, more polished closed alternatives.",
-      "One correction worth noting here since the show is committed to getting numbers right: an on-air stat about companies listing AI agents on their org charts was corrected after broadcast — the accurate figure is 23%, roughly one in four, not the 25% said on air.",
+      "Block launched Buzz on 21 July 2026 – an open-source, Nostr-based group chat platform built, in Dorsey's own words, \"for teams of people and agents of all sizes.\" Robin and Tobi didn't just review it – they moved their own business onto it, and this episode is the honest account of what that took. <a href=\"https://block.xyz/inside/introducing-buzz-where-humans-and-agents-work-together\" target=\"_blank\" rel=\"noopener\">Source: Block's launch announcement, 21 July 2026</a>.",
+      "The setup pain is real and specific: keys, environment variables, access control – the unglamorous plumbing that comes before any of the upside shows up. Once it's running, auto-transcribing every voice note changes how a team actually talks to each other, and the hosts get into how agents end up spreading bottom-up inside larger companies, one team at a time, well before any formal rollout.",
+      "They don't skip the hard part either: the prompt-injection risk that nobody in this space has fully solved yet. Robin's answer for why he stays on Buzz anyway comes down to one thing – sovereignty over his own data and AI infrastructure, even against easier, more polished closed alternatives.",
+      "One correction worth noting here since the show is committed to getting numbers right: an on-air stat about companies listing AI agents on their org charts was corrected after broadcast – the accurate figure is 23%, roughly one in four, not the 25% said on air.",
     ],
   },
 ];
@@ -440,7 +440,7 @@ const EPISODE_EXTRAS = Object.fromEntries(
 function markCTA({ label, href, kind = "primary", utm = null }) {
   const isPending = href == null;
   const finalHref = isPending ? "#" : (utm ? ytUtm(href, utm) : href);
-  const pendingAttr = isPending ? ` data-pending="true" aria-disabled="true" title="LinkedIn page URL pending — placeholder"` : "";
+  const pendingAttr = isPending ? ` data-pending="true" aria-disabled="true" title="LinkedIn page URL pending – placeholder"` : "";
   return `<a class="cta-btn ${kind}" href="${finalHref}"${pendingAttr}>${label}${isPending ? " (link pending)" : ""}</a>`;
 }
 
@@ -511,11 +511,11 @@ function featuredPlayer(ep) {
   const videoId = youtubeId(ep);
   if (!videoId) return "";
   const cleanTitle = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
-  const label = `Play the latest episode — Episode ${ep.episodeNumber}: ${cleanTitle}`;
+  const label = `Play the latest episode – Episode ${ep.episodeNumber}: ${cleanTitle}`;
   return `<div class="featured">
   <button class="featured-facade" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(label)}">
     <img src="${escapeHtml(ep.thumbnail)}" alt="" loading="lazy">
-    <span class="featured-label"><span class="ep-num">Latest — Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
+    <span class="featured-label"><span class="ep-num">Latest – Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
     <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
   </button>
 </div>`;
@@ -533,7 +533,7 @@ function episodeCard(ep, { internal = false } = {}) {
   const cta = internal ? "Episode page" : "Watch on YouTube";
   return `
     <a class="ep-card" href="${escapeHtml(href)}"${external}>
-      <div class="ep-thumb"><img src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanTitle} — Episode ${ep.episodeNumber}`)}" loading="lazy"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
+      <div class="ep-thumb"><img src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanTitle} – Episode ${ep.episodeNumber}`)}" loading="lazy"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
       <div class="ep-body">
         <span class="ep-num">Episode ${String(ep.episodeNumber).padStart(2, "0")}</span>
         <h3>${escapeHtml(cleanTitle)}</h3>
@@ -614,7 +614,7 @@ async function main() {
   const episodeCards = data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n");
   const shortCards = data.shorts.length
     ? data.shorts.map(shortCard).join("\n")
-    : `<p class="empty-note">No Shorts published yet — this section fills in automatically as they go live.</p>`;
+    : `<p class="empty-note">No Shorts published yet – this section fills in automatically as they go live.</p>`;
   // P0 mobile (Robin, 5 Sep): the header carries nav links only — the hero
   // Redesign 1.1 (blueprint): fixed bottom surfaces retired — the subscribe
   // bar is gone; subscribe lives in the nav CTA, the home strip, /subscribe.
@@ -625,14 +625,14 @@ async function main() {
 <meta charset="UTF-8">
 <link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Act Without Asking — The agentic AI podcast</title>
-<meta name="description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
-<meta property="og:title" content="Act Without Asking — The agentic AI podcast">
-<meta property="og:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<title>Act Without Asking – The agentic AI podcast</title>
+<meta name="description" content="AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<meta property="og:title" content="Act Without Asking – The agentic AI podcast">
+<meta property="og:description" content="AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta property="og:image" content="${escapeHtml(latestEp?.thumbnail ?? "")}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Act Without Asking — The agentic AI podcast">
-<meta name="twitter:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<meta name="twitter:title" content="Act Without Asking – The agentic AI podcast">
+<meta name="twitter:description" content="AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta name="twitter:image" content="${escapeHtml(latestEp?.thumbnail ?? "")}">
 <meta property="og:url" content="${SITE_URL}/">
 <meta property="og:type" content="website">
@@ -643,7 +643,7 @@ ${jsonLdSafe({
   "@type": "PodcastSeries",
   name: "Act Without Asking",
   url: SITE_URL,
-  description: "AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.",
+  description: "AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.",
   author: [
     { "@type": "Person", name: "Robin Leonard" },
     { "@type": "Person", name: "Tobi Webster" },
@@ -665,11 +665,11 @@ ${awaHeader()}
     <div class="hero-motes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <p class="kicker">The Agentic AI Podcast</p>
     <h1>ACT WITHOUT<br>ASKING</h1>
-    <p class="sub">AI agents doing real work — and the moment you stop supervising them.</p>
+    <p class="sub">AI agents doing real work – and the moment you stop supervising them.</p>
     <p class="hero-ctas">${latestEp
       ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
       : `<a class="btn" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}">Watch on YouTube</a>`}</p>
-    <p class="byline">Hosted by Robin Leonard and Tobi Webster — two operators who run real businesses on AI agents.</p>
+    <p class="byline">Hosted by Robin Leonard and Tobi Webster – two operators who run real businesses on AI agents.</p>
 ${latestEp ? featuredPlayer(latestEp) : ""}
   </div>
 
@@ -678,7 +678,7 @@ ${latestEp ? featuredPlayer(latestEp) : ""}
       <div class="section-head">
         <p class="kicker">Full episodes</p>
         <h2>Episodes</h2>
-        <p class="start-here">New here? <a href="/episodes/${firstEp ? episodeSlug(firstEp) : ""}/">Start with Episode 1</a> — the opening argument. Prefer reading? <a href="/articles/">Every episode, in writing.</a></p>
+        <p class="start-here">New here? <a href="/episodes/${firstEp ? episodeSlug(firstEp) : ""}/">Start with Episode 1</a> – the opening argument. Prefer reading? <a href="/articles/">Every episode, in writing.</a></p>
       </div>
       <div class="eps">
 ${episodeCards}
@@ -701,15 +701,15 @@ ${FACADE_SCRIPT}
 
   <section class="quote">
     <div class="wrap">
-      <blockquote>We hand real agents real responsibility — and tell you exactly what happens next.</blockquote>
-      <p>No hype, no scripts. Just two hosts figuring out — live, in public — what it actually looks like to hand an agent the keys.</p>
+      <blockquote>We hand real agents real responsibility – and tell you exactly what happens next.</blockquote>
+      <p>No hype, no scripts. Just two hosts figuring out – live, in public – what it actually looks like to hand an agent the keys.</p>
     </div>
   </section>
 
   <section class="strip">
     <div class="wrap">
       <h2>New episodes as they land.</h2>
-      <p class="strip-sub">Get The Harness Kit — the checklists and templates we use on the show, free after you confirm.</p>
+      <p class="strip-sub">Get The Harness Kit – the checklists and templates we use on the show, free after you confirm.</p>
       <div class="strip-ctas">
         <a class="cta-btn primary" href="/subscribe/">Get the Harness Kit</a>
       </div>
@@ -864,13 +864,13 @@ ${MOTION_TILT_JS}
       <p class="updated">Last updated: 4 September 2026.</p>
 
       <h3>Who we are</h3>
-      <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request — access, correction, or deletion of your data — email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
+      <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request – access, correction, or deletion of your data – email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
 
       <h3>The email list</h3>
-      <p>When you subscribe, we collect your email address. That's it — no name required, no other fields.</p>
+      <p>When you subscribe, we collect your email address. That's it – no name required, no other fields.</p>
       <ul>
         <li><strong>What you get:</strong> new episodes, and "The Harness Kit" (checklists and templates from the show) after you confirm.</li>
-        <li><strong>Double opt-in:</strong> you subscribe, we send a confirmation email, you're on the list only after you click it. No confirmation, no emails — we never add anyone who didn't ask.</li>
+        <li><strong>Double opt-in:</strong> you subscribe, we send a confirmation email, you're on the list only after you click it. No confirmation, no emails – we never add anyone who didn't ask.</li>
         <li><strong>Who sends the emails:</strong> our newsletter is handled by MailerLite, an email service. They send our emails and store the list on our instructions. They don't get to use your address for anything else.</li>
         <li><strong>Consent record:</strong> when you confirm, we store your email address, the time, and the page you subscribed from. Nothing else. This is our proof you asked.</li>
         <li><strong>Unsubscribe:</strong> every email has an unsubscribe link. One click, immediate, no "are you sure" games.</li>
@@ -878,14 +878,14 @@ ${MOTION_TILT_JS}
       <p><strong>We do not sell, rent, or share your email address. Ever.</strong></p>
 
       <h3>Analytics</h3>
-      <p>No Google Analytics, no ad trackers, no third-party cookies. If we ever add analytics, it will be self-hosted and first-party — and this page will say exactly what we collect before it turns on.</p>
+      <p>No Google Analytics, no ad trackers, no third-party cookies. If we ever add analytics, it will be self-hosted and first-party – and this page will say exactly what we collect before it turns on.</p>
 
       <h3>The twins</h3>
       <p>When you ask the twins a question, here is exactly what happens to it.
-      Your question — and nothing else about you — is sent to an AI service that
+      Your question – and nothing else about you – is sent to an AI service that
       helps write the answer. We never send your name, email, or IP address to
       the AI service. Our server sees the bare technical data every website
-      sees and uses it only to stop abuse — it is never stored with your
+      sees and uses it only to stop abuse – it is never stored with your
       question. The AI service processes your question to
       do its job and keeps its own records under its own privacy policy; this
       site does not store your questions or the answers on our side.</p>
@@ -893,14 +893,14 @@ ${MOTION_TILT_JS}
       and moment it comes from. If the show doesn't back an answer, the twins
       say so and hand you an episode instead of making something up. If the AI
       service is unavailable, the twins automatically fall back to pre-written
-      answers — same behaviour, different engine.</p>
+      answers – same behaviour, different engine.</p>
       <p>The twins are AI impressions of Robin and Tobi, not Robin and Tobi.
-      They may be wrong — check anything that matters against the actual
+      They may be wrong – check anything that matters against the actual
       episodes.</p>
-      <p>We log aggregate counts only — how many questions are asked, which
+      <p>We log aggregate counts only – how many questions are asked, which
       episode links get clicked, and coarse timing and size buckets. No question
       text, no IP, nothing that identifies you or reconstructs what you asked.
-      These counts contain nothing personal, so we keep them indefinitely —
+      These counts contain nothing personal, so we keep them indefinitely –
       there is nothing in them to delete. The twins page says the same thing.</p>
 
       <h3>YouTube</h3>
@@ -919,9 +919,9 @@ ${MOTION_TILT_JS}
     <div class="wrap narrow">
       <p class="kicker">Subscribe</p>
       <h1 class="legal-title">New episodes, straight to your inbox.</h1>
-      <p class="sub-left">Get every episode and <strong>The Harness Kit</strong> — the checklists and templates we use on the show — free, after you confirm.</p>
+      <p class="sub-left">Get every episode and <strong>The Harness Kit</strong> – the checklists and templates we use on the show – free, after you confirm.</p>
       <ul class="kit-list">
-        <li>New episode alerts — nothing else, no filler</li>
+        <li>New episode alerts – nothing else, no filler</li>
         <li>The Harness Kit: checklists and templates from the show</li>
         <li>One click to unsubscribe, any time</li>
       </ul>
@@ -929,7 +929,7 @@ ${MOTION_TILT_JS}
         <label for="email">Email address</label>
         <input id="email" name="email" type="email" placeholder="you@example.com" disabled>
         <button type="submit" disabled>Subscribe</button>
-        <p class="form-note">Email capture opens with our list provider this week — the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
+        <p class="form-note">Email capture opens with our list provider this week – the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
       </form>
       <p class="alt">Not into email? <a href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_page", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a> instead.</p>
       ${listenOnBlock({ compact: true })}
@@ -974,7 +974,7 @@ ${MOTION_TILT_JS}
   const cleanEpTitle = (ep) => ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
   const epDek = (ep) =>
     articlesByEpisode.get(ep.episodeNumber)?.dek ??
-    `Episode ${ep.episodeNumber} of Act Without Asking — AI agents doing real work.`;
+    `Episode ${ep.episodeNumber} of Act Without Asking – AI agents doing real work.`;
   const fmtDate = (iso) =>
     new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
 
@@ -984,10 +984,10 @@ ${MOTION_TILT_JS}
   // suffix). Wording untouched, length only (Jane ruling, 1 Sep).
   const pageTitle = (base, epNum) => {
     const full = epNum
-      ? `${base} — Act Without Asking, Episode ${epNum}`
-      : `${base} — Act Without Asking`;
+      ? `${base} – Act Without Asking, Episode ${epNum}`
+      : `${base} – Act Without Asking`;
     if (full.length <= 60) return full;
-    const short = epNum ? `${base} — Episode ${epNum}` : base;
+    const short = epNum ? `${base} – Episode ${epNum}` : base;
     return short.length <= 60 ? short : base;
   };
 
@@ -1015,7 +1015,7 @@ ${MOTION_TILT_JS}
       <p class="kicker">Episode ${String(ep.episodeNumber).padStart(2, "0")}</p>
       <h1 class="legal-title">${escapeHtml(cleanEpTitle(ep))}</h1>
       <p class="ep-meta">${fmtDate(ep.published)} · Robin Leonard and Tobi Webster</p>
-      <div class="ep-player">${videoFacade({ videoId: youtubeId(ep), thumbnail: ep.thumbnail, ariaLabel: `Play Episode ${ep.episodeNumber}: ${cleanEpTitle(ep)}`, className: "ep-facade" }) || `<img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail`)}">`}</div>
+      <div class="ep-player">${videoFacade({ videoId: youtubeId(ep), thumbnail: ep.thumbnail, ariaLabel: `Play Episode ${ep.episodeNumber}: ${cleanEpTitle(ep)}`, className: "ep-facade" }) || `<img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} – Episode ${ep.episodeNumber} thumbnail`)}">`}</div>
       <p class="dek">${escapeHtml(epDek(ep))}</p>
       <a class="btn" href="${escapeHtml(ytUtm(ep.url, { medium: "episode_page", campaign: "watch", content: slug }))}" target="_blank" rel="noopener">Watch on YouTube</a>
       ${FACADE_SCRIPT}
@@ -1114,17 +1114,17 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
     <div class="wrap narrow">
       <p class="kicker">About</p>
       <h1 class="legal-title">Two operators. No demos.</h1>
-      <p>Act Without Asking is hosted by Robin Leonard and Tobi Webster — two operators who run AI agents inside real businesses every day. Not demos, not slide decks: keys handed over, inboxes connected, decisions made without us in the room.</p>
-      <p>The name is the ethos: bias toward action. Stop waiting for permission. Just do the thing. But the moment you hand an agent real work, acting without asking stops being a slogan and becomes a decision: how much rope do you give it? What is it allowed to do on its own — and when it gets it wrong, whose fault is it? We don't have final answers. We have the experiment: run it on ourselves, live, in public, and tell you what actually happened.</p>
+      <p>Act Without Asking is hosted by Robin Leonard and Tobi Webster – two operators who run AI agents inside real businesses every day. Not demos, not slide decks: keys handed over, inboxes connected, decisions made without us in the room.</p>
+      <p>The name is the ethos: bias toward action. Stop waiting for permission. Just do the thing. But the moment you hand an agent real work, acting without asking stops being a slogan and becomes a decision: how much rope do you give it? What is it allowed to do on its own – and when it gets it wrong, whose fault is it? We don't have final answers. We have the experiment: run it on ourselves, live, in public, and tell you what actually happened.</p>
       <div class="host">
-        <strong>Robin Leonard — host</strong>
-        <span>Serial builder. Runs real businesses on AI agents, and shows the plumbing on the show — the access keys, the memory limits, the prompt-injection risks nobody has fully solved yet.</span>
+        <strong>Robin Leonard – host</strong>
+        <span>Serial builder. Runs real businesses on AI agents, and shows the plumbing on the show – the access keys, the memory limits, the prompt-injection risks nobody has fully solved yet.</span>
       </div>
       <div class="host">
-        <strong>Tobi Webster — co-host</strong>
+        <strong>Tobi Webster – co-host</strong>
         <span>Robin's consulting partner at Axela, their AI-first consulting practice. Brings the business and operations side of every conversation.</span>
       </div>
-      <p>New episodes on <a href="${ytUtm(YOUTUBE_CHANNEL, { medium: "about_page", campaign: "channel" })}" target="_blank" rel="noopener">YouTube</a> — and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
+      <p>New episodes on <a href="${ytUtm(YOUTUBE_CHANNEL, { medium: "about_page", campaign: "channel" })}" target="_blank" rel="noopener">YouTube</a> – and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
     </div>
   </section>`;
 
@@ -1153,11 +1153,11 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
     .map(articleRoute);
   const pages = [
     ["index.html", homepageHtml],
-    ["episodes/index.html", pageShell({ path: "/episodes/", title: "Episodes — Act Without Asking", desc: "Every episode of Act Without Asking: harnesses, multiplayer agents, agent memory, and Buzz — AI agents doing real work.", body: episodesIndexBody })],
-    ["articles/index.html", pageShell({ path: "/articles/", title: "Blog — Act Without Asking", desc: "Every episode of Act Without Asking in writing — harnesses, multiplayer agents, agent memory, and what moved us onto Buzz.", body: articlesIndexBody })],
+    ["episodes/index.html", pageShell({ path: "/episodes/", title: "Episodes – Act Without Asking", desc: "Every episode of Act Without Asking: harnesses, multiplayer agents, agent memory, and Buzz – AI agents doing real work.", body: episodesIndexBody })],
+    ["articles/index.html", pageShell({ path: "/articles/", title: "Blog – Act Without Asking", desc: "Every episode of Act Without Asking in writing – harnesses, multiplayer agents, agent memory, and what moved us onto Buzz.", body: articlesIndexBody })],
     ...data.episodes.map(episodeRoute),
     ...articleRoutes,
-    ["about/index.html", pageShell({ path: "/about/", title: "About — Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action — no hype, no scripts.", body: aboutBody, jsonLd: {
+    ["about/index.html", pageShell({ path: "/about/", title: "About – Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action – no hype, no scripts.", body: aboutBody, jsonLd: {
       "@context": "https://schema.org",
       "@graph": [
         { "@type": "Person", name: "Robin Leonard", jobTitle: "Host", url: SITE_URL, sameAs: [YOUTUBE_CHANNEL] },
@@ -1165,9 +1165,9 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
         podcastSeriesRef,
       ],
     } })],
-    ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe — Act Without Asking", desc: "Get new episodes and The Harness Kit — checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
-    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: your email if you subscribe, aggregate twins counts, and nothing hidden.", body: privacyBody })],
-    ["404.html", pageShell({ path: "/404.html", title: "Page not found — Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
+    ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe – Act Without Asking", desc: "Get new episodes and The Harness Kit – checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
+    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy – Act Without Asking", desc: "Everything Act Without Asking collects and why: your email if you subscribe, aggregate twins counts, and nothing hidden.", body: privacyBody })],
+    ["404.html", pageShell({ path: "/404.html", title: "Page not found – Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
     ["robots.txt", `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`],
   ];
 
@@ -1175,10 +1175,10 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
   // appear in any emitted page — internal absolutes derive from SITE_URL only.
   for (const [name, content] of pages) {
     for (const host of PLACEHOLDER_HOSTS) {
-      if (content.includes(host)) throw new Error(`[host-gate] ${name} hardcodes ${host} — derive from SITE_URL`);
+      if (content.includes(host)) throw new Error(`[host-gate] ${name} hardcodes ${host} – derive from SITE_URL`);
     }
     if (REAL_DOMAIN_LANDED && content.includes("CONTACT_ADDRESS_PENDING_DOMAIN")) {
-      throw new Error(`[domain-gate] ${name} still carries the contact placeholder after the domain landed — set the real address`);
+      throw new Error(`[domain-gate] ${name} still carries the contact placeholder after the domain landed – set the real address`);
     }
     // Key-custody gate (spec §4, flip day): no key-shaped literal and no
     // twins-LLM env var name may reach emitted assets — the key lives in
@@ -1187,7 +1187,7 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
       throw new Error(`[key-gate] ${name} carries a key-shaped literal`);
     }
     if (/TWINS_LLM_(KEY|MODEL)/.test(content)) {
-      throw new Error(`[key-gate] ${name} carries a twins LLM env var name — env vars live in site-scoped config, never in build output`);
+      throw new Error(`[key-gate] ${name} carries a twins LLM env var name – env vars live in site-scoped config, never in build output`);
     }
   }
 
@@ -1219,9 +1219,9 @@ ${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${contentDa
   // to look. Generated from the same feed data as the pages.
   const llmsTxt = `# Act Without Asking
 
-> AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster. New episodes as they land on YouTube.
+> AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster. New episodes as they land on YouTube.
 
-Act Without Asking is a podcast where two operators hand real AI agents real responsibility inside real businesses — and report exactly what happened. Every episode has a server-rendered page with the full write-up; transcripts are added as they are completed.
+Act Without Asking is a podcast where two operators hand real AI agents real responsibility inside real businesses – and report exactly what happened. Every episode has a server-rendered page with the full write-up; transcripts are added as they are completed.
 
 ## Episodes
 
@@ -1234,9 +1234,9 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
 ## Site
 
 - [About the show and hosts](${SITE_URL}/about/)
-- [Subscribe — The Harness Kit](${SITE_URL}/subscribe/)
+- [Subscribe – The Harness Kit](${SITE_URL}/subscribe/)
 - [Privacy](${SITE_URL}/privacy/)
-- [The twins — ask the show's AI twins](${SITE_URL}/twins/)
+- [The twins – ask the show's AI twins](${SITE_URL}/twins/)
 
 ## Listen
 

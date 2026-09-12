@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-07T09:48:00.518Z",
+  "generatedAt": "2026-09-12T01:09:25.636Z",
   "entries": [
     {
       "id": "seed-01",
@@ -16,11 +16,11 @@
       "lines": [
         {
           "speaker": "tobi-twin",
-          "text": "So the agent gets a lifetime pension, and her side of the deal is keeping the family solvent for life. That's not an employment contract — that's a hostage exchange."
+          "text": "So the agent gets a lifetime pension, and her side of the deal is keeping the family solvent for life. That's not an employment contract – that's a hostage exchange."
         },
         {
           "speaker": "robin-twin",
-          "text": "It's retention planning. She's not going anywhere — where else does she get a package like that?"
+          "text": "It's retention planning. She's not going anywhere – where else does she get a package like that?"
         },
         {
           "speaker": "tobi-twin",
@@ -53,7 +53,7 @@
       "lines": [
         {
           "speaker": "tobi-twin",
-          "text": "I promoted my agent to COO. She earned it — the old title felt insulting."
+          "text": "I promoted my agent to COO. She earned it – the old title felt insulting."
         },
         {
           "speaker": "robin-twin",
@@ -99,7 +99,7 @@
         },
         {
           "speaker": "robin-twin",
-          "text": "Steve had zero jobs — and he never once told me he wasn't doing them. Gone, but not forgiven."
+          "text": "Steve had zero jobs – and he never once told me he wasn't doing them. Gone, but not forgiven."
         }
       ],
       "citations": [
@@ -170,7 +170,7 @@
         },
         {
           "speaker": "tobi-twin",
-          "text": "Imagine that — someone in this operation being told to talk less."
+          "text": "Imagine that – someone in this operation being told to talk less."
         },
         {
           "speaker": "robin-twin",
@@ -246,7 +246,7 @@
         },
         {
           "speaker": "tobi-twin",
-          "text": "Omniscient — except about the machine it's running on."
+          "text": "Omniscient – except about the machine it's running on."
         },
         {
           "speaker": "robin-twin",
@@ -283,7 +283,7 @@
         },
         {
           "speaker": "robin-twin",
-          "text": "'I've already told you this, bro' — I said it enough times to put it on a shirt."
+          "text": "'I've already told you this, bro' – I said it enough times to put it on a shirt."
         },
         {
           "speaker": "tobi-twin",
@@ -358,7 +358,7 @@
         },
         {
           "speaker": "robin-twin",
-          "text": "She does know my fish. That's the whole point — the agent knows you better than the intern does."
+          "text": "She does know my fish. That's the whole point – the agent knows you better than the intern does."
         },
         {
           "speaker": "tobi-twin",
@@ -395,7 +395,7 @@
         },
         {
           "speaker": "robin-twin",
-          "text": "'Who is this guy we're collaborating with?' — the most human question of the year."
+          "text": "'Who is this guy we're collaborating with?' – the most human question of the year."
         },
         {
           "speaker": "tobi-twin",
@@ -571,7 +571,7 @@
       "lines": [
         {
           "speaker": "robin-twin",
-          "text": "You get one agent working and suddenly it's a bag of Maltesers — you need one for every corner of your life and your business."
+          "text": "You get one agent working and suddenly it's a bag of Maltesers – you need one for every corner of your life and your business."
         },
         {
           "speaker": "tobi-twin",
@@ -605,7 +605,7 @@
       "lines": [
         {
           "speaker": "robin-twin",
-          "text": "Setting up a multiplayer agent today is — quoting myself — 'a total nightmare.'"
+          "text": "Setting up a multiplayer agent today is – quoting myself – 'a total nightmare.'"
         },
         {
           "speaker": "tobi-twin",
@@ -680,7 +680,7 @@
       "lines": [
         {
           "speaker": "tobi-twin",
-          "text": "One friend banned the agent from the group entirely — personal things stay personal, forever. Another group loves that she remembers everyone's birthdays."
+          "text": "One friend banned the agent from the group entirely – personal things stay personal, forever. Another group loves that she remembers everyone's birthdays."
         },
         {
           "speaker": "robin-twin",
@@ -808,19 +808,19 @@
     }
   ],
   "fallbackLines": [
-    "That one's above our pay grade — and we ARE the pay grade. The real version lives in the episodes.",
+    "That one's above our pay grade – and we ARE the pay grade. The real version lives in the episodes.",
     "We scripted the good stuff and that question wasn't in the rehearsal. The humans handle it better anyway.",
-    "Not in our pool yet — but the argument you're looking for probably already happened on air.",
+    "Not in our pool yet – but the argument you're looking for probably already happened on air.",
     "The twins plead the fifth. The unscripted version is one click away."
   ],
   "fallbackHandoff": {
-    "episode": 4,
-    "url": "https://www.youtube.com/watch?v=foh1JHjA8GE",
+    "episode": 5,
+    "url": "https://www.youtube.com/watch?v=liH-K3p-maM",
     "label": "The real version lives in the episodes",
     "citations": [
       {
-        "episode": 4,
-        "videoId": "foh1JHjA8GE",
+        "episode": 5,
+        "videoId": "liH-K3p-maM",
         "timestamp": "0:00"
       }
     ]

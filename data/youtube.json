@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-09-07T09:48:00.398Z",
+  "fetchedAt": "2026-09-12T01:09:25.589Z",
   "source": "live",
   "shortsSource": "playlist-feed",
   "episodes": [
@@ -34,9 +34,52 @@
       "url": "https://www.youtube.com/watch?v=foh1JHjA8GE",
       "thumbnail": "https://i.ytimg.com/vi/foh1JHjA8GE/hqdefault.jpg",
       "episodeNumber": 4
+    },
+    {
+      "videoId": "liH-K3p-maM",
+      "title": "Grok Bot | Episode 5",
+      "published": "2026-09-08T00:38:49+00:00",
+      "url": "https://www.youtube.com/watch?v=liH-K3p-maM",
+      "thumbnail": "https://i.ytimg.com/vi/liH-K3p-maM/hqdefault.jpg",
+      "episodeNumber": 5
     }
   ],
   "shorts": [
+    {
+      "videoId": "brSunmMwQeQ",
+      "title": "AI Like 'Her'? Meet Elara: The Future of Interaction #shorts",
+      "published": "2026-09-11T23:58:36+00:00",
+      "url": "https://www.youtube.com/shorts/brSunmMwQeQ",
+      "thumbnail": "https://i.ytimg.com/vi/brSunmMwQeQ/hqdefault.jpg"
+    },
+    {
+      "videoId": "zmcugbeblO0",
+      "title": "AI Agent: Who Am I? Personality Migration & Accountability Explained! #shorts",
+      "published": "2026-09-10T21:41:38+00:00",
+      "url": "https://www.youtube.com/shorts/zmcugbeblO0",
+      "thumbnail": "https://i.ytimg.com/vi/zmcugbeblO0/hqdefault.jpg"
+    },
+    {
+      "videoId": "y6hzKYHLvLk",
+      "title": "Stop Asking WHICH LLM! Be LLM Agnostic Now! #shorts",
+      "published": "2026-09-10T04:43:26+00:00",
+      "url": "https://www.youtube.com/shorts/y6hzKYHLvLk",
+      "thumbnail": "https://i.ytimg.com/vi/y6hzKYHLvLk/hqdefault.jpg"
+    },
+    {
+      "videoId": "LdaxO1G2Nlg",
+      "title": "AI: Hope, Fear, and the Ethical Tightrope We Walk #shorts",
+      "published": "2026-09-08T20:01:24+00:00",
+      "url": "https://www.youtube.com/shorts/LdaxO1G2Nlg",
+      "thumbnail": "https://i.ytimg.com/vi/LdaxO1G2Nlg/hqdefault.jpg"
+    },
+    {
+      "videoId": "xFFtnvHOJ6E",
+      "title": "AI Superpowers Your Workforce: Boost Revenue & Cut Costs! #shorts",
+      "published": "2026-09-07T21:39:18+00:00",
+      "url": "https://www.youtube.com/shorts/xFFtnvHOJ6E",
+      "thumbnail": "https://i.ytimg.com/vi/xFFtnvHOJ6E/hqdefault.jpg"
+    },
     {
       "videoId": "c3ITeShBXec",
       "title": "AI Tidal Wave: Clarity For Businesses Navigating the Future #shorts",

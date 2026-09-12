@@ -20,7 +20,7 @@ const AWA_TOKENS_CSS = readFileSync(path.join(ROOT, "assets", "brand", "awa-toke
 const THEME_INIT_JS = readFileSync(path.join(ROOT, "assets", "brand", "awa-theme-init.js"), "utf8").trim();
 const THEME_CONTROLS_JS = readFileSync(path.join(ROOT, "assets", "brand", "awa-theme-controls.js"), "utf8").trim();
 
-// Fact gate — binding named bans from the spec + Vera's final verdicts.
+// Fact gate – binding named bans from the spec + Vera's final verdicts.
 const BANNED = [
   "31%", "4.3%", "2.53", // org-chart stats; unsourced returns figure
   "australia has recently changed", "director liability", // Ep 1 law claim: UNVERIFIED
@@ -51,8 +51,8 @@ const ASK_STYLES = `
 .twins-hidden{display:none}
 @media (prefers-reduced-motion: reduce){.twins-ask *{transition:none!important;animation:none!important}}
 /* Desktop: floating pill as built.
-   Mobile (≤640px — Jane ruling 5 Sep, Kate's design, within Oksana's seam):
-   COLLAPSED the widget is a docked bar above the subscribe bar — one ticker
+   Mobile (≤640px – Jane ruling 5 Sep, Kate's design, within Oksana's seam):
+   COLLAPSED the widget is a docked bar above the subscribe bar – one ticker
    line, always visible on the pages where the widget is present (homepage;
    /twins has the full ask surface). The dock's height is
    RESERVED on <body> by the script (same pattern as the subscribe bar's own
@@ -97,7 +97,7 @@ const ASK_SCRIPT = `
           log.appendChild(h);
         }
       })
-      .catch(function(){err.textContent="The twins lost the thread for a second. Try again — or watch the real thing.";err.hidden=false;})
+      .catch(function(){err.textContent="The twins lost the thread for a second. Try again – or watch the real thing.";err.hidden=false;})
       .finally(function(){busy=false;go.disabled=false;log.scrollTop=log.scrollHeight;});
     }
     go.addEventListener("click",ask);
@@ -126,7 +126,7 @@ const ASK_SCRIPT = `
   var docked=window.matchMedia("(max-width: 640px)");
   bar.addEventListener("click",function(){setOpen(!card.classList.contains("twins-open"));});
   bar.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(!card.classList.contains("twins-open"));}});
-  // Yoshi gate #2 (5 Sep): Escape closes the open panel — keyboard close,
+  // Yoshi gate #2 (5 Sep): Escape closes the open panel – keyboard close,
   // not just tap. Listener on document so Escape works from input focus too;
   // scoped to this widget only.
   document.addEventListener("keydown",function(e){
@@ -148,7 +148,7 @@ const ASK_SCRIPT = `
     var barEl=document.querySelector(".subscribe-bar");
     widgetEl.style.bottom=barEl?(barEl.offsetHeight+14)+"px":"";
     // Reserve the dock's height on <body> (Jane ruling 5 Sep): the docked
-    // collapsed bar occupies real space at the page end — never overlays
+    // collapsed bar occupies real space at the page end – never overlays
     // end-of-page content.
     if(docked.matches && !widgetEl.classList.contains("twins-undocked")){
       var base=barEl?(barEl.offsetHeight+14):0;
@@ -164,7 +164,7 @@ const ASK_SCRIPT = `
 
 function askRootMarkup() {
   return `<div class="twins-ask">
-  <span class="twins-tag">AI twins — may be wrong</span>
+  <span class="twins-tag">AI twins – may be wrong</span>
   <div class="twins-log" aria-live="polite"></div>
   <div class="twins-row">
     <input class="twins-input" maxlength="280" placeholder="Ask the twins…" aria-label="Ask the twins">
@@ -197,15 +197,15 @@ export function buildWidget(pool) {
 }
 
 export async function buildTwins(data, siteUrl) {
-  if (!siteUrl) throw new Error("[twins-gate] buildTwins requires SITE_URL — canonical must derive from the one domain constant, never a hardcoded host");
+  if (!siteUrl) throw new Error("[twins-gate] buildTwins requires SITE_URL – canonical must derive from the one domain constant, never a hardcoded host");
   const pool = JSON.parse(await readFile(path.join(ROOT, "data", "twins", "pool.json"), "utf8"));
   const episodes = new Map(data.episodes.map((e) => [e.episodeNumber, e]));
   const fail = (msg) => {
     throw new Error(`[twins-gate] ${msg}`);
   };
 
-  // Name gate (spec §4.5) — entry content only; pool.notes may document the correction.
-  if (/toby/i.test(JSON.stringify(pool.entries))) fail('"Toby" found in pool entries — spec gate 5 requires "Tobi" everywhere');
+  // Name gate (spec §4.5) – entry content only; pool.notes may document the correction.
+  if (/toby/i.test(JSON.stringify(pool.entries))) fail('"Toby" found in pool entries – spec gate 5 requires "Tobi" everywhere');
 
   // Fact gate (spec §4.2)
   const poolText = JSON.stringify(pool.entries).toLowerCase();
@@ -216,7 +216,7 @@ export async function buildTwins(data, siteUrl) {
   const out = [];
   for (const e of pool.entries) {
     if (!e.id || !Array.isArray(e.lines) || !e.lines.length) fail(`${e.id || "(no id)"}: malformed entry`);
-    if (e.lines.length > 3) fail(`${e.id}: ${e.lines.length} lines — spec caps exchanges at 3`);
+    if (e.lines.length > 3) fail(`${e.id}: ${e.lines.length} lines – spec caps exchanges at 3`);
     for (const l of e.lines) {
       if (!["robin-twin", "tobi-twin"].includes(l.speaker)) fail(`${e.id}: bad speaker "${l.speaker}"`);
       if (typeof l.text !== "string" || !l.text.trim()) fail(`${e.id}: empty line`);
@@ -232,7 +232,7 @@ export async function buildTwins(data, siteUrl) {
     }
     const ref = episodes.get(e.episodeRef && e.episodeRef.episode);
     if (!ref || !ref.url || !ref.videoId) {
-      fail(`entry ${e.id} references episode ${e.episodeRef && e.episodeRef.episode} — not a published episode in data/youtube.json (handoff gate)`);
+      fail(`entry ${e.id} references episode ${e.episodeRef && e.episodeRef.episode} – not a published episode in data/youtube.json (handoff gate)`);
     }
     out.push({
       id: e.id,
@@ -275,7 +275,7 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
       const href = `${e.handoff.url}&utm_source=awa_site&utm_medium=twins&utm_campaign=archive&utm_content=${e.id}`;
       return `<article class="t-card">
       ${lines}
-      <a class="t-link" href="${href}" target="_blank" rel="noopener">Episode ${e.handoff.episode}${cite && cite.timestamp ? " · " + cite.timestamp : ""} — ${e.handoff.label}</a>
+      <a class="t-link" href="${href}" target="_blank" rel="noopener">Episode ${e.handoff.episode}${cite && cite.timestamp ? " · " + cite.timestamp : ""} – ${e.handoff.label}</a>
     </article>`;
     })
     .join("\n");
@@ -286,14 +286,14 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
 <meta charset="utf-8">
 <link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The twins — Act Without Asking</title>
-<meta name="description" content="AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
-<meta property="og:title" content="The twins — Act Without Asking">
-<meta property="og:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<title>The twins – Act Without Asking</title>
+<meta name="description" content="AI twins built from the show's best arguments. Ask them anything – they may be wrong, and they always hand you the episode where it really happened.">
+<meta property="og:title" content="The twins – Act Without Asking">
+<meta property="og:description" content="Two AI twins built from the show's arguments. They may be wrong – and they always hand you the episode.">
 <meta property="og:image" content="${ogImage}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The twins — Act Without Asking">
-<meta name="twitter:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<meta name="twitter:title" content="The twins – Act Without Asking">
+<meta name="twitter:description" content="Two AI twins built from the show's arguments. They may be wrong – and they always hand you the episode.">
 <meta name="twitter:image" content="${ogImage}">
 <link rel="canonical" href="${siteUrl}/twins/">
 <meta property="og:url" content="${siteUrl}/twins/">
@@ -320,11 +320,11 @@ h2{font-size:20px;margin:32px 0 12px}
   <p class="kicker">Act Without Asking</p>
   <h1>The twins</h1>
   <p class="dek">Two AI twins, built from the show's own arguments. Robin-twin is dry and opinionated. Tobi-twin starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
-  <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode — that link is the product.</p>
+  <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode – that link is the product.</p>
   <section class="t-ask">
     <h2>Ask the twins</h2>
     ${askRootMarkup()}
-    <p class="t-note">Answers are drafted with the help of an AI service —
+    <p class="t-note">Answers are drafted with the help of an AI service –
     grounded in the show, with the episode cited. No question text is stored
     on our side; see the <a href="/privacy/">privacy page</a> for exactly
     what happens to your question.</p>
@@ -333,7 +333,7 @@ h2{font-size:20px;margin:32px 0 12px}
     <h2>Best exchanges</h2>
     ${cards}
   </section>
-  <p class="t-foot">Act Without Asking — a show from Axela, hosted by Robin Leonard with Tobi Webster.</p>
+  <p class="t-foot">Act Without Asking – a show from Axela, hosted by Robin Leonard with Tobi Webster.</p>
 </main>
 ${widgetMarkup}
 <script defer>${THEME_CONTROLS_JS}</script>
