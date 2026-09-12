@@ -65,7 +65,7 @@ function listenOnBlock({ compact = false } = {}) {
 // ONE domain constant (Oksana arch v1 §2). Every absolute internal URL —
 // canonical, sitemap, JSON-LD, OG — derives from SITE_URL. Domain switch =
 // change this one line + rebuild + 301 map at the host.
-const SITE_URL = "https://awa-website.netlify.app"; // interim host until the real domain lands
+const SITE_URL = "https://actwithoutasking.com"; // real domain live 12 Sep 2026 — verified serving 200
 // Hardcoded-host gate: hosts that must NEVER appear in emitted HTML except via
 // SITE_URL. "actwithoutasking.com" is the expected real domain — if it shows up
 // before the switch, someone hardcoded it; after the switch it IS SITE_URL and
@@ -766,7 +766,7 @@ ${MOTION_TILT_JS}
       <p class="updated">Last updated: 4 September 2026.</p>
 
       <h3>Who we are</h3>
-      <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request — access, correction, or deletion of your data — email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
+      <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request — access, correction, or deletion of your data — email <code>privacy@actwithoutasking.com</code>. A human reads it.</p>
 
       <h3>The email list</h3>
       <p>When you subscribe, we collect your email address. That's it — no name required, no other fields.</p>
