@@ -192,7 +192,7 @@ const SITE_CSS = `
   .short-facade:hover .facade-play,.ep-facade:hover .facade-play{transform:translate(-50%,-50%) scale(1.06)}
   .short-facade .facade-play{width:40px;height:40px;box-shadow:0 0 0 4px rgba(200,255,61,.18)}
   .short-facade .facade-play svg{width:16px;height:16px}
-  .short-video iframe,.ep-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .featured iframe,.short-video iframe,.ep-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .short-yt{display:block;padding:0 10px 12px;font-size:11px;color:var(--muted);text-decoration:none}
   .short-yt:hover{color:var(--lime);text-decoration:underline}
   .short-title{font-size:12px;padding:10px 10px 2px;color:var(--ink)}
