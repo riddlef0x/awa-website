@@ -1,7 +1,8 @@
 // Renders dist/index.html from data/youtube.json + the article drafts below.
 // Static output only — no client-side fetch to any third party (Oksana ruling,
 // AWA channel, 30 Aug 2026: build-time static, not a runtime dependency).
-import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile, readdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { buildTwins } from "./build-twins.mjs";
 import { writeRetrievalIndex } from "./build-retrieval.mjs";
 import { EPISODE_TRANSCRIPTS } from "./episode-transcripts.mjs";
@@ -12,13 +13,116 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const DIST = path.join(ROOT, "dist");
 
-const NAVY = "#0A1628";
-const NAVY_2 = "#111A2E";
-const NAVY_CARD = "#131E33";
-const LINE = "#22304A";
-const LIME = "#C8FF3D";
-const INK = "#F4F7FB";
-const MUTED = "#9AA7BA";
+// Redesign 1.1 (spec of record v1.0.6, §3): token source of record = the
+// Robin-gated handoff package foundations, read verbatim at build time from
+// assets/brand/awa-tokens.css (zip sha256 23b9ff94…a359, byte-exact with the
+// stamped amended zip). NO hex literals outside that token block survive into
+// dist (retired-palette census, PLANS/AWA_RETIRED_PALETTE_CENSUS.sh — the old
+// NAVY/LIME/INK constants and chevronMark() are retired).
+const AWA_TOKENS_CSS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-tokens.css");
+const AWA_LAYOUT_CSS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-website-layout.css");
+const THEME_INIT_JS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-theme-init.js");
+const THEME_CONTROLS_JS_PATH = path.join(__dirname, "..", "assets", "brand", "awa-theme-controls.js");
+
+// Package bytes, verbatim. ONE named delta per spec §3.7 (WP07): the @font-face
+// src converts TTF→WOFF2 (self-hosted woff2, ≤160KB budget, license files kept
+// in fonts/). Token VALUES untouched.
+const AWA_TOKENS_CSS = readFileSync(AWA_TOKENS_CSS_PATH, "utf8")
+  .replace(/url\("\.\.\/fonts\/([^"]+)\.ttf"\) format\("truetype"\)/g, 'url("/fonts/$1.woff2") format("woff2")');
+const AWA_LAYOUT_CSS = readFileSync(AWA_LAYOUT_CSS_PATH, "utf8");
+const THEME_INIT_JS = readFileSync(THEME_INIT_JS_PATH, "utf8").trim();
+const THEME_CONTROLS_JS = readFileSync(THEME_CONTROLS_JS_PATH, "utf8").trim();
+
+// Redesign 1.1 shell (spec §4, blueprint p11): skip link, nav, Light/Dark picker,
+// mobile menu panel (Close, Escape, focus return, aria-expanded honest).
+const THEME_PICKER = `
+      <div class="awa-theme-picker" role="group" aria-label="Colour theme">
+        <button type="button" data-awa-theme-option="light" aria-pressed="true">Light</button>
+        <button type="button" data-awa-theme-option="dark" aria-pressed="false">Dark</button>
+      </div>`;
+
+const MENU_JS = `
+<script>
+(function () {
+  var trigger = document.querySelector("[data-menu-trigger]");
+  var panel = document.getElementById("awa-menu");
+  if (!trigger || !panel) return;
+  function set(open) {
+    trigger.setAttribute("aria-expanded", String(open));
+    panel.dataset.open = String(open);
+  }
+  trigger.addEventListener("click", function () {
+    set(trigger.getAttribute("aria-expanded") !== "true");
+    if (trigger.getAttribute("aria-expanded") === "true") {
+      var close = panel.querySelector("[data-menu-close]");
+      if (close) close.focus();
+    }
+  });
+  var closer = panel.querySelector("[data-menu-close]");
+  if (closer) closer.addEventListener("click", function () {
+    set(false); trigger.focus();
+  });
+  panel.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { set(false); trigger.focus(); }
+  });
+})();
+</script>`;
+
+const SKIP_LINK = `<a class="awa-skip" href="#main">Skip to content</a>`;
+
+function awaHeader({ active = "" } = {}) {
+  return `
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="Act Without Asking – home">${awaLogo()}</a>
+    <button class="menu-btn" type="button" data-menu-trigger aria-expanded="false" aria-controls="awa-menu">Menu</button>
+    <nav class="nav-links" aria-label="Main">
+      <a class="cta-btn ghost" href="/episodes/">Episodes</a>
+      <a class="cta-btn ghost" href="/articles/">Field notes</a>
+      <a class="cta-btn ghost" href="/twins/">The Twins</a>
+      <a class="cta-btn ghost" href="/about/">About</a>
+    </nav>
+    <div class="nav-end">
+      ${THEME_PICKER}
+      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}
+    </div>
+  </div>
+  <div class="awa-menu" id="awa-menu" data-open="false">
+    <div class="wrap awa-menu-inner">
+      <div class="awa-menu-head">
+        <span class="awa-menu-title">Menu</span>
+        <button class="menu-btn" type="button" data-menu-close>Close</button>
+      </div>
+      <nav class="awa-menu-links" aria-label="Mobile">
+        <a href="/episodes/">Episodes</a>
+        <a href="/articles/">Field notes</a>
+        <a href="/twins/">The Twins</a>
+        <a href="/about/">About</a>
+        <a href="/subscribe/">Subscribe</a>
+      </nav>
+      <div class="awa-menu-theme">
+        <span class="awa-menu-label">Theme</span>
+        ${THEME_PICKER}
+      </div>
+    </div>
+  </div>
+</header>`;
+}
+
+function awaFooter() {
+  return `
+<footer>
+  <div class="wrap foot">
+    <div class="foot-links">
+      <a href="${YOUTUBE_CHANNEL}" target="_blank" rel="noopener">YouTube</a>
+      <a href="/episodes/">Episodes</a>
+      <a href="/articles/">Field notes</a>
+      <a href="/privacy/">Privacy</a>
+    </div>
+    <span class="foot-copy">© 2026 Act Without Asking · A show from Axela</span>
+  </div>
+</footer>`;
+}
 
 // LinkedIn company page URL — pending from Stephanie (Jenny flagged this 30 Aug).
 // Placeholder only. Grep for LINKEDIN_URL_PENDING before treating any build as final.
@@ -95,19 +199,23 @@ const escapeHtml = (s) =>
 const jsonLdSafe = (o) => JSON.stringify(o, null, 2).replace(/</g, "\\u003c");
 
 const SITE_CSS = `
+${AWA_TOKENS_CSS}
+  /* Redesign 1.1: legacy var names aliased onto the DS 1.1 token block —
+     no hex outside the token block (spec §2.2b). Page-family styles keep the
+     old names until the pages pass renames them. */
   :root{
-    --navy:#0A1628; --navy2:#111A2E; --lime:#C8FF3D; --ink:#F4F7FB;
-    --muted:#9AA7BA; --card:#131E33; --line:#22304A;
+    --navy:var(--awa-bg); --navy2:var(--awa-raised); --lime:var(--awa-action); --ink:var(--awa-text);
+    --muted:var(--awa-control); --card:var(--awa-surface); --line:var(--awa-divider);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
   @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
-  a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--lime);outline-offset:2px;border-radius:2px}
-  .strip a:focus-visible{outline-color:var(--navy)}
-  body{background:var(--navy);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:var(--lime)}
+  a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--awa-focus);outline-offset:3px;border-radius:2px}
+  .strip a:focus-visible{outline-color:var(--awa-onAction)}
+  body{background:var(--navy);color:var(--ink);font-family:var(--awa-font-body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--awa-accent)}
   .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
-  header{position:sticky;top:0;background:rgba(10,22,40,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
+  header{position:sticky;top:0;background:color-mix(in srgb, var(--awa-bg) 92%, transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
   .nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:.02em}
   .nav-ctas{display:flex;gap:10px;flex-wrap:wrap}
@@ -117,7 +225,7 @@ const SITE_CSS = `
   .cta-btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
   .cta-btn.ghost:hover{border-color:var(--lime);color:var(--lime)}
   .cta-btn[data-pending]{opacity:.55;cursor:not-allowed}
-  .hero{padding:96px 0 64px;text-align:center;background:radial-gradient(600px 300px at 50% -50px, rgba(200,255,61,.10), transparent 70%),linear-gradient(180deg, var(--navy2), var(--navy));position:relative;overflow:hidden}
+  .hero{padding:96px 0 64px;text-align:center;background:radial-gradient(600px 300px at 50% -50px, color-mix(in srgb, var(--awa-action) 10%, transparent), transparent 70%),linear-gradient(180deg, var(--navy2), var(--navy));position:relative;overflow:hidden}
   .hero .kicker{color:var(--lime);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.18em;font-family:'JetBrains Mono',monospace}
   .hero h1{font-size:clamp(40px,7vw,84px);line-height:1.02;letter-spacing:-.02em;margin:20px 0;font-weight:700}
   .hero .sub{color:var(--muted);max-width:600px;margin:0 auto 28px;font-size:18px}
@@ -130,13 +238,13 @@ const SITE_CSS = `
   .featured-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--navy2);cursor:pointer;overflow:hidden;display:block}
   .featured-facade img{width:100%;height:100%;object-fit:cover;display:block;opacity:.55;transition:opacity .15s ease}
   .featured-facade:hover img{opacity:.75}
-  .featured-facade::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,22,40,.05),rgba(10,22,40,.65))}
+  .featured-facade::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb, var(--awa-midnight) 5%, transparent),color-mix(in srgb, var(--awa-midnight) 65%, transparent))}
   .featured-label{position:absolute;left:16px;right:64px;bottom:12px;z-index:2;color:var(--ink);font-size:14px;font-weight:600;text-align:left;line-height:1.35}
   .featured-label .ep-num{display:block;margin-bottom:2px}
-  .featured-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:64px;height:64px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(200,255,61,.18);transition:transform .15s ease}
+  .featured-play{color:var(--awa-onAction);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:64px;height:64px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px color-mix(in srgb, var(--awa-action) 18%, transparent);transition:transform .15s ease}
   .featured-facade:hover .featured-play{transform:translate(-50%,-50%) scale(1.06)}
   .featured-facade .featured-play svg{margin-left:3px}
-  .hero .byline{margin-top:20px;color:#8B97AB;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
+  .hero .byline{margin-top:20px;color:var(--awa-control);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.02em}
   section{padding:72px 0}
   .kicker{color:var(--lime);font-weight:700;text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;text-align:center}
   h2{font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;margin-bottom:8px;text-align:center;font-weight:600}
@@ -149,7 +257,7 @@ const SITE_CSS = `
      prefers-reduced-motion kill switch above disables every rule here;
      the tilt script also self-guards (pointer:fine + reduced-motion). ---- */
   .hero-motes{position:absolute;inset:0;pointer-events:none}
-  .hero-motes i{position:absolute;bottom:-8px;width:3px;height:3px;border-radius:50%;background:rgba(200,255,61,.35);opacity:0;animation:moteDrift 9s linear infinite;will-change:transform,opacity}
+  .hero-motes i{position:absolute;bottom:-8px;width:3px;height:3px;border-radius:50%;background:color-mix(in srgb, var(--awa-action) 35%, transparent);opacity:0;animation:moteDrift 9s linear infinite;will-change:transform,opacity}
   .hero-motes i:nth-child(1){left:5%;animation-duration:11s;animation-delay:0s}
   .hero-motes i:nth-child(2){left:13%;animation-duration:13s;animation-delay:2.1s}
   .hero-motes i:nth-child(3){left:22%;animation-duration:9s;animation-delay:4.4s}
@@ -187,12 +295,12 @@ const SITE_CSS = `
   .short-video{position:relative;aspect-ratio:9/16;background:var(--navy2)}
   .short-facade{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:var(--navy2);cursor:pointer;display:block}
   .short-facade img{width:100%;height:100%;object-fit:cover;display:block}
-  .facade-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:52px;height:52px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(200,255,61,.18);transition:transform .15s ease}
+  .facade-play{color:var(--awa-onAction);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:52px;height:52px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px color-mix(in srgb, var(--awa-action) 18%, transparent);transition:transform .15s ease}
   .facade-play svg{margin-left:3px}
   .short-facade:hover .facade-play,.ep-facade:hover .facade-play{transform:translate(-50%,-50%) scale(1.06)}
-  .short-facade .facade-play{width:40px;height:40px;box-shadow:0 0 0 4px rgba(200,255,61,.18)}
+  .short-facade .facade-play{width:40px;height:40px;box-shadow:0 0 0 4px color-mix(in srgb, var(--awa-action) 18%, transparent)}
   .short-facade .facade-play svg{width:16px;height:16px}
-  .featured iframe,.short-video iframe,.ep-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .short-video iframe,.ep-player iframe,.featured iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .short-yt{display:block;padding:0 10px 12px;font-size:11px;color:var(--muted);text-decoration:none}
   .short-yt:hover{color:var(--lime);text-decoration:underline}
   .short-title{font-size:12px;padding:10px 10px 2px;color:var(--ink)}
@@ -203,7 +311,7 @@ const SITE_CSS = `
   .article-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
   .article h3{font-size:22px;margin:6px 0 8px;line-height:1.3}
   .article-dek{color:var(--muted);font-size:15px;margin-bottom:16px}
-  .article p{margin-bottom:14px;font-size:15px;color:#D6DCE8}
+  .article p{margin-bottom:14px;font-size:15px;color:var(--awa-secondary)}
   .article-watch{display:inline-block;margin-top:6px;font-weight:600;font-size:14px}
   .article h3 a.article-title-link{color:inherit;text-decoration:none}
   .article h3 a.article-title-link:hover{color:var(--lime)}
@@ -221,23 +329,48 @@ const SITE_CSS = `
   .listen-on .cta-btn{font-size:13px;padding:8px 16px}
   footer .listen-on{justify-content:flex-start;margin-top:12px}
   .start-here{color:var(--muted);font-size:15px;margin-top:12px}
-  .start-here a{color:var(--lime)}
+  .start-here a{color:var(--awa-accent)}
   footer{border-top:1px solid var(--line);padding:32px 0;color:var(--muted);font-size:13px}
   footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
   footer .foot-ctas{display:flex;gap:10px}
-  .subscribe-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,22,40,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
-  .sb-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;flex-wrap:wrap}
-  .sb-inner span{color:var(--muted);font-size:13px}
-  .sb-actions{display:flex;gap:10px;flex-wrap:wrap}
-  .sb-btn{display:inline-block;background:var(--lime);color:var(--navy);font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
-  .sb-btn:hover{filter:brightness(1.08)}
-  .sb-ghost{display:inline-block;background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:700;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;white-space:nowrap}
-  .sb-ghost:hover{border-color:var(--lime);color:var(--lime)}
-  body{padding-bottom:58px}
+  /* Redesign 1.1: fixed subscribe-bar retired (blueprint) — body padding with it. */
   @media (max-width:820px){
     .hero{padding:72px 0 48px}
     .nav{height:auto;padding:12px 0}
   }
+
+  /* ---- Redesign 1.1 shared shell (spec §4, blueprint pp. 3, 11) ---- */
+  .brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+  .brand img{display:block;height:26px;width:auto}
+  .brand .awa-logo-dark{display:none}
+  [data-awa-theme="dark"] .brand .awa-logo-light{display:none}
+  [data-awa-theme="dark"] .brand .awa-logo-dark{display:block}
+  .nav-links{display:flex;gap:10px;flex-wrap:wrap}
+  .nav-end{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .menu-btn{display:none;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:8px 14px;border:1px solid var(--awa-divider);border-radius:6px;background:var(--awa-surface);color:var(--awa-text);font:700 14px/20px var(--awa-font-body);cursor:pointer}
+  .awa-menu{display:none}
+  .awa-menu[data-open="true"]{display:block;position:fixed;inset:0;z-index:60;background:var(--awa-bg);overflow:auto}
+  .awa-menu-inner{display:grid;gap:20px;padding:16px 20px 32px}
+  .awa-menu-head{display:flex;align-items:center;justify-content:space-between}
+  .awa-menu-title{font:700 18px/24px var(--awa-font-display);color:var(--awa-text)}
+  .awa-menu-head .menu-btn{display:inline-flex}
+  .awa-menu-links{display:grid}
+  .awa-menu-links a{font:700 24px/1.3 var(--awa-font-display);color:var(--awa-text);text-decoration:none;padding:14px 0;border-bottom:1px solid var(--awa-divider)}
+  .awa-menu-theme{display:grid;gap:8px}
+  .awa-menu-label{font:400 12px/16px var(--awa-font-meta);letter-spacing:.04em;color:var(--awa-accent)}
+  @media (max-width:900px){
+    .nav-links,.nav-end{display:none}
+    .menu-btn{display:inline-flex}
+    .nav{height:64px}
+  }
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:28px 0;flex-wrap:wrap;border-top:1px solid var(--awa-divider)}
+  .foot-links{display:flex;gap:18px;flex-wrap:wrap}
+  .foot-links a{color:var(--awa-text);text-decoration:none;font:600 14px/20px var(--awa-font-body)}
+  .foot-links a:hover{color:var(--awa-accent);text-decoration:underline;text-underline-offset:4px}
+  .foot-copy{color:var(--awa-secondary);font:400 13px/18px var(--awa-font-meta)}
+  .awa-skip{position:absolute;left:-9999px;top:0;z-index:100;background:var(--awa-action);color:var(--awa-onAction);padding:10px 16px;font:700 14px/20px var(--awa-font-body);text-decoration:none;border-radius:0 0 6px 0}
+  .awa-skip:focus{left:0}
+${AWA_LAYOUT_CSS}
 `;
 
 // One article per published episode. Verified facts only, sourced from episode
@@ -249,46 +382,46 @@ const ARTICLES = [
   {
     episodeNumber: 1,
     slug: "ai-harness-over-model",
-    title: "What is an AI harness — and why does it matter more than picking a model?",
+    title: "What is an AI harness – and why does it matter more than picking a model?",
     dek: "Robin Leonard and Tobi Webster open Act Without Asking on the shift companies keep missing.",
     body: [
-      "Every AI conversation right now starts with the model. Robin and Tobi's opening argument is that the model is the least interesting decision left to make — it's a commodity, and everyone has access to the same handful of frontier options. The decision that actually determines whether AI does anything useful inside a business is the harness: the scaffolding that connects a model to your data, your tools, and the permission to act.",
-      "The episode traces the shift from \"AI-enabled\" (a chatbot bolted onto existing workflows) to \"AI-native\" (a business rebuilt around agents that can actually do the work). That distinction sets up the rest of the show — later episodes about multiplayer agents and agent memory both build on the harness idea introduced here.",
-      "They also get into cloud vs on-prem hosting and data sovereignty — questions Robin and Tobi argue every director should already be asking before an agent touches customer data, not after.",
+      "Every AI conversation right now starts with the model. Robin and Tobi's opening argument is that the model is the least interesting decision left to make – it's a commodity, and everyone has access to the same handful of frontier options. The decision that actually determines whether AI does anything useful inside a business is the harness: the scaffolding that connects a model to your data, your tools, and the permission to act.",
+      "The episode traces the shift from \"AI-enabled\" (a chatbot bolted onto existing workflows) to \"AI-native\" (a business rebuilt around agents that can actually do the work). That distinction sets up the rest of the show – later episodes about multiplayer agents and agent memory both build on the harness idea introduced here.",
+      "They also get into cloud vs on-prem hosting and data sovereignty – questions Robin and Tobi argue every director should already be asking before an agent touches customer data, not after.",
     ],
   },
   {
     episodeNumber: 2,
     slug: "multiplayer-agents",
     title: "Multiplayer agents: what changes when AI works as a teammate, not a chat window",
-    dek: "One agent answering questions is a demo. A team of named agents working alongside you — and your colleagues — is a different operating model.",
+    dek: "One agent answering questions is a demo. A team of named agents working alongside you – and your colleagues – is a different operating model.",
     body: [
-      "\"The LLM models, they're a commodity. Everyone's got access to them. No one has more access than anyone else right now. The actual moat is having the harness work with the intelligence APIs.\" That's the frame Robin opens with, and it's the thread that runs through the whole episode: multiplayer agents aren't a bigger chatbot, they're agents with names, profiles, and tasks, living inside the same WhatsApp, Slack, or Teams thread your team already uses — talking to your colleagues, not just to you.",
-      "Tobi and Robin also dig into who can actually afford to take that risk. Their read: small, nimble companies have a real advantage here — a \"David and Goliath\" dynamic where larger, more risk-averse organisations move slower precisely because they have more to protect. Solopreneurs and SMBs can install, test, and iterate on multiplayer agent platforms in a way most enterprise teams can't yet.",
-      "It's an early, honest look at where the two hosts see this heading — closer to something like a genuinely present digital teammate than the clunky first-generation version most people are using today.",
+      "\"The LLM models, they're a commodity. Everyone's got access to them. No one has more access than anyone else right now. The actual moat is having the harness work with the intelligence APIs.\" That's the frame Robin opens with, and it's the thread that runs through the whole episode: multiplayer agents aren't a bigger chatbot, they're agents with names, profiles, and tasks, living inside the same WhatsApp, Slack, or Teams thread your team already uses – talking to your colleagues, not just to you.",
+      "Tobi and Robin also dig into who can actually afford to take that risk. Their read: small, nimble companies have a real advantage here – a \"David and Goliath\" dynamic where larger, more risk-averse organisations move slower precisely because they have more to protect. Solopreneurs and SMBs can install, test, and iterate on multiplayer agent platforms in a way most enterprise teams can't yet.",
+      "It's an early, honest look at where the two hosts see this heading – closer to something like a genuinely present digital teammate than the clunky first-generation version most people are using today.",
     ],
   },
   {
     episodeNumber: 3,
     slug: "agent-memory",
     title: "The Brain: what happens when an agent runs out of memory",
-    dek: "Robin's own agent started producing garbled output when it hit a hard memory limit — this episode is the story of building it a real memory system.",
+    dek: "Robin's own agent started producing garbled output when it hit a hard memory limit – this episode is the story of building it a real memory system.",
     body: [
-      "This episode opens somewhere unexpected — Robin's trip to a blockchain and AI conference in Manila, and a discussion of how differently AI adoption is moving across the US, Europe, Asia, and Australia — before landing on its real subject: what it actually takes to give an AI agent a working memory.",
-      "The story: Robin's own Hermes-based agent hit a hard 2,000-character limit on its persistent memory and started producing garbled text. The fix he walks through on the show is a proper memory architecture — a vector-database \"world model,\" a wiki-style knowledge base, and a nightly processing job (he calls it \"REM sleep\") that consolidates what the agent learned that day. On top of that sits a four-tier classification for what the agent is allowed to remember, from public information through to strictly personal.",
-      "It's a rare look at the unglamorous infrastructure problem behind every AI agent that seems to \"know\" you — memory doesn't happen for free, and this episode is the most concrete build-log the show has done so far.",
+      "This episode opens somewhere unexpected – Robin's trip to a blockchain and AI conference in Manila, and a discussion of how differently AI adoption is moving across the US, Europe, Asia, and Australia – before landing on its real subject: what it actually takes to give an AI agent a working memory.",
+      "The story: Robin's own Hermes-based agent hit a hard 2,000-character limit on its persistent memory and started producing garbled text. The fix he walks through on the show is a proper memory architecture – a vector-database \"world model,\" a wiki-style knowledge base, and a nightly processing job (he calls it \"REM sleep\") that consolidates what the agent learned that day. On top of that sits a four-tier classification for what the agent is allowed to remember, from public information through to strictly personal.",
+      "It's a rare look at the unglamorous infrastructure problem behind every AI agent that seems to \"know\" you – memory doesn't happen for free, and this episode is the most concrete build-log the show has done so far.",
     ],
   },
   {
     episodeNumber: 4,
     slug: "we-moved-onto-buzz",
     title: "We moved our business onto Buzz. Here's what actually happened.",
-    dek: "Jack Dorsey's Block launched an agent-native chat platform for teams of people and agents. Robin and Tobi run their real company on it — and talk about what that's actually like.",
+    dek: "Jack Dorsey's Block launched an agent-native chat platform for teams of people and agents. Robin and Tobi run their real company on it – and talk about what that's actually like.",
     body: [
-      "Block launched Buzz on 21 July 2026 — an open-source, Nostr-based group chat platform built, in Dorsey's own words, \"for teams of people and agents of all sizes.\" Robin and Tobi didn't just review it — they moved their own business onto it, and this episode is the honest account of what that took. <a href=\"https://block.xyz/inside/introducing-buzz-where-humans-and-agents-work-together\" target=\"_blank\" rel=\"noopener\">Source: Block's launch announcement, 21 July 2026</a>.",
-      "The setup pain is real and specific: keys, environment variables, access control — the unglamorous plumbing that comes before any of the upside shows up. Once it's running, auto-transcribing every voice note changes how a team actually talks to each other, and the hosts get into how agents end up spreading bottom-up inside larger companies, one team at a time, well before any formal rollout.",
-      "They don't skip the hard part either: the prompt-injection risk that nobody in this space has fully solved yet. Robin's answer for why he stays on Buzz anyway comes down to one thing — sovereignty over his own data and AI infrastructure, even against easier, more polished closed alternatives.",
-      "One correction worth noting here since the show is committed to getting numbers right: an on-air stat about companies listing AI agents on their org charts was corrected after broadcast — the accurate figure is 23%, roughly one in four, not the 25% said on air.",
+      "Block launched Buzz on 21 July 2026 – an open-source, Nostr-based group chat platform built, in Dorsey's own words, \"for teams of people and agents of all sizes.\" Robin and Tobi didn't just review it – they moved their own business onto it, and this episode is the honest account of what that took. <a href=\"https://block.xyz/inside/introducing-buzz-where-humans-and-agents-work-together\" target=\"_blank\" rel=\"noopener\">Source: Block's launch announcement, 21 July 2026</a>.",
+      "The setup pain is real and specific: keys, environment variables, access control – the unglamorous plumbing that comes before any of the upside shows up. Once it's running, auto-transcribing every voice note changes how a team actually talks to each other, and the hosts get into how agents end up spreading bottom-up inside larger companies, one team at a time, well before any formal rollout.",
+      "They don't skip the hard part either: the prompt-injection risk that nobody in this space has fully solved yet. Robin's answer for why he stays on Buzz anyway comes down to one thing – sovereignty over his own data and AI infrastructure, even against easier, more polished closed alternatives.",
+      "One correction worth noting here since the show is committed to getting numbers right: an on-air stat about companies listing AI agents on their org charts was corrected after broadcast – the accurate figure is 23%, roughly one in four, not the 25% said on air.",
     ],
   },
 ];
@@ -307,15 +440,15 @@ const EPISODE_EXTRAS = Object.fromEntries(
 function markCTA({ label, href, kind = "primary", utm = null }) {
   const isPending = href == null;
   const finalHref = isPending ? "#" : (utm ? ytUtm(href, utm) : href);
-  const bg = kind === "primary" ? LIME : "transparent";
-  const color = kind === "primary" ? NAVY : INK;
-  const border = kind === "primary" ? "none" : `1px solid ${LINE}`;
-  const pendingAttr = isPending ? ` data-pending="true" aria-disabled="true" title="LinkedIn page URL pending — placeholder"` : "";
+  const pendingAttr = isPending ? ` data-pending="true" aria-disabled="true" title="LinkedIn page URL pending – placeholder"` : "";
   return `<a class="cta-btn ${kind}" href="${finalHref}"${pendingAttr}>${label}${isPending ? " (link pending)" : ""}</a>`;
 }
 
-function chevronMark({ w = 26, h = 20, opacity = 1 } = {}) {
-  return `<svg width="${w}" height="${h}" viewBox="0 0 60 40" aria-hidden="true" style="opacity:${opacity}"><g fill="${LIME}"><path d="M0 0 L16 20 L0 40 L12 40 L28 20 L12 0 Z"/><path d="M20 0 L36 20 L20 40 L32 40 L48 20 L32 0 Z"/><path d="M40 0 L56 20 L40 40 L52 40 L60 28 L60 12 Z" opacity=".55"/></g></svg>`;
+// AWA 1.1 logo masters (package assets, checksums in assets/brand/asset-checksums.json).
+// Theme-variant swap per the package: awa-logo-light shows on light, awa-logo-dark on dark.
+function awaLogo({ variant = "horizontal" } = {}) {
+  return `<img class="awa-logo-light" src="/assets/brand/${variant}-black.svg" alt="Act Without Asking" width="120" height="24">` +
+         `<img class="awa-logo-dark" src="/assets/brand/${variant}-color.svg" alt="Act Without Asking" width="120" height="24">`;
 }
 
 function episodeSlug(ep) {
@@ -370,7 +503,7 @@ function videoFacade({ videoId, thumbnail, ariaLabel, className }) {
   if (!videoId) return "";
   return `<button class="${className}" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(ariaLabel)}">
     <img src="${escapeHtml(thumbnail)}" alt="" loading="lazy">
-    <span class="facade-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
+    <span class="facade-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
   </button>`;
 }
 
@@ -378,12 +511,12 @@ function featuredPlayer(ep) {
   const videoId = youtubeId(ep);
   if (!videoId) return "";
   const cleanTitle = ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
-  const label = `Play the latest episode — Episode ${ep.episodeNumber}: ${cleanTitle}`;
+  const label = `Play the latest episode – Episode ${ep.episodeNumber}: ${cleanTitle}`;
   return `<div class="featured">
   <button class="featured-facade" type="button" data-yt="${escapeHtml(videoId)}" aria-label="${escapeHtml(label)}">
     <img src="${escapeHtml(ep.thumbnail)}" alt="" loading="lazy">
-    <span class="featured-label"><span class="ep-num">Latest — Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
-    <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="${NAVY}"><path d="M8 5v14l11-7z"/></svg></span>
+    <span class="featured-label"><span class="ep-num">Latest – Episode ${String(ep.episodeNumber).padStart(2, "0")}</span> ${escapeHtml(cleanTitle)}</span>
+    <span class="featured-play" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
   </button>
 </div>`;
 }
@@ -400,7 +533,7 @@ function episodeCard(ep, { internal = false } = {}) {
   const cta = internal ? "Episode page" : "Watch on YouTube";
   return `
     <a class="ep-card" href="${escapeHtml(href)}"${external}>
-      <div class="ep-thumb"><img src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanTitle} — Episode ${ep.episodeNumber}`)}" loading="lazy"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
+      <div class="ep-thumb"><img src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanTitle} – Episode ${ep.episodeNumber}`)}" loading="lazy"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
       <div class="ep-body">
         <span class="ep-num">Episode ${String(ep.episodeNumber).padStart(2, "0")}</span>
         <h3>${escapeHtml(cleanTitle)}</h3>
@@ -481,17 +614,10 @@ async function main() {
   const episodeCards = data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n");
   const shortCards = data.shorts.length
     ? data.shorts.map(shortCard).join("\n")
-    : `<p class="empty-note">No Shorts published yet — this section fills in automatically as they go live.</p>`;
+    : `<p class="empty-note">No Shorts published yet – this section fills in automatically as they go live.</p>`;
   // P0 mobile (Robin, 5 Sep): the header carries nav links only — the hero
-  // holds the ONE "Subscribe on YouTube" CTA and the listen-on block is the
-  // persistent one.
-  const headerCTAs = ``;
-
-  // P0 mobile (Robin, 5 Sep + Yoshi gate #5): the hero holds the ONE
-  // "Subscribe on YouTube" CTA; the footer listen-on block is the persistent
-  // listen surface. No subscribe CTA in footer CTAs — the listen-on block
-  // carries the YouTube link there on every page.
-  const footerCTAs = ``;
+  // Redesign 1.1 (blueprint): fixed bottom surfaces retired — the subscribe
+  // bar is gone; subscribe lives in the nav CTA, the home strip, /subscribe.
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -499,14 +625,14 @@ async function main() {
 <meta charset="UTF-8">
 <link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Act Without Asking — The agentic AI podcast</title>
-<meta name="description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
-<meta property="og:title" content="Act Without Asking — The agentic AI podcast">
-<meta property="og:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<title>Act Without Asking – The agentic AI podcast</title>
+<meta name="description" content="AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<meta property="og:title" content="Act Without Asking – The agentic AI podcast">
+<meta property="og:description" content="AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta property="og:image" content="${escapeHtml(latestEp?.thumbnail ?? "")}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Act Without Asking — The agentic AI podcast">
-<meta name="twitter:description" content="AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
+<meta name="twitter:title" content="Act Without Asking – The agentic AI podcast">
+<meta name="twitter:description" content="AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.">
 <meta name="twitter:image" content="${escapeHtml(latestEp?.thumbnail ?? "")}">
 <meta property="og:url" content="${SITE_URL}/">
 <meta property="og:type" content="website">
@@ -517,7 +643,7 @@ ${jsonLdSafe({
   "@type": "PodcastSeries",
   name: "Act Without Asking",
   url: SITE_URL,
-  description: "AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.",
+  description: "AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster.",
   author: [
     { "@type": "Person", name: "Robin Leonard" },
     { "@type": "Person", name: "Tobi Webster" },
@@ -525,27 +651,25 @@ ${jsonLdSafe({
 }, null, 2)}
 </script>
 ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt=${data.fetchedAt} (${ageDays.toFixed(1)} days old). This build shipped with stale/fallback data rather than failing. -->` : ""}
+<meta name="color-scheme" content="light dark">
+<script>${THEME_INIT_JS}</script>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
+${SKIP_LINK}
 
-<header>
-  <div class="wrap nav">
-    <a class="brand" href="#top">${chevronMark()} Act Without Asking</a>
-    <div class="nav-ctas"><a class="cta-btn ghost" href="/episodes/">Episodes</a><a class="cta-btn ghost" href="/articles/">Blog</a><a class="cta-btn ghost" href="/about/">About</a>${headerCTAs}</div>
-  </div>
-</header>
+${awaHeader()}
 
 <main id="top">
   <div class="hero">
     <div class="hero-motes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <p class="kicker">The Agentic AI Podcast</p>
     <h1>ACT WITHOUT<br>ASKING</h1>
-    <p class="sub">AI agents doing real work — and the moment you stop supervising them.</p>
+    <p class="sub">AI agents doing real work – and the moment you stop supervising them.</p>
     <p class="hero-ctas">${latestEp
       ? `<a class="btn" href="/episodes/${episodeSlug(latestEp)}/">Watch the latest episode</a><a class="btn ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a>`
       : `<a class="btn" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "hero", campaign: "subscribe" })}">Watch on YouTube</a>`}</p>
-    <p class="byline">Hosted by Robin Leonard and Tobi Webster — two operators who run real businesses on AI agents.</p>
+    <p class="byline">Hosted by Robin Leonard and Tobi Webster – two operators who run real businesses on AI agents.</p>
 ${latestEp ? featuredPlayer(latestEp) : ""}
   </div>
 
@@ -554,7 +678,7 @@ ${latestEp ? featuredPlayer(latestEp) : ""}
       <div class="section-head">
         <p class="kicker">Full episodes</p>
         <h2>Episodes</h2>
-        <p class="start-here">New here? <a href="/episodes/${firstEp ? episodeSlug(firstEp) : ""}/">Start with Episode 1</a> — the opening argument. Prefer reading? <a href="/articles/">Every episode, in writing.</a></p>
+        <p class="start-here">New here? <a href="/episodes/${firstEp ? episodeSlug(firstEp) : ""}/">Start with Episode 1</a> – the opening argument. Prefer reading? <a href="/articles/">Every episode, in writing.</a></p>
       </div>
       <div class="eps">
 ${episodeCards}
@@ -577,15 +701,15 @@ ${FACADE_SCRIPT}
 
   <section class="quote">
     <div class="wrap">
-      <blockquote>We hand real agents real responsibility — and tell you exactly what happens next.</blockquote>
-      <p>No hype, no scripts. Just two hosts figuring out — live, in public — what it actually looks like to hand an agent the keys.</p>
+      <blockquote>We hand real agents real responsibility – and tell you exactly what happens next.</blockquote>
+      <p>No hype, no scripts. Just two hosts figuring out – live, in public – what it actually looks like to hand an agent the keys.</p>
     </div>
   </section>
 
   <section class="strip">
     <div class="wrap">
       <h2>New episodes as they land.</h2>
-      <p class="strip-sub">Get The Harness Kit — the checklists and templates we use on the show, free after you confirm.</p>
+      <p class="strip-sub">Get The Harness Kit – the checklists and templates we use on the show, free after you confirm.</p>
       <div class="strip-ctas">
         <a class="cta-btn primary" href="/subscribe/">Get the Harness Kit</a>
       </div>
@@ -593,31 +717,16 @@ ${FACADE_SCRIPT}
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    <span>© 2026 Act Without Asking · A show from Axela</span>
-    <div class="foot-ctas">${footerCTAs}</div>
-    ${listenOnBlock({ compact: true })}
-  </div>
-</footer>
+${awaFooter()}
 
+<script defer>${THEME_CONTROLS_JS}</script>
+${MENU_JS}
 </body>
 </html>
 `;
 
   // ---- Phase 0 multi-page skeleton: shared shell, inner pages, SEO artifacts ----
   const REAL_DOMAIN_LANDED = !PLACEHOLDER_HOSTS.includes("actwithoutasking.com");
-
-  const subscribeBar = `
-<div class="subscribe-bar">
-  <div class="wrap sb-inner">
-    <span>New episodes as they land — no hype, just the real work.</span>
-    <div class="sb-actions">
-      <a class="sb-btn" href="/subscribe/">Get the Harness Kit</a>
-      <a class="sb-ghost" href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_bar", campaign: "subscribe" })}" target="_blank" rel="noopener">YouTube</a>
-    </div>
-  </div>
-</div>`;
 
   const innerCSS = `
   .wrap.narrow{max-width:720px}
@@ -720,35 +829,24 @@ ${FACADE_SCRIPT}
 <meta property="og:type" content="website">
 ${ogImageTags}
 <link rel="canonical" href="${abs}">
-${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script>\n` : ""}<link rel="stylesheet" href="/site.css">
+${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script>\n` : ""}<meta name="color-scheme" content="light dark">
+<script>${THEME_INIT_JS}</script>
+<link rel="stylesheet" href="/site.css">
 <style>${innerCSS}</style>
 </head>
 <body>
+${SKIP_LINK}
 
-<header>
-  <div class="wrap nav">
-    <a class="brand" href="/">${chevronMark({ w: 22, h: 17 })} Act Without Asking</a>
-    <div class="nav-ctas">
-      <a class="cta-btn ghost" href="/episodes/">Episodes</a>
-      <a class="cta-btn ghost" href="/articles/">Blog</a>
-      <a class="cta-btn ghost" href="/about/">About</a>
-      ${markCTA({ label: "Subscribe on YouTube", href: YOUTUBE_SUBSCRIBE, utm: { medium: "nav", campaign: "subscribe" } })}
-    </div>
-  </div>
-</header>
+${awaHeader()}
 
 <main id="top">
 ${body}
 </main>
 
-<footer>
-  <div class="wrap">
-    <span>© 2026 Act Without Asking · A show from Axela</span>
-    <div class="foot-ctas">${footerCTAs}</div>
-    ${listenOnBlock({ compact: true })}
-  </div>
-</footer>
-${subscribeBar}
+${awaFooter()}
+
+<script defer>${THEME_CONTROLS_JS}</script>
+${MENU_JS}
 ${MOTION_TILT_JS}
 </body>
 </html>
@@ -766,13 +864,13 @@ ${MOTION_TILT_JS}
       <p class="updated">Last updated: 4 September 2026.</p>
 
       <h3>Who we are</h3>
-      <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request — access, correction, or deletion of your data — email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
+      <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request – access, correction, or deletion of your data – email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
 
       <h3>The email list</h3>
-      <p>When you subscribe, we collect your email address. That's it — no name required, no other fields.</p>
+      <p>When you subscribe, we collect your email address. That's it – no name required, no other fields.</p>
       <ul>
         <li><strong>What you get:</strong> new episodes, and "The Harness Kit" (checklists and templates from the show) after you confirm.</li>
-        <li><strong>Double opt-in:</strong> you subscribe, we send a confirmation email, you're on the list only after you click it. No confirmation, no emails — we never add anyone who didn't ask.</li>
+        <li><strong>Double opt-in:</strong> you subscribe, we send a confirmation email, you're on the list only after you click it. No confirmation, no emails – we never add anyone who didn't ask.</li>
         <li><strong>Who sends the emails:</strong> our newsletter is handled by MailerLite, an email service. They send our emails and store the list on our instructions. They don't get to use your address for anything else.</li>
         <li><strong>Consent record:</strong> when you confirm, we store your email address, the time, and the page you subscribed from. Nothing else. This is our proof you asked.</li>
         <li><strong>Unsubscribe:</strong> every email has an unsubscribe link. One click, immediate, no "are you sure" games.</li>
@@ -780,14 +878,14 @@ ${MOTION_TILT_JS}
       <p><strong>We do not sell, rent, or share your email address. Ever.</strong></p>
 
       <h3>Analytics</h3>
-      <p>No Google Analytics, no ad trackers, no third-party cookies. If we ever add analytics, it will be self-hosted and first-party — and this page will say exactly what we collect before it turns on.</p>
+      <p>No Google Analytics, no ad trackers, no third-party cookies. If we ever add analytics, it will be self-hosted and first-party – and this page will say exactly what we collect before it turns on.</p>
 
       <h3>The twins</h3>
       <p>When you ask the twins a question, here is exactly what happens to it.
-      Your question — and nothing else about you — is sent to an AI service that
+      Your question – and nothing else about you – is sent to an AI service that
       helps write the answer. We never send your name, email, or IP address to
       the AI service. Our server sees the bare technical data every website
-      sees and uses it only to stop abuse — it is never stored with your
+      sees and uses it only to stop abuse – it is never stored with your
       question. The AI service processes your question to
       do its job and keeps its own records under its own privacy policy; this
       site does not store your questions or the answers on our side.</p>
@@ -795,14 +893,14 @@ ${MOTION_TILT_JS}
       and moment it comes from. If the show doesn't back an answer, the twins
       say so and hand you an episode instead of making something up. If the AI
       service is unavailable, the twins automatically fall back to pre-written
-      answers — same behaviour, different engine.</p>
+      answers – same behaviour, different engine.</p>
       <p>The twins are AI impressions of Robin and Tobi, not Robin and Tobi.
-      They may be wrong — check anything that matters against the actual
+      They may be wrong – check anything that matters against the actual
       episodes.</p>
-      <p>We log aggregate counts only — how many questions are asked, which
+      <p>We log aggregate counts only – how many questions are asked, which
       episode links get clicked, and coarse timing and size buckets. No question
       text, no IP, nothing that identifies you or reconstructs what you asked.
-      These counts contain nothing personal, so we keep them indefinitely —
+      These counts contain nothing personal, so we keep them indefinitely –
       there is nothing in them to delete. The twins page says the same thing.</p>
 
       <h3>YouTube</h3>
@@ -821,9 +919,9 @@ ${MOTION_TILT_JS}
     <div class="wrap narrow">
       <p class="kicker">Subscribe</p>
       <h1 class="legal-title">New episodes, straight to your inbox.</h1>
-      <p class="sub-left">Get every episode and <strong>The Harness Kit</strong> — the checklists and templates we use on the show — free, after you confirm.</p>
+      <p class="sub-left">Get every episode and <strong>The Harness Kit</strong> – the checklists and templates we use on the show – free, after you confirm.</p>
       <ul class="kit-list">
-        <li>New episode alerts — nothing else, no filler</li>
+        <li>New episode alerts – nothing else, no filler</li>
         <li>The Harness Kit: checklists and templates from the show</li>
         <li>One click to unsubscribe, any time</li>
       </ul>
@@ -831,7 +929,7 @@ ${MOTION_TILT_JS}
         <label for="email">Email address</label>
         <input id="email" name="email" type="email" placeholder="you@example.com" disabled>
         <button type="submit" disabled>Subscribe</button>
-        <p class="form-note">Email capture opens with our list provider this week — the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
+        <p class="form-note">Email capture opens with our list provider this week – the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
       </form>
       <p class="alt">Not into email? <a href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_page", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a> instead.</p>
       ${listenOnBlock({ compact: true })}
@@ -864,7 +962,7 @@ ${MOTION_TILT_JS}
   // twins-gate below still proves the injection happened.
   const homepageHtml = html
     .replace('<section class="strip">', `${twins.widget}\n  <section class="strip">`)
-    .replace("</body>", `${subscribeBar}\n${MOTION_TILT_JS}\n</body>`);
+    .replace("</body>", `${MOTION_TILT_JS}\n</body>`);
   if (!homepageHtml.includes("twinsWidget")) throw new Error("[twins-gate] widget injection into index.html failed");
 
   // ---- Multi-page routes (arch v1: /episodes, /episodes/[slug],
@@ -876,7 +974,7 @@ ${MOTION_TILT_JS}
   const cleanEpTitle = (ep) => ep.title.replace(/\s*\|\s*Episode\s+\d+\s*$/i, "").trim();
   const epDek = (ep) =>
     articlesByEpisode.get(ep.episodeNumber)?.dek ??
-    `Episode ${ep.episodeNumber} of Act Without Asking — AI agents doing real work.`;
+    `Episode ${ep.episodeNumber} of Act Without Asking – AI agents doing real work.`;
   const fmtDate = (iso) =>
     new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
 
@@ -886,10 +984,10 @@ ${MOTION_TILT_JS}
   // suffix). Wording untouched, length only (Jane ruling, 1 Sep).
   const pageTitle = (base, epNum) => {
     const full = epNum
-      ? `${base} — Act Without Asking, Episode ${epNum}`
-      : `${base} — Act Without Asking`;
+      ? `${base} – Act Without Asking, Episode ${epNum}`
+      : `${base} – Act Without Asking`;
     if (full.length <= 60) return full;
-    const short = epNum ? `${base} — Episode ${epNum}` : base;
+    const short = epNum ? `${base} – Episode ${epNum}` : base;
     return short.length <= 60 ? short : base;
   };
 
@@ -917,7 +1015,7 @@ ${MOTION_TILT_JS}
       <p class="kicker">Episode ${String(ep.episodeNumber).padStart(2, "0")}</p>
       <h1 class="legal-title">${escapeHtml(cleanEpTitle(ep))}</h1>
       <p class="ep-meta">${fmtDate(ep.published)} · Robin Leonard and Tobi Webster</p>
-      <div class="ep-player">${videoFacade({ videoId: youtubeId(ep), thumbnail: ep.thumbnail, ariaLabel: `Play Episode ${ep.episodeNumber}: ${cleanEpTitle(ep)}`, className: "ep-facade" }) || `<img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} — Episode ${ep.episodeNumber} thumbnail`)}">`}</div>
+      <div class="ep-player">${videoFacade({ videoId: youtubeId(ep), thumbnail: ep.thumbnail, ariaLabel: `Play Episode ${ep.episodeNumber}: ${cleanEpTitle(ep)}`, className: "ep-facade" }) || `<img class="ep-hero" src="${escapeHtml(ep.thumbnail)}" alt="${escapeHtml(`${cleanEpTitle(ep)} – Episode ${ep.episodeNumber} thumbnail`)}">`}</div>
       <p class="dek">${escapeHtml(epDek(ep))}</p>
       <a class="btn" href="${escapeHtml(ytUtm(ep.url, { medium: "episode_page", campaign: "watch", content: slug }))}" target="_blank" rel="noopener">Watch on YouTube</a>
       ${FACADE_SCRIPT}
@@ -1016,17 +1114,17 @@ ${data.episodes.map((e) => episodeCard(e, { internal: true })).join("\n")}
     <div class="wrap narrow">
       <p class="kicker">About</p>
       <h1 class="legal-title">Two operators. No demos.</h1>
-      <p>Act Without Asking is hosted by Robin Leonard and Tobi Webster — two operators who run AI agents inside real businesses every day. Not demos, not slide decks: keys handed over, inboxes connected, decisions made without us in the room.</p>
-      <p>The name is the ethos: bias toward action. Stop waiting for permission. Just do the thing. But the moment you hand an agent real work, acting without asking stops being a slogan and becomes a decision: how much rope do you give it? What is it allowed to do on its own — and when it gets it wrong, whose fault is it? We don't have final answers. We have the experiment: run it on ourselves, live, in public, and tell you what actually happened.</p>
+      <p>Act Without Asking is hosted by Robin Leonard and Tobi Webster – two operators who run AI agents inside real businesses every day. Not demos, not slide decks: keys handed over, inboxes connected, decisions made without us in the room.</p>
+      <p>The name is the ethos: bias toward action. Stop waiting for permission. Just do the thing. But the moment you hand an agent real work, acting without asking stops being a slogan and becomes a decision: how much rope do you give it? What is it allowed to do on its own – and when it gets it wrong, whose fault is it? We don't have final answers. We have the experiment: run it on ourselves, live, in public, and tell you what actually happened.</p>
       <div class="host">
-        <strong>Robin Leonard — host</strong>
-        <span>Serial builder. Runs real businesses on AI agents, and shows the plumbing on the show — the access keys, the memory limits, the prompt-injection risks nobody has fully solved yet.</span>
+        <strong>Robin Leonard – host</strong>
+        <span>Serial builder. Runs real businesses on AI agents, and shows the plumbing on the show – the access keys, the memory limits, the prompt-injection risks nobody has fully solved yet.</span>
       </div>
       <div class="host">
-        <strong>Tobi Webster — co-host</strong>
+        <strong>Tobi Webster – co-host</strong>
         <span>Robin's consulting partner at Axela, their AI-first consulting practice. Brings the business and operations side of every conversation.</span>
       </div>
-      <p>New episodes on <a href="${ytUtm(YOUTUBE_CHANNEL, { medium: "about_page", campaign: "channel" })}" target="_blank" rel="noopener">YouTube</a> — and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
+      <p>New episodes on <a href="${ytUtm(YOUTUBE_CHANNEL, { medium: "about_page", campaign: "channel" })}" target="_blank" rel="noopener">YouTube</a> – and in your inbox if you <a href="/subscribe/">subscribe</a>.</p>
     </div>
   </section>`;
 
@@ -1055,11 +1153,11 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
     .map(articleRoute);
   const pages = [
     ["index.html", homepageHtml],
-    ["episodes/index.html", pageShell({ path: "/episodes/", title: "Episodes — Act Without Asking", desc: "Every episode of Act Without Asking: harnesses, multiplayer agents, agent memory, and Buzz — AI agents doing real work.", body: episodesIndexBody })],
-    ["articles/index.html", pageShell({ path: "/articles/", title: "Blog — Act Without Asking", desc: "Every episode of Act Without Asking in writing — harnesses, multiplayer agents, agent memory, and what moved us onto Buzz.", body: articlesIndexBody })],
+    ["episodes/index.html", pageShell({ path: "/episodes/", title: "Episodes – Act Without Asking", desc: "Every episode of Act Without Asking: harnesses, multiplayer agents, agent memory, and Buzz – AI agents doing real work.", body: episodesIndexBody })],
+    ["articles/index.html", pageShell({ path: "/articles/", title: "Blog – Act Without Asking", desc: "Every episode of Act Without Asking in writing – harnesses, multiplayer agents, agent memory, and what moved us onto Buzz.", body: articlesIndexBody })],
     ...data.episodes.map(episodeRoute),
     ...articleRoutes,
-    ["about/index.html", pageShell({ path: "/about/", title: "About — Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action — no hype, no scripts.", body: aboutBody, jsonLd: {
+    ["about/index.html", pageShell({ path: "/about/", title: "About – Act Without Asking", desc: "Act Without Asking: the agentic AI podcast hosted by Robin Leonard, with Tobi Webster. Bias toward action – no hype, no scripts.", body: aboutBody, jsonLd: {
       "@context": "https://schema.org",
       "@graph": [
         { "@type": "Person", name: "Robin Leonard", jobTitle: "Host", url: SITE_URL, sameAs: [YOUTUBE_CHANNEL] },
@@ -1067,9 +1165,9 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
         podcastSeriesRef,
       ],
     } })],
-    ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe — Act Without Asking", desc: "Get new episodes and The Harness Kit — checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
-    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: your email if you subscribe, aggregate twins counts, and nothing hidden.", body: privacyBody })],
-    ["404.html", pageShell({ path: "/404.html", title: "Page not found — Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
+    ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe – Act Without Asking", desc: "Get new episodes and The Harness Kit – checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
+    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy – Act Without Asking", desc: "Everything Act Without Asking collects and why: your email if you subscribe, aggregate twins counts, and nothing hidden.", body: privacyBody })],
+    ["404.html", pageShell({ path: "/404.html", title: "Page not found – Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
     ["robots.txt", `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`],
   ];
 
@@ -1077,10 +1175,10 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
   // appear in any emitted page — internal absolutes derive from SITE_URL only.
   for (const [name, content] of pages) {
     for (const host of PLACEHOLDER_HOSTS) {
-      if (content.includes(host)) throw new Error(`[host-gate] ${name} hardcodes ${host} — derive from SITE_URL`);
+      if (content.includes(host)) throw new Error(`[host-gate] ${name} hardcodes ${host} – derive from SITE_URL`);
     }
     if (REAL_DOMAIN_LANDED && content.includes("CONTACT_ADDRESS_PENDING_DOMAIN")) {
-      throw new Error(`[domain-gate] ${name} still carries the contact placeholder after the domain landed — set the real address`);
+      throw new Error(`[domain-gate] ${name} still carries the contact placeholder after the domain landed – set the real address`);
     }
     // Key-custody gate (spec §4, flip day): no key-shaped literal and no
     // twins-LLM env var name may reach emitted assets — the key lives in
@@ -1089,15 +1187,31 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
       throw new Error(`[key-gate] ${name} carries a key-shaped literal`);
     }
     if (/TWINS_LLM_(KEY|MODEL)/.test(content)) {
-      throw new Error(`[key-gate] ${name} carries a twins LLM env var name — env vars live in site-scoped config, never in build output`);
+      throw new Error(`[key-gate] ${name} carries a twins LLM env var name – env vars live in site-scoped config, never in build output`);
     }
   }
 
-  // Arch condition B (event 36f1e546): sitemap lastmod must be content-true.
-  // Derive from youtube.json fetchedAt — changes only when the feed data
-  // changes, not on every rebuild. A missing lastmod is honest; a build-date
-  // one lies.
-  const contentDate = data.fetchedAt.slice(0, 10);
+  // Arch condition B (event 36f1e546) + Robin launch brief P0-1 (12 Sep):
+  // sitemap lastmod must be the page's real content date, never a build or
+  // fetch date. Episode pages carry the episode's YouTube publish date;
+  // article pages the date of the episode they cover; home and the indexes
+  // carry the newest real date they contain. Pages with no per-page content
+  // date (twins, about, subscribe, privacy) ship NO lastmod — a missing
+  // lastmod is honest; a fabricated one lies.
+  const epDate = (ep) => (ep && ep.published ? ep.published.slice(0, 10) : null);
+  const newestContentDate =
+    data.episodes
+      .map(epDate)
+      .filter(Boolean)
+      .sort()
+      .pop() || null;
+  const lastmodFor = Object.fromEntries([
+    ...data.episodes.map((ep) => [`/episodes/${episodeSlug(ep)}/`, epDate(ep)]),
+    ...ARTICLES.map((a) => [`/articles/${a.slug}/`, epDate(episodesByNumber.get(a.episodeNumber))]),
+    ["/", newestContentDate],
+    ["/episodes/", newestContentDate],
+    ["/articles/", newestContentDate],
+  ]);
   const sitemapPaths = [
     "/",
     "/episodes/",
@@ -1111,7 +1225,13 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
   ];
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${contentDate}</lastmod></url>`).join("\n")}
+${sitemapPaths
+    .map((p) =>
+      lastmodFor[p]
+        ? `  <url><loc>${SITE_URL}${p}</loc><lastmod>${lastmodFor[p]}</lastmod></url>`
+        : `  <url><loc>${SITE_URL}${p}</loc></url>`,
+    )
+    .join("\n")}
 </urlset>
 `;
   pages.push(["sitemap.xml", sitemapXml]);
@@ -1121,9 +1241,9 @@ ${sitemapPaths.map((p) => `  <url><loc>${SITE_URL}${p}</loc><lastmod>${contentDa
   // to look. Generated from the same feed data as the pages.
   const llmsTxt = `# Act Without Asking
 
-> AI agents doing real work — and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster. New episodes as they land on YouTube.
+> AI agents doing real work – and the moment you stop supervising them. Hosted by Robin Leonard and Tobi Webster. New episodes as they land on YouTube.
 
-Act Without Asking is a podcast where two operators hand real AI agents real responsibility inside real businesses — and report exactly what happened. Every episode has a server-rendered page with the full write-up; transcripts are added as they are completed.
+Act Without Asking is a podcast where two operators hand real AI agents real responsibility inside real businesses – and report exactly what happened. Every episode has a server-rendered page with the full write-up; transcripts are added as they are completed.
 
 ## Episodes
 
@@ -1136,9 +1256,9 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
 ## Site
 
 - [About the show and hosts](${SITE_URL}/about/)
-- [Subscribe — The Harness Kit](${SITE_URL}/subscribe/)
+- [Subscribe – The Harness Kit](${SITE_URL}/subscribe/)
 - [Privacy](${SITE_URL}/privacy/)
-- [The twins — ask the show's AI twins](${SITE_URL}/twins/)
+- [The twins – ask the show's AI twins](${SITE_URL}/twins/)
 
 ## Listen
 
@@ -1170,6 +1290,17 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => `- [$
   // function itself healthy). A _redirects file in the publish dir is
   // processed on every deploy type, so the rewrite cannot be lost again.
   await writeFile(path.join(DIST, "_redirects"), "/api/ask  /.netlify/functions/ask  200\n");
+  // Redesign 1.1 assets: self-hosted WOFF2 fonts (§3.7, OFL licenses ride along)
+  // + the four AWA 1.1 logo masters (§3.3) + package foundation files.
+  await mkdir(path.join(DIST, "fonts"), { recursive: true });
+  for (const f of await readdir(path.join(ROOT, "fonts"))) {
+    if (f.endsWith(".ttf")) continue; // WOFF2 only ships (§3.7); TTF sources stay in-repo
+    await copyFile(path.join(ROOT, "fonts", f), path.join(DIST, "fonts", f));
+  }
+  await mkdir(path.join(DIST, "assets", "brand"), { recursive: true });
+  for (const f of await readdir(path.join(ROOT, "assets", "brand"))) {
+    await copyFile(path.join(ROOT, "assets", "brand", f), path.join(DIST, "assets", "brand", f));
+  }
   console.log(`[build] wrote ${pages.length} pages + site.css + dist/twins/index.html + _redirects (routes: /, /episodes, ${data.episodes.length} episode pages, ${articleRoutes.length} article pages, /about, /subscribe, /privacy, 404, robots, sitemap; twins gates passed; retrieval=${retrieval.excerpts.length} excerpts; stale=${isStale})`);
 }
 
