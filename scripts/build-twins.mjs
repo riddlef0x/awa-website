@@ -175,7 +175,7 @@ function askRootMarkup(honest = true) {
     <button class="twins-go">Ask</button>
   </div>
   <p class="twins-err" hidden></p>
-  ${honest ? `<p class="twins-note">Answers are drafted with the help of an AI service. We don't store your questions; <a href="/privacy/">what happens to your question</a>.</p>` : ""}
+  ${honest ? `<p class="twins-note">Answers are drafted with the help of an AI service. We don't keep your questions – just an anonymous record that one was asked. <a href="/privacy/">what happens to your question</a>.</p>` : ""}
   <input class="twins-hp" name="website" type="text" tabindex="-1" aria-hidden="true" autocomplete="off">
 </div>`;
 }
@@ -328,10 +328,11 @@ h2{font-size:20px;margin:32px 0 12px}
   <section class="t-ask">
     <h2>Ask the twins</h2>
     ${askRootMarkup(false)}
-    <p class="t-note">Answers are drafted with the help of an AI service —
-    grounded in the show, with the episode cited. No question text is stored
-    on our side; see the <a href="/privacy/">privacy page</a> for exactly
-    what happens to your question.</p>
+    <p class="t-note">Answers are drafted with the help of an AI service –
+    grounded in the show, with the episode cited. We don't keep your
+    questions – just an anonymous record that one was asked. See
+    the <a href="/privacy/">privacy page</a> for exactly what happens to your
+    question.</p>
   </section>
   <section>
     <h2>Best exchanges</h2>
