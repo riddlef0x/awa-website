@@ -4,7 +4,7 @@
 // Run: node scripts/test-llm-seam.mjs
 import assert from "node:assert";
 import { callProvider } from "../netlify/functions/llm/provider.mjs";
-import { validateAnswer, MAX_ANSWER_CHARS, MAX_ANSWER_LINES, materialCitations, MATERIAL_MIN_TOKENS } from "../netlify/functions/llm/filters.mjs";
+import { validateAnswer, MAX_ANSWER_CHARS, MAX_ANSWER_LINES, materialCitations, isHonestDecline, MATERIAL_MIN_TOKENS } from "../netlify/functions/llm/filters.mjs";
 import { mockProvider, FIXTURES } from "../netlify/functions/llm/provider-mock.mjs";
 import { retrieve } from "../netlify/functions/llm/retrieval.mjs";
 import { createGuard } from "../netlify/functions/llm/guard.mjs";
@@ -150,10 +150,11 @@ console.log("PASS 5: fixture registry complete");
   console.log("PASS 8: fallback-rate circuit trips at the §6 threshold, resets each hour");
 }
 
-// 9. Citation-material tie filter (17 Sep, Class B provenance ruling): a
-// retrieved excerpt the answer does not draw on is a decorative citation and
-// must drop; true sources stay; an answer tied to nothing keeps its top
-// citation (an honest decline must never degrade into a filter rejection).
+// 9. Citation-material tie filter (17 Sep, Class B provenance ruling; polarity
+// amended by the joint Oksana/Zar F-NEW-1 ruling): a retrieved excerpt the
+// answer does not draw on is a decorative citation and must drop; true sources
+// stay; the set MAY be empty — an honest empty is a valid return, not a
+// defect (the old never-empty fallback was the defect's spec and is voided).
 {
   const excMaterial = { text: "Originally, when I started this, I burned $800 on Opus in the first month. It was gnarly, absolutely gnarly." };
   const excStack = { text: "The way it landed, yeah – month after month of hosting arguments, on-prem versus cloud, and the data sovereignty questions every director should ask." };
@@ -166,7 +167,7 @@ console.log("PASS 5: fixture registry complete");
   assert.deepStrictEqual(outAll, [citeMaterial], "fully-tied citation set passes through unchanged");
   const decline = "Robin-twin: We haven't covered that on the show yet – and we'd rather say so than invent it.\nTobi-twin: Ask us about the token bill instead. That one still stings.";
   const outNone = materialCitations({ answer: decline, excerpts: [excStack], citations: [citeStack] });
-  assert.deepStrictEqual(outNone, [citeStack], "no-tie answer keeps its top citation (never empty)");
+  assert.deepStrictEqual(outNone, [], "decline class cites NOTHING regardless of string overlap (F-NEW-1)");
   // Corpus-glue exclusion: "way / yeah / month" in common must NOT tie the
   // stack excerpt to the answer; a single glue overlap is not material.
   const outGlue = materialCitations({
@@ -176,8 +177,45 @@ console.log("PASS 5: fixture registry complete");
     ignoreTokens: new Set(["way", "yeah", "month", "twin", "which", "through", "first"]),
   });
   assert.deepStrictEqual(outGlue, [citeMaterial], "glue-only overlap must not count as material");
+  // A claim-bearing answer tied to nothing returns [] too — validateAnswer
+  // then rejects it to the scripted fallback (no grounding → no LLM answer).
+  const outUntied = materialCitations({ answer: "Robin-twin: Something entirely new.\nTobi-twin: Fresh ground altogether.", excerpts: [excStack], citations: [citeStack] });
+  assert.deepStrictEqual(outUntied, [], "claim-bearing answer with no material tie must return empty, not keep a decorative top citation");
   assert.strictEqual(MATERIAL_MIN_TOKENS, 2, "tie floor stays at 2 shared tokens");
-  console.log("PASS 9: materialCitations drops decorative citations, keeps honest declines served");
+  console.log("PASS 9: materialCitations drops decorative citations; empty sets are honest returns (never-empty guarantee dead)");
+}
+
+// 10. Decline-class polarity (F-NEW-1, joint Oksana/Zar ruling 17 Sep): the
+// rendered answer's class decides the citation set — `citations empty ⟺
+// DECLINE class`. Yoshi's Jupiter repro shape: an on-air "we haven't covered
+// … yet" excerpt plus the decline's own phrasing must NOT fabricate a
+// citation, and the validator must reject a decline that ships chrome.
+{
+  // Jupiter-shaped corpus: the corpus itself contains honest-coverage
+  // phrasing (hosts saying it on air) — the exact overlap that fabricated
+  // the decline's citations in the repro.
+  const excCoverClaim = { text: "We haven't covered that yet on the show, and honestly we should do a whole episode on it." };
+  const citeCoverClaim = { episode: 2, videoId: "ccc333", timestamp: "21:07" };
+  const declineAnswer = "Robin-twin: We haven't covered that on the show yet – and we'd rather say so than invent it.\nTobi-twin: Ask us about the token bill instead. That one still stings.";
+  assert.strictEqual(isHonestDecline(declineAnswer), true, "honest-coverage line must classify as DECLINE");
+  assert.strictEqual(isHonestDecline("Robin-twin: We torched $800 on Opus in month one.\nTobi-twin: The wallet never recovered."), false, "claim-bearing answer must not classify as DECLINE");
+  // Self-phrasing overlap (decline text ↔ on-air coverage phrasing) is zero
+  // material: empty set regardless of string overlap.
+  const outSelf = materialCitations({ answer: declineAnswer, excerpts: [excCoverClaim], citations: [citeCoverClaim] });
+  assert.deepStrictEqual(outSelf, [], "decline's own phrasing must never fabricate relevance (Jupiter repro)");
+  // Validator polarity, DECLINE class: empty citations OK, non-empty rejected.
+  const vDeclineClean = validateAnswer({ answer: declineAnswer, citations: [], allowedCitations: [citeCoverClaim] });
+  assert.deepStrictEqual(vDeclineClean, { ok: true, reason: null }, "decline with citations [] must pass — the absence is the assertion");
+  const vDeclineChrome = validateAnswer({ answer: declineAnswer, citations: [citeCoverClaim], allowedCitations: [citeCoverClaim] });
+  assert.deepStrictEqual(vDeclineChrome, { ok: false, reason: "decline-with-citations" }, "decline with decorative citations must fail CLOSED (Jupiter defect)");
+  // Validator polarity, CLAIM-BEARING class: non-empty grounded required.
+  const claimAnswer = "Robin-twin: We argued about whether agents need memory or just better notes.\nTobi-twin: Still my favourite fight.";
+  const citeClaim = { episode: 1, videoId: "abc123", timestamp: "12:34" };
+  const vClaimOk = validateAnswer({ answer: claimAnswer, citations: [citeClaim], allowedCitations: [citeClaim] });
+  assert.deepStrictEqual(vClaimOk, { ok: true, reason: null }, "claim-bearing with grounded citations must pass");
+  const vClaimEmpty = validateAnswer({ answer: claimAnswer, citations: [], allowedCitations: [citeClaim] });
+  assert.deepStrictEqual(vClaimEmpty, { ok: false, reason: "no-citations" }, "claim-bearing with empty citations must fail CLOSED (unchanged)");
+  console.log("PASS 10: decline-class polarity — citations empty ⟺ DECLINE, chrome under a decline fails CLOSED");
 }
 
 console.log("ALL LLM-SEAM TESTS PASS");
