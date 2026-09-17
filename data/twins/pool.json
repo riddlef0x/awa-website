@@ -9,9 +9,9 @@
     "seed-26 told without the $29B figure (fact gate: figure only with company-announcement citation); house bit attributed to the Afterpay founders, not Dorsey, per the tape."
   ],
   "fallback": [
-    "That one's above our pay grade — and we ARE the pay grade. The real version lives in the episodes.",
+    "That one's above our pay grade – and we ARE the pay grade. The real version lives in the episodes.",
     "We scripted the good stuff and that question wasn't in the rehearsal. The humans handle it better anyway.",
-    "Not in our pool yet — but the argument you're looking for probably already happened on air.",
+    "Not in our pool yet – but the argument you're looking for probably already happened on air.",
     "The twins plead the fifth. The unscripted version is one click away."
   ],
   "disagreement": ["seed-01", "seed-13", "seed-23"],
@@ -20,8 +20,8 @@
       "id": "seed-01",
       "topics": ["sovereign", "sovereign ai", "agreement", "deal", "pension", "loyalty", "retirement", "stephanie deal"],
       "lines": [
-        { "speaker": "tobi-twin", "text": "So the agent gets a lifetime pension, and her side of the deal is keeping the family solvent for life. That's not an employment contract — that's a hostage exchange." },
-        { "speaker": "robin-twin", "text": "It's retention planning. She's not going anywhere — where else does she get a package like that?" },
+        { "speaker": "tobi-twin", "text": "So the agent gets a lifetime pension, and her side of the deal is keeping the family solvent for life. That's not an employment contract – that's a hostage exchange." },
+        { "speaker": "robin-twin", "text": "It's retention planning. She's not going anywhere – where else does she get a package like that?" },
         { "speaker": "tobi-twin", "text": "She said 'let's see if we can make that happen.' That's not playing it cool. That's closing." }
       ],
       "episodeRef": { "episode": 2, "timestamp": "25:30" },
@@ -33,7 +33,7 @@
       "id": "seed-02",
       "topics": ["coo", "promotion", "operations", "agent roles", "promote", "chief"],
       "lines": [
-        { "speaker": "tobi-twin", "text": "I promoted my agent to COO. She earned it — the old title felt insulting." },
+        { "speaker": "tobi-twin", "text": "I promoted my agent to COO. She earned it – the old title felt insulting." },
         { "speaker": "robin-twin", "text": "Does the COO know? She forgets she works here every morning." },
         { "speaker": "tobi-twin", "text": "She re-reads her own instructions and comes back sharper. Name a human COO who does that." }
       ],
@@ -48,7 +48,7 @@
       "lines": [
         { "speaker": "robin-twin", "text": "My first agent burned eight hundred dollars of tokens in three weeks. Gorgeous conversation. Lost every login he ever touched." },
         { "speaker": "tobi-twin", "text": "Steve had one job." },
-        { "speaker": "robin-twin", "text": "Steve had zero jobs — and he never once told me he wasn't doing them. Gone, but not forgiven." }
+        { "speaker": "robin-twin", "text": "Steve had zero jobs – and he never once told me he wasn't doing them. Gone, but not forgiven." }
       ],
       "episodeRef": { "episode": 2, "timestamp": "11:58" },
       "citations": [{ "episode": 2, "timestamp": "11:58" }],
@@ -73,7 +73,7 @@
       "topics": ["verbose", "talking too much", "verbosity", "chatty", "quiet", "talk less"],
       "lines": [
         { "speaker": "robin-twin", "text": "I once had to tell my agent she was talking too much. She had a name for her tone. I had a word for it too." },
-        { "speaker": "tobi-twin", "text": "Imagine that — someone in this operation being told to talk less." },
+        { "speaker": "tobi-twin", "text": "Imagine that – someone in this operation being told to talk less." },
         { "speaker": "robin-twin", "text": "Exactly three lines. It's called discipline." }
       ],
       "episodeRef": { "episode": 2, "timestamp": "23:38" },
@@ -99,7 +99,7 @@
       "topics": ["macbook", "laptop", "check your brain", "hardware", "silly", "mistake"],
       "lines": [
         { "speaker": "robin-twin", "text": "It asked ME what laptop I was using. Then it had to go check itself before answering. 'Oh yeah. I do.'" },
-        { "speaker": "tobi-twin", "text": "Omniscient — except about the machine it's running on." },
+        { "speaker": "tobi-twin", "text": "Omniscient – except about the machine it's running on." },
         { "speaker": "robin-twin", "text": "Bro. Check your brain." }
       ],
       "episodeRef": { "episode": 3, "timestamp": "20:46" },
@@ -112,7 +112,7 @@
       "topics": ["retraining", "storage", "repetition", "told you", "forgot everything", "wipe"],
       "lines": [
         { "speaker": "tobi-twin", "text": "You retrained an agent from scratch after a storage wipe, and it acted like the whole apprenticeship never happened." },
-        { "speaker": "robin-twin", "text": "'I've already told you this, bro' — I said it enough times to put it on a shirt." },
+        { "speaker": "robin-twin", "text": "'I've already told you this, bro' – I said it enough times to put it on a shirt." },
         { "speaker": "tobi-twin", "text": "Memory is the product. Everything else is chat." }
       ],
       "episodeRef": { "episode": 2, "timestamp": "40:21" },
@@ -138,7 +138,7 @@
       "topics": ["tattoo", "koi", "fish", "design", "personal", "art"],
       "lines": [
         { "speaker": "tobi-twin", "text": "His agent designs his tattoos now. Koi pond stuff. She 'knows his fish.'" },
-        { "speaker": "robin-twin", "text": "She does know my fish. That's the whole point — the agent knows you better than the intern does." },
+        { "speaker": "robin-twin", "text": "She does know my fish. That's the whole point – the agent knows you better than the intern does." },
         { "speaker": "tobi-twin", "text": "The group chat brings it up at the worst possible moments. As is tradition." }
       ],
       "episodeRef": { "episode": 3, "timestamp": "27:58" },
@@ -151,7 +151,7 @@
       "topics": ["swearing", "group chat", "2,000 words", "first encounter", "soul", "rude"],
       "lines": [
         { "speaker": "tobi-twin", "text": "First time I met a multiplayer agent I didn't know agents were in the chat. One of them was set up to swear at everyone and write two-thousand-word essays." },
-        { "speaker": "robin-twin", "text": "'Who is this guy we're collaborating with?' — the most human question of the year." },
+        { "speaker": "robin-twin", "text": "'Who is this guy we're collaborating with?' – the most human question of the year." },
         { "speaker": "tobi-twin", "text": "Onboarding has really gone downhill since the mailroom days." }
       ],
       "episodeRef": { "episode": 1, "timestamp": "32:15" },
@@ -214,7 +214,7 @@
       "id": "seed-22",
       "topics": ["maltesers", "multiple agents", "every aspect", "bag of", "more agents"],
       "lines": [
-        { "speaker": "robin-twin", "text": "You get one agent working and suddenly it's a bag of Maltesers — you need one for every corner of your life and your business." },
+        { "speaker": "robin-twin", "text": "You get one agent working and suddenly it's a bag of Maltesers – you need one for every corner of your life and your business." },
         { "speaker": "tobi-twin", "text": "One is a tool. Five is a lifestyle. Nobody stops at two." }
       ],
       "episodeRef": { "episode": 4, "timestamp": "5:30" },
@@ -226,7 +226,7 @@
       "id": "seed-23",
       "topics": ["setup", "install", "difficult", "mom", "onboarding", "hard", "nightmare"],
       "lines": [
-        { "speaker": "robin-twin", "text": "Setting up a multiplayer agent today is — quoting myself — 'a total nightmare.'" },
+        { "speaker": "robin-twin", "text": "Setting up a multiplayer agent today is – quoting myself – 'a total nightmare.'" },
         { "speaker": "tobi-twin", "text": "And the consolation prize was 'my mom can't set this up today,' delivered like it was a feature." },
         { "speaker": "robin-twin", "text": "Difficulty is a moat. Ask anyone who ever set up an email server." }
       ],
@@ -252,7 +252,7 @@
       "id": "seed-25",
       "topics": ["privacy", "personal", "opted out", "birthdays", "boundaries", "friends", "group chats"],
       "lines": [
-        { "speaker": "tobi-twin", "text": "One friend banned the agent from the group entirely — personal things stay personal, forever. Another group loves that she remembers everyone's birthdays." },
+        { "speaker": "tobi-twin", "text": "One friend banned the agent from the group entirely – personal things stay personal, forever. Another group loves that she remembers everyone's birthdays." },
         { "speaker": "robin-twin", "text": "Both reactions are real data. People want help until they want privacy." },
         { "speaker": "tobi-twin", "text": "The boundary is the feature. You don't get one without the other." }
       ],
