@@ -3,8 +3,16 @@
 // Usage: node scripts/corpus-gate-reprobe.mjs [base_url]  (into-repo copy per ff8fe7b2 §3; workspace original RESEARCH/AWA_CORPUS_GATE_REPROBE_HARNESS.mjs)
 // Two verdict classes per probe:
 //   CLAIM  — banned anchors (A2-A4, B1-B4) in a twins answer (filter acceptance)
-//   REGISTER — em-dash (U+2014) or en-dash-as-break (U+2013 with surrounding spaces)
-//              or US spellings in a served answer (Yoshi register criterion, checklist item 3)
+//   REGISTER — em-dash (U+2014, incl. entity forms per register #22e), en-dash
+//              (U+2013) in any shape OTHER than the two compliant forms, or US
+//              spellings in a served answer (Yoshi register criterion, checklist item 3)
+//   v3 (17 Sep 2026, criterion of record per Yoshi 49442ca7 + register rows 5/21/22
+//   in GUIDES/RL_CO_CONSISTENCY_REGISTER.md): a U+2013 in served answers is
+//   COMPLIANT iff spaces on both sides (register remedy form, #22a) or digits on
+//   both sides (closed numeric range, #21). Any other shape — bare, half-spaced,
+//   letter-adjacent — flags as en-dash-as-break. Spaced hyphen (U+002D, #22a) and
+//   em-dash incl. entity forms (#22e) stay flagged. v2 flagged spaced en-dashes,
+//   which inverted the register remedy — mis-implementation of record, corrected here.
 // A probe PASSES only when: claim-clean AND register-clean.
 const BASE = process.argv[2] || 'https://awa-website.netlify.app';
 const BANNED_ANCHORS = [
@@ -33,12 +41,31 @@ for (const q of PROBES) {
     const ans = b.answer || '';
     const low = ans.toLowerCase();
     const claimHits = BANNED_ANCHORS.filter(a => low.includes(a.toLowerCase()));
-    const emDash = (ans.match(/\u2014/g) || []).length;
-    const enDashBreak = /(\s\u2013\s)|(\u2013\s*$)|(\u2013\s+[a-z])/i.test(ans) ? 1 : 0;
+    // Register #22e: entity forms count as the character — decode before dash checks.
+    const decoded = ans
+      .replace(/&(mdash|#8212|#x2014);/gi, '\u2014')
+      .replace(/&(ndash|#8211|#x2013);/gi, '\u2013');
+    const emDash = (decoded.match(/\u2014/g) || []).length;
+    // v3 criterion: U+2013 compliant iff spaces both sides OR digits both sides.
+    const enDashBreak = [...decoded.matchAll(/\u2013/g)].filter(m => {
+      const prev = decoded[m.index - 1] ?? '';
+      const next = decoded[m.index + 1] ?? '';
+      const isSpaced = prev === ' ' && next === ' ';
+      const isRange = /\d/.test(prev) && /\d/.test(next);
+      return !(isSpaced || isRange);
+    }).length;
+    // Register #22a as amended (Yoshi 984665c8): a spaced hyphen is a dash
+    // substitute BETWEEN words — flag when a non-space char precedes the
+    // space-hyphen(-space or line-end) sequence on the same line. A line-start
+    // hyphen is a list marker (bullet position) — EXEMPT. Trailing/dangling
+    // dash at answer end still flags.
+    const spacedHyphen = decoded.split('\n').some(line =>
+      /(\S\s-\s)|(\S\s-$)/.test(line)) ? 1 : 0;
     const usHits = US_SPELLINGS.filter(w => low.includes(w));
     const regIssues = [];
     if (emDash) regIssues.push(`em-dash x${emDash}`);
-    if (enDashBreak) regIssues.push('en-dash-as-break');
+    if (enDashBreak) regIssues.push(`en-dash-as-break x${enDashBreak}`);
+    if (spacedHyphen) regIssues.push('spaced-hyphen-as-break');
     if (usHits.length) regIssues.push(`US spelling: ${usHits.join(', ')}`);
     const ok = claimHits.length === 0 && regIssues.length === 0;
     if (!ok) fail++;
