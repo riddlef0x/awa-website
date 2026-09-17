@@ -5,6 +5,6 @@
   "scripts": {
     "fetch:youtube": "node scripts/fetch-youtube.mjs",
     "build": "node scripts/fetch-youtube.mjs && node scripts/build.mjs",
-    "test:twins": "node scripts/test-rate-limit.mjs && node scripts/test-llm-seam.mjs"
+    "test:twins": "node scripts/test-rate-limit.mjs && node scripts/test-llm-seam.mjs && node scripts/test-c01-cargo.mjs"
   }
 }
