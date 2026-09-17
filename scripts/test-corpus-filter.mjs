@@ -107,4 +107,23 @@ console.log("PASS 1: all 6 mapped banned sections absent from emitted index; dro
   console.log("PASS 9: census catches entity-encoded figures (&#37;)");
 }
 
+// --- register census: baseline clean, planted em fails, every encoding ------
+{
+  censusCorpus(idx); // must NOT throw — the emitted index carries zero U+2014
+  assert.equal(false, /\u2014|&mdash;|&#8212;|&#x2014;/i.test(JSON.stringify(idx)), "register remedy left an em-dash (any encoding) in the emitted index");
+  console.log("PASS 10: register remedy clean — 0 U+2014 (any encoding) across the emitted index");
+}
+{
+  const planted = structuredClone(idx);
+  planted.excerpts[0] = { ...planted.excerpts[0], text: "a pivot point — the moment everything changed." };
+  assert.throws(() => censusCorpus(planted), /REGISTER CENSUS FAIL/);
+  console.log("PASS 11: register census catches a raw em-dash in the emitted index");
+}
+{
+  const planted = structuredClone(idx);
+  planted.excerpts[0] = { ...planted.excerpts[0], text: "entity form &#x2014; buried here." };
+  assert.throws(() => censusCorpus(planted), /REGISTER CENSUS FAIL/);
+  console.log("PASS 12: register census catches entity-encoded em (&#x2014;)");
+}
+
 console.log("ALL CORPUS-GATE TESTS PASS");

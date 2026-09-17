@@ -48,12 +48,31 @@ function excerptText(blockHtml) {
     .replace(/\n /g, "\n")
     .replace(/\n{2,}/g, "\n")
     .trim();
+  // Register remedy (stage-1 ruling of record, Oksana 17 Sep, event c9cc2769):
+  // llm answers are composed FROM these excerpts, so the register criterion
+  // (U+2014 count-to-zero, register rows 5/22(a)) must hold on the grounding
+  // corpus, not just the served pool (PR #6 swept pool.json only). Mechanical
+  // U+2014 -> U+2013 spaced at emission — the same remedy form as the pool
+  // sweep. Transcripts stay verbatim on the pages; conversion is build-time.
+  s = registerRemedy(s);
   if (s.length > MAX_EXCERPT_CHARS) {
     const cut = s.slice(0, MAX_EXCERPT_CHARS);
     const stop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
-    s = (stop > MAX_EXCERPT_CHARS * 0.5 ? cut.slice(0, stop + 1) : cut) + " …[transcript continues]";
+    let body = stop > MAX_EXCERPT_CHARS * 0.5 ? cut.slice(0, stop + 1) : cut;
+    // register hygiene: never end the emitted string on a dangling dash
+    body = body.replace(/[\s\u2013-]+$/, "");
+    s = body + " …[transcript continues]";
   }
   return s;
+}
+
+// U+2014 -> U+2013 spaced, whitespace runs collapsed, ends trimmed. Applied
+// to text + section fields at excerpt construction (see remedy note above).
+function registerRemedy(s) {
+  return s
+    .replace(/[ \t]*\u2014[ \t]*/g, " \u2013 ")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
 }
 
 export function buildRetrievalIndex({ episodes }) {
@@ -90,7 +109,7 @@ export function buildRetrievalIndex({ episodes }) {
       excerpts.push({
         episode: num,
         timestamp: head.timestamp,
-        section: head.section,
+        section: registerRemedy(head.section),
         text,
         citation: { episode: num, timestamp: head.timestamp, videoId },
         handoff: {
@@ -232,6 +251,29 @@ export function censusCorpus(index) {
     const detail = hits.slice(0, 10).map((h) => `"${h.form}" @ …${h.sample}…`).join("\n  ");
     throw new Error(`[corpus-gate] CENSUS FAIL: ${hits.length} banned-anchor occurrence(s) in the emitted index (count-to-zero violated):\n  ${detail}`);
   }
-  console.log(`[corpus-gate] census PASS: ${gate.censusAnchors.length} anchors, count-to-zero, ${index.excerpts.length} excerpts emitted`);
-  return { anchors: gate.censusAnchors.length, excerpts: index.excerpts.length, hits: 0 };
+  // Register census (stage-1 ruling of record, Oksana 17 Sep, event c9cc2769):
+  // count-to-zero U+2014 on the emitted index, every encoding — same
+  // fail-closed pattern as the claims census, so the register criterion
+  // cannot rot with the next transcript pass (this is how the pre-flight
+  // found the corpus carrying 466 ems while the served pool was clean).
+  const EM_FORMS = [
+    { re: /\u2014/g, label: "raw U+2014" },
+    { re: /&mdash;/gi, label: "&mdash;" },
+    { re: /&#8212;/gi, label: "&#8212;" },
+    { re: /&#x2014;/gi, label: "&#x2014;" },
+  ];
+  const emHits = [];
+  for (const { re, label } of EM_FORMS) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(raw)) !== null) {
+      emHits.push({ label, sample: raw.slice(m.index - 40, m.index + 60) });
+    }
+  }
+  if (emHits.length) {
+    const detail = emHits.slice(0, 5).map((h) => `${h.label} @ …${h.sample}…`).join("\n  ");
+    throw new Error(`[corpus-gate] REGISTER CENSUS FAIL: ${emHits.length} em-dash occurrence(s) in the emitted index (U+2014 count-to-zero violated):\n  ${detail}`);
+  }
+  console.log(`[corpus-gate] census PASS: ${gate.censusAnchors.length} anchors + U+2014 count-to-zero (0, every encoding), ${index.excerpts.length} excerpts emitted`);
+  return { anchors: gate.censusAnchors.length, excerpts: index.excerpts.length, hits: 0, em: 0 };
 }
