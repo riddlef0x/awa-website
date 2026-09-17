@@ -110,9 +110,9 @@ function isGreeting(question) {
 function greetingResponse() {
   const list = greetingTopics.slice(0, 3);
   const askLine = list.length
-    ? (list.length > 2
+    ? `Ask us about ${list.length > 2
         ? `${list.slice(0, -1).join(", ")}, or ${list[list.length - 1]}`
-        : list.join(" or ")) + " – the humans were there for all of it. We were rendered."
+        : list.join(" or")} – the humans were there for all of it. We were rendered.`
     : "Ask us anything from the show – if the humans said it on air, we'll argue about it.";
   const answer = `Robin-twin: G'day – we're the twins, AI versions of the hosts, scripted from the show's best arguments.\n\nTobi-twin: ${askLine}`;
   return new Response(
