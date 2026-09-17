@@ -175,7 +175,7 @@ function askRootMarkup(honest = true) {
     <button class="twins-go">Ask</button>
   </div>
   <p class="twins-err" hidden></p>
-  ${honest ? `<p class="twins-note">Answers are drafted with the help of an AI service. We don't keep your questions – just an anonymous record that one was asked. <a href="/privacy/">what happens to your question</a>.</p>` : ""}
+  ${honest ? `<p class="twins-note">Answers are drafted with the help of an AI service. We don't keep your questions – just an anonymous record that one was asked; <a href="/privacy/">what happens to your question</a>.</p>` : ""}
   <input class="twins-hp" name="website" type="text" tabindex="-1" aria-hidden="true" autocomplete="off">
 </div>`;
 }
