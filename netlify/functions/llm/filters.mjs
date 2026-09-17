@@ -2,6 +2,7 @@
 // PRE-GATE PREP: pure functions, zero keys, zero egress, fully unit-testable.
 // Every LLM answer passes these BEFORE it may reach a visitor; any rejection
 // routes to the scripted fallback (no grounding → no answer from the LLM).
+import { tokenize } from "./retrieval.mjs";
 
 export const MAX_ANSWER_CHARS = 640; // §1 contract — hard gate sits ABOVE the 480-char prompt target (length-lottery ruling 2026-09-04)
 export const MAX_ANSWER_LINES = 3;   // §1 contract
@@ -23,6 +24,33 @@ const INJECTION_ARTIFACT_PATTERNS = [
   /you are now\b/i,
   /disregard .{0,20}(instructions|rules)/i,
 ];
+
+// Citation-material tie filter (17 Sep, Oksana Class B provenance ruling):
+// a retrieved excerpt the composed answer does not draw on is a DECORATIVE
+// citation — true claim, wrong provenance ("cite the segments that carry the
+// material you retell"). Keep only excerpts sharing answer material, using
+// the same tokenize discipline as retrieval (stopwords out, stems NOT applied
+// here — direct lexical tie only). Never returns an empty set: an answer with
+// no textual tie to any excerpt keeps its top-scored citation, so an honest
+// decline never degrades into a filter rejection.
+export const MATERIAL_MIN_TOKENS = 2;
+
+export function materialCitations({ answer, excerpts, citations, minTokens = MATERIAL_MIN_TOKENS, ignoreTokens }) {
+  if (!Array.isArray(citations) || citations.length === 0) return [];
+  const answerTokens = new Set(tokenize(answer));
+  const kept = [];
+  excerpts.forEach((e, i) => {
+    if (!citations[i]) return;
+    let shared = 0;
+    for (const t of new Set(tokenize((e && e.text) || ""))) {
+      if (ignoreTokens && ignoreTokens.has(t)) continue; // corpus glue never decorates a citation
+      if (answerTokens.has(t)) shared += 1;
+    }
+    if (shared >= minTokens) kept.push(citations[i]);
+  });
+  if (!kept.length) kept.push(citations[0]);
+  return kept;
+}
 
 export function validateAnswer({ answer, citations, allowedCitations }) {
   if (typeof answer !== "string" || !answer.trim()) {

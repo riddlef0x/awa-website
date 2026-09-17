@@ -4,7 +4,7 @@
 // Run: node scripts/test-llm-seam.mjs
 import assert from "node:assert";
 import { callProvider } from "../netlify/functions/llm/provider.mjs";
-import { validateAnswer, MAX_ANSWER_CHARS, MAX_ANSWER_LINES } from "../netlify/functions/llm/filters.mjs";
+import { validateAnswer, MAX_ANSWER_CHARS, MAX_ANSWER_LINES, materialCitations, MATERIAL_MIN_TOKENS } from "../netlify/functions/llm/filters.mjs";
 import { mockProvider, FIXTURES } from "../netlify/functions/llm/provider-mock.mjs";
 import { retrieve } from "../netlify/functions/llm/retrieval.mjs";
 import { createGuard } from "../netlify/functions/llm/guard.mjs";
@@ -148,6 +148,36 @@ console.log("PASS 5: fixture registry complete");
   t += 3_600_000; // next hour → fresh window
   assert.strictEqual(await guard.tripped(), false, "circuit resets with the hour");
   console.log("PASS 8: fallback-rate circuit trips at the §6 threshold, resets each hour");
+}
+
+// 9. Citation-material tie filter (17 Sep, Class B provenance ruling): a
+// retrieved excerpt the answer does not draw on is a decorative citation and
+// must drop; true sources stay; an answer tied to nothing keeps its top
+// citation (an honest decline must never degrade into a filter rejection).
+{
+  const excMaterial = { text: "Originally, when I started this, I burned $800 on Opus in the first month. It was gnarly, absolutely gnarly." };
+  const excStack = { text: "The way it landed, yeah – month after month of hosting arguments, on-prem versus cloud, and the data sovereignty questions every director should ask." };
+  const citeMaterial = { episode: 1, videoId: "aaa111", timestamp: "19:54" };
+  const citeStack = { episode: 4, videoId: "bbb222", timestamp: "9:13" };
+  const answer = "Robin-twin: Tobi torched $800 on Opus in his first month – absolutely gnarly, he called it.\nTobi-twin: The wallet never recovered. That's the tuition.";
+  const out = materialCitations({ answer, excerpts: [excMaterial, excStack], citations: [citeMaterial, citeStack] });
+  assert.deepStrictEqual(out, [citeMaterial], "decorative ep-4-style citation must drop; material citation must stay");
+  const outAll = materialCitations({ answer, excerpts: [excMaterial], citations: [citeMaterial] });
+  assert.deepStrictEqual(outAll, [citeMaterial], "fully-tied citation set passes through unchanged");
+  const decline = "Robin-twin: We haven't covered that on the show yet – and we'd rather say so than invent it.\nTobi-twin: Ask us about the token bill instead. That one still stings.";
+  const outNone = materialCitations({ answer: decline, excerpts: [excStack], citations: [citeStack] });
+  assert.deepStrictEqual(outNone, [citeStack], "no-tie answer keeps its top citation (never empty)");
+  // Corpus-glue exclusion: "way / yeah / month" in common must NOT tie the
+  // stack excerpt to the answer; a single glue overlap is not material.
+  const outGlue = materialCitations({
+    answer,
+    excerpts: [excMaterial, excStack],
+    citations: [citeMaterial, citeStack],
+    ignoreTokens: new Set(["way", "yeah", "month", "twin", "which", "through", "first"]),
+  });
+  assert.deepStrictEqual(outGlue, [citeMaterial], "glue-only overlap must not count as material");
+  assert.strictEqual(MATERIAL_MIN_TOKENS, 2, "tie floor stays at 2 shared tokens");
+  console.log("PASS 9: materialCitations drops decorative citations, keeps honest declines served");
 }
 
 console.log("ALL LLM-SEAM TESTS PASS");

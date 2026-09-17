@@ -254,6 +254,26 @@ export async function buildTwins(data, siteUrl) {
   }
 
   const latest = data.episodes.reduce((a, b) => (a.episodeNumber > b.episodeNumber ? a : b));
+
+  // Greeting router topics (fallback-honesty unit, 17 Sep ruling): the topics
+  // the scripted greeting may promise. Each label must contain its anchor
+  // VERBATIM and the anchor must be one of that entry's pool keywords — that
+  // guarantees a phrase match (+3) at the ask.mjs threshold, so the router
+  // can never promise more than the pool genuinely answers.
+  const GREETING_TOPICS = [
+    { id: "seed-01", anchor: "sovereign ai", label: "the sovereign AI deal" },
+    { id: "seed-04", anchor: "50 first dates", label: "the 50 first dates memory problem" },
+    { id: "seed-22", anchor: "maltesers", label: "the Maltesers rule" },
+  ];
+  const greetingTopics = [];
+  for (const t of GREETING_TOPICS) {
+    const e = out.find((x) => x.id === t.id);
+    if (!e) fail(`greeting topic: entry ${t.id} not in pool`);
+    if (!e.keywords.includes(t.anchor)) fail(`greeting topic ${t.id}: anchor "${t.anchor}" is not one of its pool topics`);
+    if (!t.label.toLowerCase().includes(t.anchor.toLowerCase())) fail(`greeting topic ${t.id}: label "${t.label}" must contain its anchor "${t.anchor}" verbatim`);
+    greetingTopics.push(t.label);
+  }
+
   const askData = {
     generatedAt: new Date().toISOString(),
     entries: out,
@@ -262,9 +282,13 @@ export async function buildTwins(data, siteUrl) {
       episode: latest.episodeNumber,
       url: latest.url,
       label: "The real version lives in the episodes",
-      citations: [{ episode: latest.episodeNumber, videoId: latest.videoId, timestamp: "0:00" }],
+      // Fallback-honesty ruling (17 Sep): NO citations on the fallback tier.
+      // The old `citations: [{episode 5 · 0:00}]` here was fabricated
+      // provenance — a scripted deflection was never spoken on that episode.
+      // The handoff stays: it is a general, true pointer, not a citation.
     },
     disagreementIds: pool.disagreement,
+    greetingTopics,
   };
   await writeFile(path.join(ROOT, "netlify", "functions", "ask-data.json"), JSON.stringify(askData, null, 2));
 
