@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T10:38:53.351Z",
+  "generatedAt": "2026-09-17T20:00:44.699Z",
   "entries": [
     {
       "id": "seed-01",
@@ -814,20 +814,18 @@
     "The twins plead the fifth. The unscripted version is one click away."
   ],
   "fallbackHandoff": {
-    "episode": 5,
-    "url": "https://www.youtube.com/watch?v=liH-K3p-maM",
-    "label": "The real version lives in the episodes",
-    "citations": [
-      {
-        "episode": 5,
-        "videoId": "liH-K3p-maM",
-        "timestamp": "0:00"
-      }
-    ]
+    "episode": 4,
+    "url": "https://www.youtube.com/watch?v=foh1JHjA8GE",
+    "label": "The real version lives in the episodes"
   },
   "disagreementIds": [
     "seed-01",
     "seed-13",
     "seed-23"
+  ],
+  "greetingTopics": [
+    "the sovereign AI deal",
+    "the 50 first dates memory problem",
+    "the Maltesers rule"
   ]
 }

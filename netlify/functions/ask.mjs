@@ -8,12 +8,13 @@ import { readFileSync } from "node:fs";
 import { createLimiter } from "./rate-limit.mjs";
 import { createConsent } from "./consent.mjs";
 import { callProvider } from "./llm/provider.mjs";
-import { validateAnswer } from "./llm/filters.mjs";
-import { retrieve } from "./llm/retrieval.mjs";
+import { validateAnswer, materialCitations } from "./llm/filters.mjs";
+import { retrieve, tokenize } from "./llm/retrieval.mjs";
 import { createGuard } from "./llm/guard.mjs";
 
 const data = JSON.parse(readFileSync(new URL("./ask-data.json", import.meta.url), "utf8"));
 const { entries, fallbackLines, fallbackHandoff, disagreementIds } = data;
+const greetingTopics = Array.isArray(data.greetingTopics) ? data.greetingTopics : [];
 const byId = new Map(entries.map((e) => [e.id, e]));
 
 // Retrieval corpus (spec §5: repo transcripts only, build-generated). If the
@@ -23,6 +24,22 @@ try {
   RETRIEVAL = JSON.parse(readFileSync(new URL("./ask-retrieval.json", import.meta.url), "utf8"));
 } catch {
   console.error("[ask] ask-retrieval.json missing — LLM path disabled (scripted only)");
+}
+
+// Corpus-ubiquitous tokens (17 Sep, Class B provenance fix): conversational
+// glue ("way", "yeah") appears across the whole transcript corpus and must
+// never decorate a citation via the material tie. Computed once at module
+// load over the same index — df ≥ 10% of excerpts = glue. Empty index (LLM
+// path disabled anyway) yields an empty set, which changes nothing.
+const UBIQUITOUS_DF_FRACTION = 0.1;
+const UBIQUITOUS = new Set();
+{
+  const df = new Map();
+  for (const e of RETRIEVAL.excerpts) {
+    for (const t of new Set(tokenize((e && e.text) || ""))) df.set(t, (df.get(t) || 0) + 1);
+  }
+  const floor = RETRIEVAL.excerpts.length * UBIQUITOUS_DF_FRACTION;
+  for (const [t, n] of df) if (n >= floor) UBIQUITOUS.add(t);
 }
 
 // LLM path config (spec §8: flip = env var only; rollback = env var back).
@@ -72,6 +89,42 @@ function normalize(s) {
 }
 
 const GENERIC = new Set(["who", "are", "you", "what", "this", "hello", "hi", "hey", "ai", "agent", "agents", "podcast", "twins", "show", "robin", "tobi", "episode", "episodes", "about"]);
+
+// Greeting router (fallback-honesty unit, 17 Sep ruling): a pure greeting is
+// the most common first input and used to land the worst tier. It now gets a
+// scripted, in-character response pointing at real pool topics — zero LLM
+// spend, no citations (the router lines were never spoken). The topics come
+// from ask-data.json greetingTopics, build-derived by scripts/build-twins.mjs
+// and gated there against pool keywords, so the router can never promise more
+// than the pool genuinely answers.
+const GREETING_WORDS = new Set(["hi", "hello", "hey", "yo", "hiya", "howdy", "sup", "gday", "g", "day", "good", "morning", "afternoon", "evening", "greetings", "aloha", "hola", "there", "twins"]);
+const GREETING_CORE = new Set(["hi", "hello", "hey", "yo", "hiya", "howdy", "sup", "gday", "g", "day", "morning", "afternoon", "evening", "greetings", "aloha", "hola"]);
+const GREETING_MAX_TOKENS = 4;
+
+function isGreeting(question) {
+  const tokens = normalize(question).split(" ").filter(Boolean);
+  if (!tokens.length || tokens.length > GREETING_MAX_TOKENS) return false;
+  return tokens.every((w) => GREETING_WORDS.has(w)) && tokens.some((w) => GREETING_CORE.has(w));
+}
+
+function greetingResponse() {
+  const list = greetingTopics.slice(0, 3);
+  const askLine = list.length
+    ? `Ask us about ${list.join(", ").replace(/, ([^,]*)$/, " or $1")} – the humans were there for all of it. We were rendered.`
+    : "Ask us anything from the show – if the humans said it on air, we'll argue about it.";
+  const answer = `Robin-twin: G'day – we're the twins, AI versions of the hosts, scripted from the show's best arguments.\n\nTobi-twin: ${askLine}`;
+  return new Response(
+    JSON.stringify({
+      answer,
+      speaker: "both",
+      citations: [],
+      poolId: "greeting",
+      fallbackUsed: false,
+      mode: "greeting",
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
+}
 
 // Weak-evidence words: never counted at word level (they match everything).
 const STOPWORDS = new Set(["the", "a", "an", "of", "to", "is", "are", "was", "were", "be", "been", "am", "it", "its", "in", "on", "at", "and", "or", "for", "with", "what", "how", "who", "whats", "do", "does", "did", "me", "my", "your", "you", "this", "that", "they", "them", "their", "we", "us", "our", "so", "if", "was", "will", "can", "get", "got"]);
@@ -166,7 +219,11 @@ function handoffResponse(statusCode, answer) {
     JSON.stringify({
       answer,
       speaker: "both",
-      citations: fallbackHandoff.citations,
+      // Fallback-honesty ruling (17 Sep, Oksana/Stephanie): every line this
+      // tier serves is scripted and was never spoken on air — any citation
+      // here is fabricated provenance. citations[] is empty on this tier;
+      // the handoff stays because it is a general, true pointer.
+      citations: [],
       handoff: fallbackHandoff,
       poolId: "fallback",
       fallbackUsed: true,
@@ -244,9 +301,15 @@ async function llmAnswer(question) {
   });
 
   // §5 filters: any rejection → throw → scripted fallback. Fails CLOSED.
-  const v = validateAnswer({ answer, citations, allowedCitations: citations });
+  // Class B provenance fix (17 Sep): cite only the excerpts the answer draws
+  // on — a decorative citation is true-claim-wrong-provenance. The provider
+  // payload above is unchanged (the model sees the same grounding); this
+  // trims the citation surface only. validateAnswer still gates non-empty
+  // citations and every citation still traces to a retrieved excerpt.
+  const cited = materialCitations({ answer, excerpts: picked, citations, ignoreTokens: UBIQUITOUS });
+  const v = validateAnswer({ answer, citations: cited, allowedCitations: citations });
   if (!v.ok) throw new Error(`filter:${v.reason}`);
-  return { answer, citations, handoff: picked[0].handoff };
+  return { answer, citations: cited, handoff: picked[0].handoff };
 }
 
 function llmResponse(out) {
@@ -320,6 +383,19 @@ export function createAskHandler(deps = {}) {
       consentId = await consent.pending(ASK_SOURCES.has(body.source) ? body.source : "unknown");
     } catch {
       consentId = null; // recording never blocks an answer
+    }
+
+    // Greeting router (fallback-honesty unit): a pure greeting gets the
+    // scripted router, not the worst tier. Sits ahead of the LLM path so a
+    // greeting never spends a token and the probe stays deterministic.
+    if (isGreeting(question)) {
+      log({ poolId: "greeting", fallbackUsed: false, mode: "greeting" });
+      try {
+        await consent.confirm(consentId);
+      } catch {
+        // recording never blocks an answer
+      }
+      return greetingResponse();
     }
 
     // Phase B LLM path (spec §8: flip = env var; Phase A below IS the
