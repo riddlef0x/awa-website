@@ -1,0 +1,36 @@
+/* Proposed WEBSITE layout refinement. Load after approved awa-tokens.css.
+   Palette, identity, theme scripts and typography families remain AWA 1.1. */
+:root {
+  --awa-content-max: 1200px;
+  --awa-page-gutter: 32px;
+  --awa-grid-gap: 24px;
+  --awa-reading-max: 680px;
+  --awa-header-height: 88px;
+  --awa-section-gap: 96px;
+}
+.awa-container {
+  width: min(var(--awa-content-max), calc(100% - 2 * var(--awa-page-gutter)));
+  max-width: none;
+  padding-inline: 0;
+  margin-inline: auto;
+}
+.awa-reading { max-width: var(--awa-reading-max); }
+.awa-page { overflow-wrap: break-word; }
+.awa-page :is(h1,h2,h3,p) { margin-block-start: 0; }
+.awa-page :is(section,[id]) { scroll-margin-top: calc(var(--awa-header-height) + 24px); }
+.awa-detail-title { font: 700 3.5rem/1.0714 var(--awa-font-display); letter-spacing: -.02em; }
+.awa-editorial-grid { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: var(--awa-grid-gap); }
+.awa-media { aspect-ratio: 16/9; overflow: hidden; border-radius: var(--awa-radius-media); }
+.awa-media img { display:block; width:100%; height:100%; object-fit:cover; }
+.awa-page :is(button, input, textarea) { font-size: 1rem; }
+.awa-page button { min-height:44px; }
+@media (max-width:1199px) {
+  :root { --awa-page-gutter:24px; --awa-header-height:72px; }
+}
+@media (max-width:767px) {
+  :root { --awa-page-gutter:20px; --awa-section-gap:64px; }
+  .awa-h1 { font-size:clamp(2.25rem,11.3vw,2.75rem); line-height:1.091; }
+  .awa-detail-title { font-size:2.25rem; line-height:1.111; }
+  .awa-reading { font-size:1.125rem; line-height:1.61; }
+  .awa-editorial-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
