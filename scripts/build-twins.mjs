@@ -31,7 +31,7 @@ const BANNED = [
 ];
 
 const ASK_STYLES = `
-.twins-ask{background:var(--awa-raised);border:1px solid var(--awa-divider);border-radius:12px;color:var(--awa-text);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.twins-ask{/* C01 port per Oksana refresh ruling 17 Sep (post f72432ec): token mappings role-based; palette drift to DS 1.1 values expected */background:var(--awa-raised);border:1px solid var(--awa-divider);border-radius:12px;color:var(--awa-text);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .twins-log{max-height:300px;overflow-y:auto;padding:4px 12px 0;font-size:13px;line-height:1.45}
 .twins-q{color:var(--awa-text);margin:8px 0 2px;font-weight:600}
 .twins-a{color:var(--awa-secondary);margin:2px 0 8px;white-space:pre-line}
@@ -41,9 +41,14 @@ const ASK_STYLES = `
 .twins-input{flex:1;background:var(--awa-surface);border:1px solid var(--awa-divider);border-radius:8px;color:var(--awa-text);padding:8px 10px;font-size:16px;min-width:0}
 .twins-go{background:var(--awa-action);border:0;border-radius:8px;color:var(--awa-onAction);font-weight:700;padding:8px 12px;cursor:pointer}
 .twins-err{color:var(--awa-warning);font-size:12px;margin:0 12px 10px}
+.twins-note{color:var(--awa-secondary);font-size:12px;line-height:1.4;margin:0 12px 10px}
+.twins-note a{color:var(--awa-action)}
+/* C01 honeypot decoy: invisible to people, never focusable (tabindex -1),
+   machine-ignored (aria-hidden). 16px font so no iOS auto-zoom if anything
+   ever focuses it (the 5 Sept mobile lesson). */
+.twins-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;font-size:16px}
 .twins-tag{display:inline-block;font-size:11px;letter-spacing:.02em;color:var(--awa-accent);background:color-mix(in srgb, var(--awa-action) 8%, transparent);border:1px solid color-mix(in srgb, var(--awa-action) 25%, transparent);border-radius:6px;padding:4px 8px;margin:10px 12px 0}
-.twins-widget{position:fixed;right:16px;bottom:24px;z-index:9999;max-width:min(360px,calc(100vw - 32px))}
-.twins-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none}
+.twins-widget{position:fixed;right:16px;bottom:24px;z-index:9999;max-width:min(360px,calc(100vw - 32px))}.twins-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none}
 .twins-dot{width:8px;height:8px;border-radius:50%;background:var(--awa-action);flex:none}
 .twins-ticker{font-size:13px;color:var(--awa-control);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .twins-panel{display:none;border-top:1px solid var(--awa-divider)}
@@ -73,7 +78,8 @@ const ASK_SCRIPT = `
 (function(){
   function initAsk(root){
     var log=root.querySelector(".twins-log"),input=root.querySelector(".twins-input"),
-        go=root.querySelector(".twins-go"),err=root.querySelector(".twins-err");
+        go=root.querySelector(".twins-go"),err=root.querySelector(".twins-err"),
+        hp=root.querySelector(".twins-hp");
     if(!log||!input||!go)return;
     var busy=false;
     function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
@@ -82,7 +88,11 @@ const ASK_SCRIPT = `
       err.hidden=true;busy=true;go.disabled=true;
       var qEl=document.createElement("div");qEl.className="twins-q";qEl.textContent="You: "+q;log.appendChild(qEl);
       input.value="";
-      fetch("/api/ask",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({question:q})})
+      // C01: source names the surface (page vs widget) for the anonymous
+      // consent record; the honeypot field is sent back only if a bot filled it.
+      var payload={question:q,source:root.closest("#twinsWidget")?"widget":"twins"};
+      if(hp&&hp.value)payload.website=hp.value;
+      fetch("/api/ask",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)})
       .then(function(r){return r.json().then(function(b){return {status:r.status,body:b};});})
       .then(function(res){
         var b=res.body||{};
@@ -162,7 +172,7 @@ const ASK_SCRIPT = `
 })();
 `;
 
-function askRootMarkup() {
+function askRootMarkup(honest = true) {
   return `<div class="twins-ask">
   <span class="twins-tag">AI twins – may be wrong</span>
   <div class="twins-log" aria-live="polite"></div>
@@ -171,6 +181,8 @@ function askRootMarkup() {
     <button class="twins-go">Ask</button>
   </div>
   <p class="twins-err" hidden></p>
+  ${honest ? `<p class="twins-note">Answers are drafted with the help of an AI service. We don't keep your questions – just an anonymous record that one was asked; <a href="/privacy/">what happens to your question</a>.</p>` : ""}
+  <input class="twins-hp" name="website" type="text" tabindex="-1" aria-hidden="true" autocomplete="off">
 </div>`;
 }
 
@@ -323,11 +335,12 @@ h2{font-size:20px;margin:32px 0 12px}
   <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode – that link is the product.</p>
   <section class="t-ask">
     <h2>Ask the twins</h2>
-    ${askRootMarkup()}
+    ${askRootMarkup(false)}
     <p class="t-note">Answers are drafted with the help of an AI service –
-    grounded in the show, with the episode cited. No question text is stored
-    on our side; see the <a href="/privacy/">privacy page</a> for exactly
-    what happens to your question.</p>
+    grounded in the show, with the episode cited. We don't keep your
+    questions – just an anonymous record that one was asked. See
+    the <a href="/privacy/">privacy page</a> for exactly what happens to your
+    question.</p>
   </section>
   <section>
     <h2>Best exchanges</h2>
