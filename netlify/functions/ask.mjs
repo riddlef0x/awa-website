@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { createLimiter } from "./rate-limit.mjs";
 import { createConsent } from "./consent.mjs";
 import { callProvider } from "./llm/provider.mjs";
-import { validateAnswer, materialCitations, isHonestDecline } from "./llm/filters.mjs";
+import { validateAnswer, materialCitations, isHonestDecline, buildIdf } from "./llm/filters.mjs";
 import { retrieve, tokenize } from "./llm/retrieval.mjs";
 import { createGuard } from "./llm/guard.mjs";
 
@@ -26,21 +26,19 @@ try {
   console.error("[ask] ask-retrieval.json missing — LLM path disabled (scripted only)");
 }
 
-// Corpus-ubiquitous tokens (17 Sep, Class B provenance fix): conversational
-// glue ("way", "yeah") appears across the whole transcript corpus and must
-// never decorate a citation via the material tie. Computed once at module
-// load over the same index — df ≥ 10% of excerpts = glue. Empty index (LLM
-// path disabled anyway) yields an empty set, which changes nothing.
+// Corpus stats, computed once at module load over the index (F-NEW-2, 17 Sep):
+// (a) UBIQUITOUS — conversational glue ("way", "yeah"; df ≥ 10% of excerpts)
+//     never decorates a citation via the material tie (Class B fix);
+// (b) IDF — the BM25 idf the per-claim material tie weights shared tokens by
+//     (Oksana consolidation `6150aced`: reuse the retrieval side's own
+//     primitive so tie weight and ranking weight agree by construction).
+// Empty index (LLM path disabled anyway) yields an empty glue set and an idf
+// that never fires — the LLM path is unreachable without excerpts.
+const { idf: IDF, df: CORPUS_DF } = buildIdf(RETRIEVAL.excerpts);
 const UBIQUITOUS_DF_FRACTION = 0.1;
-const UBIQUITOUS = new Set();
-{
-  const df = new Map();
-  for (const e of RETRIEVAL.excerpts) {
-    for (const t of new Set(tokenize((e && e.text) || ""))) df.set(t, (df.get(t) || 0) + 1);
-  }
-  const floor = RETRIEVAL.excerpts.length * UBIQUITOUS_DF_FRACTION;
-  for (const [t, n] of df) if (n >= floor) UBIQUITOUS.add(t);
-}
+const UBIQUITOUS = new Set(
+  [...CORPUS_DF].filter(([, n]) => n >= RETRIEVAL.excerpts.length * UBIQUITOUS_DF_FRACTION).map(([t]) => t),
+);
 
 // LLM path config (spec §8: flip = env var only; rollback = env var back).
 // Provider host is PINNED here (spec §3: one function, one outbound call, one
@@ -306,14 +304,18 @@ async function llmAnswer(question) {
   // Class-conditional citation polarity (17 Sep, joint Oksana/Zar F-NEW-1
   // ruling — Oksana `626fcdb8` §2, Zar `97aafdca`): the rendered answer's
   // class decides the citation set — `citations empty ⟺ DECLINE class`.
-  // materialCitations returns [] for a decline (its own phrasing must never
-  // tie-match itself into a citation — the Jupiter defect) and for a
-  // claim-bearing answer tied to nothing (validateAnswer then rejects to the
-  // scripted fallback). Handoff: a decline carries NO episode-attributed
+  // materialCitations: per-claim idf material tie (F-NEW-2, Oksana
+  // `6150aced`). Returns [] for a decline (its own phrasing must never
+  // tie-match itself into a citation — the Jupiter defect). A fully-stripped
+  // claim-bearing composition is NOT rerouted to a decline shape — routing
+  // correction `f30b3047` §2: validateAnswer's claim-bearing class rejects
+  // the empty set and the throw lands on the scripted fallback tier
+  // (fail-closed as always; no ungrounded prose under decline chrome).
+  // Handoff: a decline carries NO episode-attributed
   // handoff — the recycled neutral pointer ("The real version lives in the
   // episodes") serves stripped to {url, label}; the `episode` field never
   // rides a decline. Claim-bearing keeps the excerpt's own handoff.
-  const cited = materialCitations({ answer, excerpts: picked, citations, ignoreTokens: UBIQUITOUS });
+  const cited = materialCitations({ answer, excerpts: picked, citations, ignoreTokens: UBIQUITOUS, idf: IDF });
   const v = validateAnswer({ answer, citations: cited, allowedCitations: citations });
   if (!v.ok) throw new Error(`filter:${v.reason}`);
   const handoff = isHonestDecline(answer)

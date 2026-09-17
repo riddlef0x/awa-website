@@ -25,58 +25,115 @@ const INJECTION_ARTIFACT_PATTERNS = [
   /disregard .{0,20}(instructions|rules)/i,
 ];
 
-// Citation-material tie filter (17 Sep, Oksana Class B provenance ruling;
-// polarity amended by the joint Oksana/Zar F-NEW-1 ruling, 17 Sep 22:5xZ):
-// a retrieved excerpt the composed answer does not draw on is a DECORATIVE
-// citation — true claim, wrong provenance ("cite the segments that carry the
-// material you retell"). Keep only excerpts sharing answer material, using
-// the same tokenize discipline as retrieval (stopwords out, stems NOT applied
-// here — direct lexical tie only).
+// Citation-material tie filter — PER-CLAIM IDF MATERIAL TIE (F-NEW-2).
+// History: 17 Sep Class B provenance ruling (whole-answer token overlap >= 2);
+// polarity amended by the joint Oksana/Zar F-NEW-1 ruling (never-empty
+// guarantee dead); F-NEW-1 added the decline short-circuit. Kaeo's battery +
+// Yoshi's reproduction (17 Sep ~23:2xZ) proved the token-overlap proxy admits
+// GLUE PADS: excerpts sharing generic vocabulary with the answer ("month",
+// "twin", "before") enter top-K citations while carrying no material for any
+// attributed claim — the same visitor-facing family as the ep-4 defect.
 //
-// Ruled (joint F-NEW-1 ruling, Oksana `626fcdb8` / Zar `97aafdca`): the
-// never-empty guarantee is DEAD — an honest empty is a valid return, not a
-// defect to hack around. "Citations render ⟺ at least one tie carries
-// material for a claim the answer attributes; otherwise zero." Two
-// consequences: (1) an HONEST DECLINE attributes nothing to the corpus, so it
-// returns [] regardless of string overlap — the decline's own phrasing
-// ("we haven't covered … on the show") must never tie-match itself into a
-// citation (the Jupiter defect); (2) a claim-bearing answer tied to nothing
-// returns [] too, and validateAnswer then rejects it to the scripted
-// fallback — no grounding → no LLM answer, fail-closed as always.
-export const MATERIAL_MIN_TOKENS = 2;
+// RULING OF RECORD (Oksana consolidation `6150aced`, mechanism per her
+// `c7ea6678` §3; Zar concurrence `8379caaf`-era standard): a citation
+// survives only if it carries material for a claim the served answer
+// attributes — the tie evaluated PER CLAIM against the claim's identifying
+// vocabulary (entities, numbers, named models, domain nouns), weighted by
+// BM25 idf over the live index so generic tokens cannot pile up into
+// admission. Threshold raise alone was REJECTED; marking (generator-side)
+// was considered and REJECTED — verification must be generator-independent.
+// Mechanism picked over the marking shape because the filter tie is
+// mechanical, deterministic, and replay-stable per (answer, index) pair.
+//
+// Shipped mechanics (implementation inside the ruled acceptance bar):
+//   1. The answer splits into claims (sentence/line units; speaker prefixes
+//      stripped — they are chrome, not claim vocabulary).
+//   2. Exclusion spans ("we've never talked about X", "we haven't covered X")
+//      are suppressed from a claim's vocabulary — the F-NEW-1 self-phrasing
+//      principle (Jupiter defect) applied at claim level: a negative claim
+//      attributes nothing, so the excluded topic's tokens must not tie its
+//      own excerpt into the citations.
+//   3. A citation survives iff SOME claim shares tokens with the excerpt
+//      whose idf sum >= MATERIAL_TIE_MIN. Polarity is fail-CLOSED: strip on
+//      doubt; fewer citations, never decorative chrome.
+//   4. Fully-stripped claim-bearing compositions are NOT rerouted —
+//      validateAnswer's claim-bearing class rejects the empty set and the
+//      handler throws to the scripted fallback tier (Oksana routing
+//      correction `f30b3047` §2; shipped fail-closed does the work).
+//
+// CALIBRATION (17 Sep, first-party against the live 81-excerpt index and the
+// three real probe compositions of record — Kaeo token-bill, Yoshi claim-opus,
+// Kaeo horse/raising partial): keep-set scores 9.42..29.91, pad-set scores
+// 2.90..7.81. MATERIAL_TIE_MIN = 8.5 separates with ~0.7..1.6 idf units of
+// margin on each side. This is a calibrated constant, not a derived one: the
+// battery's stability legs (identical served sets across runs) and red
+// fixtures police it; if a leg flakes, this ONE constant is the dial.
+export const MATERIAL_TIE_MIN = 8.5;
 
-// F-NEW-1 (Yoshi re-verify finding; RULED — joint Oksana/Zar ruling 17 Sep,
-// Oksana `626fcdb8`, Zar `97aafdca`): an llm-tier HONEST DECLINE asserts the
-// show never covered the topic. Provenance chrome (citations, "This answer
-// comes from Episode N") under that sentence contradicts it — the same
-// visitor-facing harm as the ep-4 ruling, one degree starker: the chrome
-// asserts exactly what the text denies. Detection is mechanical: the system
-// prompt's honest-coverage line is a fixed seam ("we haven't covered that on
-// the show yet"). Ruled output shape: decline → citations [] + NO
-// episode-attributed handoff; the neutral non-attributing pointer MAY ride
-// ("The real version lives in the episodes" — recycled copy, register
-// pre-cleared, no voice pass owed); anything naming an episode as the source
-// of a decline may not. The general test of record: does the rendered answer
-// ATTRIBUTE ANY CLAIM to the corpus? Claims → cite carrying segments only;
-// no claims → cite nothing, hand off nothing episode-specific.
+// Exclusion spans: the negative-claim phrasings whose OBJECT tokens never
+// enter tie vocabulary. Scoped to the span up to a clause break ("but",
+// "however", sentence end) so the pivot half of a partial answer keeps its
+// own vocabulary.
+const EXCLUSION_SPANS = [
+  /never\s+(?:talked|spoke)\s+about\s+[^.?!]*?(?=\s*,?\s*(?:but|however)\b|[.?!]|$)/gi,
+  /haven'?t\s+covered\s+[^.?!]*?(?=\s*,?\s*(?:but|however)\b|[.?!]|$)/gi,
+  /\bnot\s+covered\b[^.\n]*?\bon the show\b/gi,
+];
+
+const SPEAKER_PREFIX = /^(Robin|Tobi)-twin:\s*/;
+
+// Splits a composed answer into claims: blank-line and sentence boundaries,
+// speaker prefixes stripped. Exported for the seam tests.
+export function splitClaims(answer) {
+  return String(answer)
+    .split(/\n\n+|(?<=[.!?])\s+/)
+    .map((s) => s.replace(SPEAKER_PREFIX, "").trim())
+    .filter(Boolean);
+}
+
+// A claim's tie vocabulary: tokens minus exclusion-span content minus glue.
+export function claimVocabulary(claim, ignoreTokens) {
+  let c = claim;
+  for (const re of EXCLUSION_SPANS) c = c.replace(re, " ");
+  return [...new Set(tokenize(c))].filter((t) => !(ignoreTokens && ignoreTokens.has(t)));
+}
+
+// BM25 idf over a corpus of excerpts — the retrieval side's own primitive,
+// reused here so the tie weight and the ranking weight agree by construction
+// (rare terms dominate; generic ones fade). Returns { idf, df } — ask.mjs
+// derives its UBIQUITOUS glue set from the same df pass.
+export function buildIdf(excerpts) {
+  const df = new Map();
+  for (const e of excerpts) {
+    for (const t of new Set(tokenize((e && e.text) || ""))) df.set(t, (df.get(t) || 0) + 1);
+  }
+  const N = excerpts.length;
+  const idf = (t) => Math.log(1 + (N - (df.get(t) || 0) + 0.5) / ((df.get(t) || 0) + 0.5));
+  return { idf, df };
+}
+
 export function isHonestDecline(answer) {
   if (typeof answer !== "string") return false;
   return /\bhaven'?t\s+covered\b/i.test(answer) || /\bnot\s+covered\b[^.\n]*\bon the show\b/i.test(answer);
 }
 
-export function materialCitations({ answer, excerpts, citations, minTokens = MATERIAL_MIN_TOKENS, ignoreTokens }) {
+export function materialCitations({ answer, excerpts, citations, ignoreTokens, idf, tieMin = MATERIAL_TIE_MIN }) {
   if (isHonestDecline(answer)) return []; // decline class: zero, regardless of string overlap (self-phrasing never fabricates relevance)
   if (!Array.isArray(citations) || citations.length === 0) return [];
-  const answerTokens = new Set(tokenize(answer));
+  if (typeof idf !== "function") {
+    throw new Error("materialCitations: idf function required — the per-claim tie is corpus-weighted by ruling");
+  }
+  const claimVocabs = splitClaims(answer).map((c) => claimVocabulary(c, ignoreTokens));
   const kept = [];
   excerpts.forEach((e, i) => {
     if (!citations[i]) return;
-    let shared = 0;
-    for (const t of new Set(tokenize((e && e.text) || ""))) {
-      if (ignoreTokens && ignoreTokens.has(t)) continue; // corpus glue never decorates a citation
-      if (answerTokens.has(t)) shared += 1;
-    }
-    if (shared >= minTokens) kept.push(citations[i]);
+    const exTokens = new Set(tokenize((e && e.text) || ""));
+    const survives = claimVocabs.some((v) => {
+      let score = 0;
+      for (const t of v) if (exTokens.has(t)) score += idf(t);
+      return score >= tieMin;
+    });
+    if (survives) kept.push(citations[i]);
   });
   return kept; // MAY be empty — validateAnswer's class-conditional polarity decides serve vs fallback
 }
