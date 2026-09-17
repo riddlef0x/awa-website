@@ -799,11 +799,14 @@ ${MOTION_TILT_JS}
       <p>The twins are AI impressions of Robin and Tobi, not Robin and Tobi.
       They may be wrong — check anything that matters against the actual
       episodes.</p>
-      <p>We log aggregate counts only — how many questions are asked, which
-      episode links get clicked, and coarse timing and size buckets. No question
-      text, no IP, nothing that identifies you or reconstructs what you asked.
-      These counts contain nothing personal, so we keep them indefinitely —
-      there is nothing in them to delete. The twins page says the same thing.</p>
+      <p>We log aggregate counts – how many questions are asked, which
+      episode links get clicked, and coarse timing and size buckets. On top of
+      those counts, we keep an anonymous record when a question is asked and
+      another when it is answered – each says when, nothing about who asked. No
+      question text, no IP, nothing that identifies you or reconstructs what
+      you asked. These counts contain nothing personal, so we keep them
+      indefinitely – there is nothing in them to delete. The twins page says
+      the same thing.</p>
 
       <h3>YouTube</h3>
       <p>The site embeds YouTube videos. YouTube's own privacy policy applies to what they see when a video plays.</p>
