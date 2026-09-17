@@ -279,8 +279,17 @@ export async function buildTwins(data, siteUrl) {
     entries: out,
     fallbackLines: pool.fallback,
     fallbackHandoff: {
-      episode: latest.episodeNumber,
-      url: latest.url,
+      // Pointer genericization (ruled 17 Sep, Oksana `626fcdb8` §1/§2 + the
+      // sealed follow-up; landed with F-NEW-2 per consolidation `6150aced`):
+      // the neutral pointer goes to the SITE'S EPISODES INDEX, not one
+      // specific episode — "the real version lives in the episodes" handing
+      // the visitor a today's-latest-episode deep link read as a soft pointer
+      // to "the answer". The internal `episode` datum dies with it: the
+      // fallback tier (handoffResponse) ships this object VERBATIM, so the
+      // field must not exist at the source — stripping only on the
+      // llm-decline path left the fallback wire carrying it. No episode
+      // attribution on any tier now, source or wire.
+      url: siteUrl.replace(/\/+$/, "") + "/episodes/",
       label: "The real version lives in the episodes",
       // Fallback-honesty ruling (17 Sep): NO citations on the fallback tier.
       // The old `citations: [{episode 5 · 0:00}]` here was fabricated
