@@ -1,0 +1,106 @@
+{
+  "sourceOfRecord": "Oksana consolidation event ff8fe7b2 (5 Sep 2026) + Vera gate-inputs event 59ec45f8; windows mapped to corpus sections 17 Sep (PLANS/AWA_TWINS_CORPUS_FILTER_BUILD_PLAN_2026-09-17.md)",
+  "exclusions": [
+    {
+      "id": "A2",
+      "episode": 1,
+      "windowStart": "37:20",
+      "windowEnd": "38:02",
+      "fingerprints": [
+        "australia has recently changed",
+        "directors can be personally liable"
+      ],
+      "note": "Director-liability law claim (UNVERIFIED). Section Ep1 [37:00] 'Solopreneurs vs enterprises'."
+    },
+    {
+      "id": "B1",
+      "episode": 2,
+      "windowStart": "2:26",
+      "windowEnd": "3:02",
+      "fingerprints": [
+        "open season",
+        "regulation change"
+      ],
+      "note": "'No regulation / open season' + vague-instrument line — chunker merged both tape lines (~2:26 + ~2:50) into section Ep2 [0:55] 'Welcome back'; ONE drop covers both per spec."
+    },
+    {
+      "id": "B3",
+      "episode": 3,
+      "windowStart": "5:16",
+      "windowEnd": "5:31",
+      "fingerprints": [
+        "and this is inevitable"
+      ],
+      "note": "'All data will have to become verifiable — inevitable' speculation-as-fact. Section Ep3 [5:00] 'Trust, and the agent wallet'."
+    },
+    {
+      "id": "B4",
+      "episode": 3,
+      "windowStart": "35:41",
+      "windowEnd": "36:04",
+      "fingerprints": [
+        "protect secrets"
+      ],
+      "dormantExpected": true,
+      "note": "'No one can protect secrets'. DORMANT at gate creation: live Ep3 transcript truncates at 22:25 (known finding, Kate's file of record has the tail) so no corpus section overlaps this window. Filter re-runs every build: when the tail is restored the section auto-drops if the fingerprint matches; a fingerprint miss = loud build failure. Flip dormantExpected=false at that data touch."
+    },
+    {
+      "id": "B2",
+      "episode": 4,
+      "windowStart": "18:56",
+      "windowEnd": "19:02",
+      "fingerprints": [
+        "track their work on blockchain"
+      ],
+      "note": "Blockchain-legislation claim (UNVERIFIED, highest-risk). Section Ep4 [18:46] 'Crypto identities and regulation'."
+    },
+    {
+      "id": "A3",
+      "episode": 4,
+      "windowStart": "13:05",
+      "windowEnd": "13:40",
+      "fingerprints": [
+        "31%"
+      ],
+      "note": "Org-chart stats 31%/25%/4.3% (UNVERIFIED; all three figures live in this one section — one drop clears all). Section Ep4 [13:01] 'Killer or coexist'. Site Ep4 page carries the 23% correction of record."
+    },
+    {
+      "id": "A4",
+      "episode": 4,
+      "windowStart": "11:10",
+      "windowEnd": "11:30",
+      "fingerprints": [
+        "29 bill"
+      ],
+      "note": "Block/Afterpay '$29b' — unverified as spoken, banned without company-announcement citation. Section Ep4 [11:04] 'Dorsey, Block and Afterpay'."
+    }
+  ],
+  "censusAnchors": [
+    "31%",
+    "25%",
+    "4.3%",
+    "2.53",
+    "australia has recently changed",
+    "director liability",
+    "directors can be personally liable",
+    "21 july 2026",
+    "29 bill",
+    "$29b",
+    "open season",
+    "no regulation or law",
+    "regulation change in australia",
+    "and this is inevitable",
+    "track their work on blockchain",
+    "have to use cryptographic identities",
+    "protect secrets",
+    "anthropic's doing 80",
+    "80% of its coding"
+  ],
+  "censusNotes": {
+    "percentEncodings": "every anchor containing % is also probed with the entity forms &#37; and &percnt; (mdash lesson: every encoding)",
+    "figure25": "Bare '25%' IS an anchor per Vera's census addition (59ec45f8: figures 31%, 25%, 4.3%, 29b, unattributed 80%). Verified zero benign hits in the current corpus; if a future transcript adds benign prose containing 25% the build fails loud and a human re-points — fail-closed by design.",
+    "figure80": "the vendor-attributed sentence ('Anthropic's doing 80% of its coding…') is the CLEARED wording per the build-twins BANNED comment; the census fails on it only when 'anthropic' is absent from the containing sentence (unattributed 80%).",
+    "additionsFromBANNED": "the build-twins pool fact-gate list is folded in so corpus and pool share one anchor baseline; '25%' gap in that list is noted in the plan.",
+    "glmExclusion": "GLM-version / Buzz-launch-date anchors are twins seed-pool bans (build-twins BANNED + existing seed gate), NOT corpus bans — the corpus is the hosts' spoken words and keeps them (Vera 59ec45f8: seed-pool items are 'not a transcript section'). Census anchors cover ONLY the 8 excluded-section claim classes + figures."
+  }
+}
