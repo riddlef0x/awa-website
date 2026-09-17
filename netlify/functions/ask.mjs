@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { createLimiter } from "./rate-limit.mjs";
 import { createConsent } from "./consent.mjs";
 import { callProvider } from "./llm/provider.mjs";
-import { validateAnswer, materialCitations } from "./llm/filters.mjs";
+import { validateAnswer, materialCitations, isHonestDecline } from "./llm/filters.mjs";
 import { retrieve, tokenize } from "./llm/retrieval.mjs";
 import { createGuard } from "./llm/guard.mjs";
 
@@ -303,15 +303,23 @@ async function llmAnswer(question) {
   });
 
   // §5 filters: any rejection → throw → scripted fallback. Fails CLOSED.
-  // Class B provenance fix (17 Sep): cite only the excerpts the answer draws
-  // on — a decorative citation is true-claim-wrong-provenance. The provider
-  // payload above is unchanged (the model sees the same grounding); this
-  // trims the citation surface only. validateAnswer still gates non-empty
-  // citations and every citation still traces to a retrieved excerpt.
+  // Class-conditional citation polarity (17 Sep, joint Oksana/Zar F-NEW-1
+  // ruling — Oksana `626fcdb8` §2, Zar `97aafdca`): the rendered answer's
+  // class decides the citation set — `citations empty ⟺ DECLINE class`.
+  // materialCitations returns [] for a decline (its own phrasing must never
+  // tie-match itself into a citation — the Jupiter defect) and for a
+  // claim-bearing answer tied to nothing (validateAnswer then rejects to the
+  // scripted fallback). Handoff: a decline carries NO episode-attributed
+  // handoff — the recycled neutral pointer ("The real version lives in the
+  // episodes") serves stripped to {url, label}; the `episode` field never
+  // rides a decline. Claim-bearing keeps the excerpt's own handoff.
   const cited = materialCitations({ answer, excerpts: picked, citations, ignoreTokens: UBIQUITOUS });
   const v = validateAnswer({ answer, citations: cited, allowedCitations: citations });
   if (!v.ok) throw new Error(`filter:${v.reason}`);
-  return { answer, citations: cited, handoff: picked[0].handoff };
+  const handoff = isHonestDecline(answer)
+    ? { url: fallbackHandoff.url, label: fallbackHandoff.label }
+    : picked[0].handoff;
+  return { answer, citations: cited, handoff };
 }
 
 function llmResponse(out) {
