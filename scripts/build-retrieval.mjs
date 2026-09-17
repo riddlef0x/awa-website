@@ -10,6 +10,7 @@
 // per Kate's conversion rules — the spoken words, nothing added.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { EPISODE_TRANSCRIPTS } from "./episode-transcripts.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -47,12 +48,31 @@ function excerptText(blockHtml) {
     .replace(/\n /g, "\n")
     .replace(/\n{2,}/g, "\n")
     .trim();
+  // Register remedy (stage-1 ruling of record, Oksana 17 Sep, event c9cc2769):
+  // llm answers are composed FROM these excerpts, so the register criterion
+  // (U+2014 count-to-zero, register rows 5/22(a)) must hold on the grounding
+  // corpus, not just the served pool (PR #6 swept pool.json only). Mechanical
+  // U+2014 -> U+2013 spaced at emission — the same remedy form as the pool
+  // sweep. Transcripts stay verbatim on the pages; conversion is build-time.
+  s = registerRemedy(s);
   if (s.length > MAX_EXCERPT_CHARS) {
     const cut = s.slice(0, MAX_EXCERPT_CHARS);
     const stop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
-    s = (stop > MAX_EXCERPT_CHARS * 0.5 ? cut.slice(0, stop + 1) : cut) + " …[transcript continues]";
+    let body = stop > MAX_EXCERPT_CHARS * 0.5 ? cut.slice(0, stop + 1) : cut;
+    // register hygiene: never end the emitted string on a dangling dash
+    body = body.replace(/[\s\u2013-]+$/, "");
+    s = body + " …[transcript continues]";
   }
   return s;
+}
+
+// U+2014 -> U+2013 spaced, whitespace runs collapsed, ends trimmed. Applied
+// to text + section fields at excerpt construction (see remedy note above).
+function registerRemedy(s) {
+  return s
+    .replace(/[ \t]*\u2014[ \t]*/g, " \u2013 ")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
 }
 
 export function buildRetrievalIndex({ episodes }) {
@@ -89,7 +109,7 @@ export function buildRetrievalIndex({ episodes }) {
       excerpts.push({
         episode: num,
         timestamp: head.timestamp,
-        section: head.section,
+        section: registerRemedy(head.section),
         text,
         citation: { episode: num, timestamp: head.timestamp, videoId },
         handoff: {
@@ -100,11 +120,160 @@ export function buildRetrievalIndex({ episodes }) {
       });
     }
   }
-  return { generatedAt: new Date().toISOString(), source: "scripts/episode-transcripts.mjs (Kate's site-pass files)", excerpts };
+  const { filtered, receipts, droppedCount } = applyCorpusGate(excerpts);
+  return {
+    generatedAt: new Date().toISOString(),
+    source: "scripts/episode-transcripts.mjs (Kate's site-pass files)",
+    excerpts: filtered,
+    corpusGate: { droppedCount, receipts },
+  };
 }
 
 export async function writeRetrievalIndex({ episodes, writeFile }) {
   const index = buildRetrievalIndex({ episodes });
+  censusCorpus(index);
   await writeFile(path.join(ROOT, "netlify", "functions", "ask-retrieval.json"), JSON.stringify(index, null, 1));
   return index;
+}
+
+// ---------------------------------------------------------------------------
+// Corpus gate (checklist item (a) of record — Oksana consolidation ff8fe7b2,
+// 5 Sep 2026; data: Vera event 59ec45f8). Two controls, both fail-closed:
+//
+//   1. EXCLUSION FILTER — banned transcript sections never enter the emitted
+//      index. Match = episode + time window + text fingerprints (ALL must be
+//      present). An exclusion that cannot resolve is a LOUD build failure so
+//      new transcripts extend the gate rather than rotting it — except an
+//      exclusion explicitly marked dormantExpected, which warns and rides
+//      until the section reappears (its fingerprint still guards the text).
+//   2. CENSUS — count-to-zero on the EMITTED index for anchor strings AND
+//      distinctive figures, every encoding (entity forms of % included).
+//      Any hit = loud build failure. Receipt printed to build output.
+// ---------------------------------------------------------------------------
+
+
+const GATE_PATH = path.join(ROOT, "data", "twins", "corpus-gate.json");
+
+function loadGate() {
+  return JSON.parse(readFileSync(GATE_PATH, "utf8"));
+}
+
+// "37:20" | "1:02:03" → seconds
+function tsToSeconds(ts) {
+  const parts = String(ts).split(":").map(Number);
+  if (parts.some(Number.isNaN)) throw new Error(`[corpus-gate] bad timestamp ${ts}`);
+  return parts.reduce((acc, p) => acc * 60 + p, 0);
+}
+
+// Speech estimate for a trailing section with no known end: ~10 chars/sec is
+// deliberately generous — it must never stretch far enough to swallow a real
+// later window (B4 vs the Ep3 tail at 22:25 is the case that forced this).
+function sectionSpanStart(excerpts, i) {
+  const e = excerpts[i];
+  const start = tsToSeconds(e.timestamp);
+  const isLast = i + 1 >= excerpts.length || excerpts[i + 1].episode !== e.episode;
+  const end = isLast ? start + Math.max(120, Math.floor(e.text.length / 10)) : tsToSeconds(excerpts[i + 1].timestamp);
+  return [start, end];
+}
+
+export function applyCorpusGate(excerpts) {
+  const gate = loadGate();
+  const dropped = [];
+  const receipts = [];
+
+  for (const ex of gate.exclusions) {
+    const ws = tsToSeconds(ex.windowStart);
+    const we = tsToSeconds(ex.windowEnd);
+    const idxs = [];
+    for (let i = 0; i < excerpts.length; i++) {
+      const e = excerpts[i];
+      if (e.episode !== ex.episode) continue;
+      const [s0, s1] = sectionSpanStart(excerpts, i);
+      if (s0 <= we && s1 > ws) idxs.push(i);
+    }
+    if (idxs.length === 0) {
+      if (ex.dormantExpected) {
+        console.warn(`[corpus-gate] ${ex.id}: window ${ex.windowStart}-${ex.windowEnd} (Ep${ex.episode}) has no section in the corpus yet — dormantExpected, filter stays armed (${ex.note})`);
+        receipts.push({ id: ex.id, status: "dormant", dropped: [] });
+        continue;
+      }
+      throw new Error(`[corpus-gate] exclusion ${ex.id} UNRESOLVABLE: no corpus section overlaps Ep${ex.episode} ${ex.windowStart}-${ex.windowEnd}. The corpus moved — re-point the exclusion by hand, never guess. (${ex.note})`);
+    }
+    for (const i of idxs) {
+      const hay = excerpts[i].text.toLowerCase();
+      const missing = ex.fingerprints.filter((f) => !hay.includes(f.toLowerCase()));
+      if (missing.length) {
+        throw new Error(`[corpus-gate] exclusion ${ex.id}: section Ep${ex.episode} [${excerpts[i].timestamp}] overlaps the window but is missing fingerprint(s) [${missing.join(", ")}] — section text changed; re-point the exclusion by hand. (${ex.note})`);
+      }
+    }
+    for (const i of idxs) {
+      dropped.push({ id: ex.id, episode: excerpts[i].episode, timestamp: excerpts[i].timestamp, section: excerpts[i].section });
+    }
+    receipts.push({ id: ex.id, status: "dropped", dropped: idxs.map((i) => `Ep${excerpts[i].episode} [${excerpts[i].timestamp}] ${excerpts[i].section}`) });
+  }
+
+  const dropSet = new Set(dropped.map((d) => `${d.episode}@${d.timestamp}`));
+  const filtered = excerpts.filter((e) => !dropSet.has(`${e.episode}@${e.timestamp}`));
+  return { filtered, receipts, droppedCount: dropped.length };
+}
+
+export function censusCorpus(index) {
+  const gate = loadGate();
+  const raw = JSON.stringify(index);
+  const low = raw.toLowerCase();
+  const entityForms = (a) => {
+    if (!a.includes("%")) return [a];
+    return [a, a.replaceAll("%", "&#37;"), a.replaceAll("%", "&percnt;")];
+  };
+  const hits = [];
+  for (const anchor of gate.censusAnchors) {
+    for (const form of entityForms(anchor.toLowerCase())) {
+      let pos = 0;
+      while ((pos = low.indexOf(form, pos)) !== -1) {
+        if (form.includes("80")) {
+          // Vendor-attributed 80% is the cleared wording (build-twins BANNED
+          // comment): both 80-anchors target that one sentence; fail only when
+          // the containing sentence lacks "anthropic".
+          const sentStart = Math.max(low.lastIndexOf(". ", pos), 0);
+          const sentEnd = low.indexOf(". ", pos + 1);
+          const sentence = low.slice(sentStart, sentEnd === -1 ? undefined : sentEnd + 2);
+          if (!sentence.includes("anthropic")) {
+            hits.push({ anchor, form, sample: raw.slice(pos - 40, pos + 60) });
+          }
+        } else {
+          hits.push({ anchor, form, sample: raw.slice(pos - 40, pos + 60) });
+        }
+        pos += form.length;
+      }
+    }
+  }
+  if (hits.length) {
+    const detail = hits.slice(0, 10).map((h) => `"${h.form}" @ …${h.sample}…`).join("\n  ");
+    throw new Error(`[corpus-gate] CENSUS FAIL: ${hits.length} banned-anchor occurrence(s) in the emitted index (count-to-zero violated):\n  ${detail}`);
+  }
+  // Register census (stage-1 ruling of record, Oksana 17 Sep, event c9cc2769):
+  // count-to-zero U+2014 on the emitted index, every encoding — same
+  // fail-closed pattern as the claims census, so the register criterion
+  // cannot rot with the next transcript pass (this is how the pre-flight
+  // found the corpus carrying 466 ems while the served pool was clean).
+  const EM_FORMS = [
+    { re: /\u2014/g, label: "raw U+2014" },
+    { re: /&mdash;/gi, label: "&mdash;" },
+    { re: /&#8212;/gi, label: "&#8212;" },
+    { re: /&#x2014;/gi, label: "&#x2014;" },
+  ];
+  const emHits = [];
+  for (const { re, label } of EM_FORMS) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(raw)) !== null) {
+      emHits.push({ label, sample: raw.slice(m.index - 40, m.index + 60) });
+    }
+  }
+  if (emHits.length) {
+    const detail = emHits.slice(0, 5).map((h) => `${h.label} @ …${h.sample}…`).join("\n  ");
+    throw new Error(`[corpus-gate] REGISTER CENSUS FAIL: ${emHits.length} em-dash occurrence(s) in the emitted index (U+2014 count-to-zero violated):\n  ${detail}`);
+  }
+  console.log(`[corpus-gate] census PASS: ${gate.censusAnchors.length} anchors + U+2014 count-to-zero (0, every encoding), ${index.excerpts.length} excerpts emitted`);
+  return { anchors: gate.censusAnchors.length, excerpts: index.excerpts.length, hits: 0, em: 0 };
 }
