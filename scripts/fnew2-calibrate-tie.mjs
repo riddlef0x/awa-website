@@ -1,6 +1,6 @@
 // Threshold calibration for the per-claim idf material tie (F-NEW-2, Oksana 6150aced).
 import { readFileSync } from "node:fs";
-import { retrieve, tokenize } from "../../awa-fnew2-tie/netlify/functions/llm/retrieval.mjs";
+import { retrieve, tokenize } from "../netlify/functions/llm/retrieval.mjs";
 
 const idx = JSON.parse(readFileSync("./netlify/functions/ask-retrieval.json", "utf8"));
 const excerpts = idx.excerpts;
