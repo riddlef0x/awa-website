@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T22:51:52.134Z",
+  "generatedAt": "2026-09-17T23:52:35.824Z",
   "entries": [
     {
       "id": "seed-01",
@@ -814,8 +814,7 @@
     "The twins plead the fifth. The unscripted version is one click away."
   ],
   "fallbackHandoff": {
-    "episode": 5,
-    "url": "https://www.youtube.com/watch?v=liH-K3p-maM",
+    "url": "https://awa-website.netlify.app/episodes/",
     "label": "The real version lives in the episodes"
   },
   "disagreementIds": [
