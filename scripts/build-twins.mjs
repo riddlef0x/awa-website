@@ -22,14 +22,26 @@ const BANNED = [
   "anthropic's doing 80", "80% of its coding", // only the vendor wording is cleared; not used in v1
 ];
 
+// Session turn cap (two-agent spec §S6, pinned by Oksana's stamp 18 Sep): 10
+// visitor messages per session, a CLIENT-ENFORCED UX BRAKE displayed honestly
+// — never a security control (the rate limiter + per-request budget are the
+// real cost brakes). One constant here feeds the client script; ask.mjs
+// exports the same value and scripts/test-two-agent-chat.mjs asserts the two
+// are identical, so the client and server can never drift apart.
+const TWINS_THREAD_TURN_CAP = 10;
+
 const ASK_STYLES = `
 .twins-ask{background:#131E33;border:1px solid #22304A;border-radius:12px;color:#F4F7FB;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .twins-log{max-height:300px;overflow-y:auto;padding:4px 12px 0;font-size:13px;line-height:1.45}
 .twins-q{color:#F4F7FB;margin:8px 0 2px;font-weight:600}
 .twins-a{color:#C9D4E3;margin:2px 0 8px;white-space:pre-line}
 .twins-cite{font-size:11px;color:#9AA7BA}
+.twins-sys{color:#9AA7BA;font-size:12px;line-height:1.4;margin:6px 0 2px;font-style:italic}
+.twins-sys a{color:#C8FF3D}
 .twins-handoff{display:inline-block;margin:6px 0 10px;padding:7px 12px;border-radius:8px;background:#C8FF3D;color:#0A1628;font-weight:700;font-size:13px;text-decoration:none}
-.twins-row{display:flex;gap:6px;padding:10px 12px 12px}
+.twins-row{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px 12px}
+.twins-who{flex:none}
+.twins-addressee{background:#0A1628;border:1px solid #22304A;border-radius:8px;color:#F4F7FB;padding:8px 4px;font-size:16px}
 .twins-input{flex:1;background:#0A1628;border:1px solid #22304A;border-radius:8px;color:#F4F7FB;padding:8px 10px;font-size:16px;min-width:0}
 .twins-go{background:#C8FF3D;border:0;border-radius:8px;color:#0A1628;font-weight:700;padding:8px 12px;cursor:pointer}
 .twins-err{color:#FFB86B;font-size:12px;margin:0 12px 10px}
@@ -72,12 +84,43 @@ const ASK_SCRIPT = `
   function initAsk(root){
     var log=root.querySelector(".twins-log"),input=root.querySelector(".twins-input"),
         go=root.querySelector(".twins-go"),err=root.querySelector(".twins-err"),
-        hp=root.querySelector(".twins-hp");
+        hp=root.querySelector(".twins-hp"),sel=root.querySelector(".twins-addressee");
     if(!log||!input||!go)return;
     var busy=false;
+    // Two-agent thread layer (spec S1/S6): the visitor's browser holds the
+    // thread — in-memory ONLY (never localStorage: first-party storage of
+    // question text is Option B territory, gated separately). Each request
+    // sends the last 8 turns (the server's structural cap; anything over is
+    // refused wholesale, so pre-trimming here avoids a needless refusal).
+    // THREAD_CAP is the pinned client UX brake (spec S6 = 10 visitor
+    // messages), NOT a security control — the rate limiter and budget are.
+    // The value is interpolated from the TWINS_THREAD_TURN_CAP constant in
+    // this file and cross-checked against ask.mjs's export by
+    // scripts/test-two-agent-chat.mjs, so the two can never drift apart.
+    var THREAD_CAP=${TWINS_THREAD_TURN_CAP};
+    var thread=[],asked=0;
     function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+    function sysLine(text,href,label){
+      var e=document.createElement("div");e.className="twins-sys";e.textContent=text;
+      if(href){var a=document.createElement("a");a.href=href;a.textContent=label||href;a.style.marginLeft="6px";e.appendChild(a);}
+      log.appendChild(e);
+    }
+    function citeLine(c){
+      var cEl=document.createElement("div");cEl.className="twins-cite";
+      cEl.textContent="From Episode "+c.episode+(c.timestamp?" · "+c.timestamp:"");
+      log.appendChild(cEl);
+    }
+    function handoffLink(b){
+      var h=document.createElement("a");h.className="twins-handoff";
+      h.href=b.handoff.url+"&utm_source=awa_site&utm_medium=twins&utm_campaign=handoff&utm_content="+encodeURIComponent(b.poolId||"fallback");
+      h.target="_blank";h.rel="noopener";h.textContent=b.handoff.label||"Watch the episode";
+      h.addEventListener("click",function(){try{navigator.sendBeacon("/api/ask",JSON.stringify({kind:"handoff-click",poolId:b.poolId}));}catch(e){}});
+      log.appendChild(h);
+    }
     function ask(){
-      if(busy)return;var q=input.value.trim();if(!q)return;
+      if(busy)return;
+      if(asked>=THREAD_CAP){sysLine("That's the ten questions for this visit – the twins are handing you to the episodes.","/episodes/","Watch the episodes");return;}
+      var q=input.value.trim();if(!q)return;
       err.hidden=true;busy=true;go.disabled=true;
       var qEl=document.createElement("div");qEl.className="twins-q";qEl.textContent="You: "+q;log.appendChild(qEl);
       input.value="";
@@ -85,20 +128,37 @@ const ASK_SCRIPT = `
       // consent record; the honeypot field is sent back only if a bot filled it.
       var payload={question:q,source:root.closest("#twinsWidget")?"widget":"twins"};
       if(hp&&hp.value)payload.website=hp.value;
+      // Addressee (spec S2/plan 3.3): optional; "both" is the default and is
+      // sent as ABSENT so the server's default path stays untouched. An
+      // unknown server-side reroute comes back flagged and renders a visible
+      // system line below — never a silent reroute.
+      if(sel&&sel.value&&sel.value!=="both")payload.addressee=sel.value;
+      if(thread.length)payload.history=thread.slice(-8);
       fetch("/api/ask",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)})
       .then(function(r){return r.json().then(function(b){return {status:r.status,body:b};});})
       .then(function(res){
         var b=res.body||{};
-        if(b.answer){var aEl=document.createElement("div");aEl.className="twins-a";aEl.textContent=b.answer;log.appendChild(aEl);}
-        if(b.citations&&b.citations.length){var c=b.citations[0];
-          var cEl=document.createElement("div");cEl.className="twins-cite";cEl.textContent="From Episode "+c.episode+(c.timestamp?" · "+c.timestamp:"");log.appendChild(cEl);}
-        if(b.handoff&&b.handoff.url){
-          var h=document.createElement("a");h.className="twins-handoff";
-          h.href=b.handoff.url+"&utm_source=awa_site&utm_medium=twins&utm_campaign=handoff&utm_content="+encodeURIComponent(b.poolId||"fallback");
-          h.target="_blank";h.rel="noopener";h.textContent=b.handoff.label||"Watch the episode";
-          h.addEventListener("click",function(){try{navigator.sendBeacon("/api/ask",JSON.stringify({kind:"handoff-click",poolId:b.poolId}));}catch(e){}});
-          log.appendChild(h);
+        // Refused-history honesty line (spec S1.3): visible, never a silent
+        // continuity pretence. Copy is a Kate register surface at preview;
+        // the battery asserts PRESENCE (historyAccepted:false + a visible
+        // line), never this literal string.
+        if(b.historyAccepted===false)sysLine("We couldn't carry the earlier messages into this answer – so this reply starts fresh from your latest question.");
+        if(b.addresseeRerouted)sysLine("Both chairs took that one.");
+        if(b.turns&&b.turns.length){
+          b.turns.forEach(function(t){
+            var aEl=document.createElement("div");aEl.className="twins-a";
+            aEl.textContent=(t.speaker==="robin-twin"?"Robin-twin":"Tobi-twin")+": "+t.text;log.appendChild(aEl);
+            if(t.citations&&t.citations.length)citeLine(t.citations[0]);
+            thread.push({role:"agent",text:t.text});
+          });
+        }else if(b.answer){
+          var aEl=document.createElement("div");aEl.className="twins-a";aEl.textContent=b.answer;log.appendChild(aEl);
+          if(b.citations&&b.citations.length)citeLine(b.citations[0]);
+          thread.push({role:"agent",text:b.answer});
         }
+        if(b.handoff&&b.handoff.url)handoffLink(b);
+        asked+=1;
+        if(asked>=THREAD_CAP)sysLine("That's the ten questions for this visit – the twins are handing you to the episodes.","/episodes/","Watch the episodes");
       })
       .catch(function(){err.textContent="The twins lost the thread for a second. Try again — or watch the real thing.";err.hidden=false;})
       .finally(function(){busy=false;go.disabled=false;log.scrollTop=log.scrollHeight;});
@@ -167,10 +227,19 @@ const ASK_SCRIPT = `
 `;
 
 function askRootMarkup(honest = true) {
+  // Two-agent surface (plan §3.3/§5): explicit addressee control, default
+  // "both"; per-message attribution renders from the wire's `speaker`/`turns`
+  // fields, never from tone. Labels are copy-only swap surfaces for Robin at
+  // preview — the option VALUES are the fixed internal roster ids.
   return `<div class="twins-ask">
   <span class="twins-tag">AI twins — may be wrong</span>
-  <div class="twins-log" aria-live="polite"></div>
+  <div class="twins-log" aria-live="polite"><div class="twins-sys">Robin-twin and Tobi-twin are AI agents arguing the show's positions – not the hosts.</div></div>
   <div class="twins-row">
+    <label class="twins-who"><select class="twins-addressee" aria-label="Who answers">
+      <option value="both" selected>Both chairs</option>
+      <option value="advocate">Robin-twin</option>
+      <option value="counterweight">Tobi-twin</option>
+    </select></label>
     <input class="twins-input" maxlength="280" placeholder="Ask the twins…" aria-label="Ask the twins">
     <button class="twins-go">Ask</button>
   </div>

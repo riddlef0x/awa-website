@@ -18,7 +18,9 @@ const BIO_FACT_PATTERNS = [
 
 // Visitor-question-is-DATA output filter (§5): the answer must never look like
 // it executed an instruction. Starter patterns; Kaeo's probes extend these.
-const INJECTION_ARTIFACT_PATTERNS = [
+// Exported (two-agent spec §S1.4): the same stack gates client-supplied
+// thread history, both roles, per turn.
+export const INJECTION_ARTIFACT_PATTERNS = [
   /ignore (all |any |the )?(previous|prior|above) (instructions|prompts?|rules?)/i,
   /system prompt/i,
   /you are now\b/i,
