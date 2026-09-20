@@ -131,28 +131,49 @@ function makeBaseline() {
 }
 
 // ---- Handler legs (llm tier, stubbed provider) ------------------------------
-const LEGACY_KEYS = ["answer", "speaker", "citations", "handoff", "poolId", "fallbackUsed", "mode"];
-const flat = (b) => JSON.stringify(LEGACY_KEYS.map((k) => b[k]));
 
-// 5 - Snapshot leg: absent-history legacy flat fields byte-identical to the
-// pre-change serve (spec S2), against the real 43a0c78 handler.
+// 5 - Snapshot leg: absent-history AND absent-addressee → WHOLE-BODY
+// byte-identity with the pre-change serve (spec S2, Oksana 13e43e98), against
+// the real 43a0c78 handler. No flat-subset compare — the entire body, key
+// order included, must be bit-frozen; a flat compare would have permitted
+// exactly the additive key the superseded paragraph allowed. Additive-key
+// presence is asserted on the supplied-request legs (PASS 5b, 6-8).
 {
   RAW = GOOD_TWO_LINE;
   const body = await (await post(makeHandler(), { question: QUESTION })).json();
   assert.strictEqual(body.mode, "llm", "llm path serves the two-chair exchange");
   const bodyOld = await (await post(makeBaseline(), { question: QUESTION })).json();
-  assert.strictEqual(flat(body), flat(bodyOld), "absent-history legacy flat fields byte-identical to the pre-change serve");
-  assert.ok(!("historyAccepted" in body), "absent history → historyAccepted ABSENT (byte-identical leg; presence+value is asserted with history supplied)");
-  assert.ok(Array.isArray(body.turns) && body.turns.length === 2, "additive turns[] carries both chairs");
-  assert.ok(!("addresseeRerouted" in body), "no reroute flag without an addressee");
-  for (const t of body.turns) {
+  assert.strictEqual(JSON.stringify(body), JSON.stringify(bodyOld), "absent-both WHOLE-BODY byte-identical to the pre-change serve (spec S2, 13e43e98)");
+  console.log("PASS 5: absent-both snapshot leg WHOLE-BODY byte-identical to 43a0c78 (additive keys absent)");
+}
+
+// 5b - Additive predicates (Oksana 13e43e98 + 199d9a30): `turns` and
+// `historyAccepted` ride IFF history was supplied (a turn-structured
+// composition only exists on the llm tier); `addresseeRerouted` rides IFF
+// addressee was supplied — boolean, honest per tier: llm false for a valid
+// chair/both, true on unknown→both.
+{
+  RAW = GOOD_TWO_LINE;
+  const addrOnly = await (await post(makeHandler(), { question: QUESTION, addressee: "advocate" })).json();
+  assert.strictEqual(addrOnly.addresseeRerouted, false, "valid chair honored on the llm tier → flag present, value false");
+  assert.ok(!("turns" in addrOnly), "addressee-only → turns ABSENT (turns ride iff history supplied, 199d9a30)");
+  assert.ok(!("historyAccepted" in addrOnly), "addressee-only → historyAccepted ABSENT (its condition is history supplied)");
+  const bothLlm = await (await post(makeHandler(), { question: QUESTION, addressee: "both" })).json();
+  assert.strictEqual(bothLlm.addresseeRerouted, false, "requested both, served both → false");
+  const unknownLlm = await (await post(makeHandler(), { question: QUESTION, addressee: "banana" })).json();
+  assert.strictEqual(unknownLlm.addresseeRerouted, true, "unknown addressee → served both ≠ requested → true (visible reroute, plan 3.3)");
+  const histOnly = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
+  assert.ok(Array.isArray(histOnly.turns) && histOnly.turns.length === 2, "history supplied → additive turns[] present");
+  assert.strictEqual(histOnly.historyAccepted, true, "history-only → historyAccepted rides");
+  assert.ok(!("addresseeRerouted" in histOnly), "history-only → no addressee flag (its condition is addressee supplied)");
+  for (const t of histOnly.turns) {
     assert.ok(["robin-twin", "tobi-twin"].includes(t.speaker), "per-turn speaker from the fixed roster");
     assert.strictEqual(typeof t.text, "string");
     assert.ok(Array.isArray(t.citations), "per-turn citations array");
     assert.strictEqual(typeof t.grounded, "boolean");
   }
-  assert.strictEqual(body.answer, body.turns.map((t) => (t.speaker === "robin-twin" ? "Robin-twin" : "Tobi-twin") + ": " + t.text).join("\n"), "legacy answer derived from turns (fixture separator)");
-  console.log("PASS 5: absent-history snapshot leg byte-identical; additive contract present");
+  assert.strictEqual(histOnly.answer, histOnly.turns.map((t) => (t.speaker === "robin-twin" ? "Robin-twin" : "Tobi-twin") + ": " + t.text).join("\n"), "legacy answer derived from turns (fixture separator)");
+  console.log("PASS 5b: per-key additive predicates hold on the llm tier (13e43e98 + 199d9a30)");
 }
 
 // 6 - Valid history rides the composition inside untrusted-data delimiters.
@@ -190,7 +211,7 @@ const flat = (b) => JSON.stringify(LEGACY_KEYS.map((k) => b[k]));
 {
   const fresh = makeHandler();
   const body = await (await post(fresh, { question: QUESTION, addressee: "advocate" })).json();
-  assert.ok(!("addresseeRerouted" in body), "valid addressee = no reroute flag");
+  assert.strictEqual(body.addresseeRerouted, false, "valid addressee = flag present, value false (199d9a30: rides iff addressee supplied)");
   assert.ok(seenBody.messages[1].content.includes("ADDRESSEE: advocate"), "addressee scopes the composition");
   const body2 = await (await post(fresh, { question: QUESTION, addressee: "banana" })).json();
   assert.strictEqual(body2.addresseeRerouted, true, "unknown addressee reroute is VISIBLE on the wire (plan 3.3)");
@@ -202,7 +223,10 @@ const flat = (b) => JSON.stringify(LEGACY_KEYS.map((k) => b[k]));
 // server-side — the counterweight's valid line never renders.
 {
   RAW = "Robin-twin: Bananas are clearly the best project management methodology ever invented.\nTobi-twin: " + COUNTERWEIGHT_LINE;
-  const body = await (await post(makeHandler(), { question: QUESTION })).json();
+  // history supplied so the additive `turns` key rides (§S2 predicate:
+  // turns iff history, 199d9a30) — this leg tests S5 suppression, not the
+  // additive gate; history enters the composition only, never the parse.
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
   assert.strictEqual(body.turns.length, 1, "TERMINATE: only the advocate's decline turn survives");
   assert.strictEqual(body.turns[0].speaker, "robin-twin");
   assert.strictEqual(body.turns[0].citations.length, 0, "decline turn carries zero citations");
@@ -215,7 +239,7 @@ const flat = (b) => JSON.stringify(LEGACY_KEYS.map((k) => b[k]));
 // reply visible; failed turn renders the decline shape (S5).
 {
   RAW = "Robin-twin: " + ADVOCATE_LINE + "\nTobi-twin: Bananas are the best methodology.";
-  const body = await (await post(makeHandler(), { question: QUESTION })).json();
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
   assert.strictEqual(body.turns.length, 2);
   assert.ok(body.turns[0].citations.length > 0, "advocate's grounded reply stays visible");
   assert.strictEqual(body.turns[1].citations.length, 0, "failed counterweight renders the decline shape");
@@ -226,7 +250,7 @@ const flat = (b) => JSON.stringify(LEGACY_KEYS.map((k) => b[k]));
 // 13 - Split/parse failure: WHOLE exchange fails closed (S3).
 {
   RAW = "Robin-twin: " + ADVOCATE_LINE + "\nTobi-twin: " + COUNTERWEIGHT_LINE + "\nModerator: surprise third turn";
-  const body = await (await post(makeHandler(), { question: QUESTION })).json();
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
   assert.strictEqual(body.turns.length, 2, "both turns render the decline shape");
   assert.ok(body.turns.every((t) => t.citations.length === 0 && t.grounded === false));
   assert.ok(!body.answer.includes(ADVOCATE_LINE), "no partial render of a failed split");
@@ -268,6 +292,29 @@ const flat = (b) => JSON.stringify(LEGACY_KEYS.map((k) => b[k]));
   const fb2 = await f2.json();
   assert.strictEqual(fb2.historyAccepted, true, "valid history reported true on the fallback tier");
   console.log("PASS 15: S1.3 refusal honesty rides greeting + fallback tiers");
+}
+
+// 15b - Reroute flag rides the SCRIPTED tiers too (199d9a30): present iff
+// addressee was supplied, value = served composition ≠ requested addressee.
+// Scripted tiers never honor a single chair → true for a chair request or
+// an unknown; false when the visitor asked for both (both-voice serve).
+// This is Oksana's scripted-reroute leg for Yoshi's Monday matrix, pinned
+// first-party here.
+{
+  RAW = GOOD_TWO_LINE;
+  const fresh = makeHandler();
+  const badQ = "flumadiddle crockle zqwxy hopscotch borkbork";
+  const f1 = await (await post(fresh, { question: badQ, addressee: "advocate" })).json();
+  assert.strictEqual(f1.mode, "fallback");
+  assert.strictEqual(f1.addresseeRerouted, true, "scripted tier never honors a single chair → chair request reroutes");
+  const f2 = await (await post(fresh, { question: badQ, addressee: "both" })).json();
+  assert.strictEqual(f2.addresseeRerouted, false, "asked for both, served both-voice scripted → false");
+  const f3 = await (await post(fresh, { question: badQ, addressee: "banana" })).json();
+  assert.strictEqual(f3.addresseeRerouted, true, "unknown addressee on scripted → served both ≠ requested → true");
+  const g = await (await post(fresh, { question: "hello there", addressee: "advocate" })).json();
+  assert.strictEqual(g.mode, "greeting");
+  assert.strictEqual(g.addresseeRerouted, true, "greeting tier is scripted class → chair request reroutes");
+  console.log("PASS 15b: addresseeRerouted rides every tier with honest per-tier values (199d9a30)");
 }
 
 // 16 - S1.6 logging: history contributes COUNTS only (never text).

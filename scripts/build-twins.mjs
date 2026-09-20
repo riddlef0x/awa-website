@@ -119,7 +119,7 @@ const ASK_SCRIPT = `
     }
     function ask(){
       if(busy)return;
-      if(asked>=THREAD_CAP){sysLine("That's the ten questions for this visit – the twins are handing you to the episodes.","/episodes/","Watch the episodes");return;}
+      if(asked>=THREAD_CAP){sysLine("That's the ten questions for this visit – the twins are handing you over to the episodes.","/episodes/","Watch the episodes");return;}
       var q=input.value.trim();if(!q)return;
       err.hidden=true;busy=true;go.disabled=true;
       var qEl=document.createElement("div");qEl.className="twins-q";qEl.textContent="You: "+q;log.appendChild(qEl);
@@ -142,7 +142,7 @@ const ASK_SCRIPT = `
         // continuity pretence. Copy is a Kate register surface at preview;
         // the battery asserts PRESENCE (historyAccepted:false + a visible
         // line), never this literal string.
-        if(b.historyAccepted===false)sysLine("We couldn't carry the earlier messages into this answer – so this reply starts fresh from your latest question.");
+        if(b.historyAccepted===false)sysLine("We couldn't carry the earlier messages into this answer, so this reply starts fresh from your latest question.");
         if(b.addresseeRerouted)sysLine("Both chairs took that one.");
         if(b.turns&&b.turns.length){
           b.turns.forEach(function(t){
@@ -158,9 +158,9 @@ const ASK_SCRIPT = `
         }
         if(b.handoff&&b.handoff.url)handoffLink(b);
         asked+=1;
-        if(asked>=THREAD_CAP)sysLine("That's the ten questions for this visit – the twins are handing you to the episodes.","/episodes/","Watch the episodes");
+        if(asked>=THREAD_CAP)sysLine("That's the ten questions for this visit – the twins are handing you over to the episodes.","/episodes/","Watch the episodes");
       })
-      .catch(function(){err.textContent="The twins lost the thread for a second. Try again — or watch the real thing.";err.hidden=false;})
+      .catch(function(){err.textContent="The twins lost the thread for a second. Try again – or watch the real thing.";err.hidden=false;})
       .finally(function(){busy=false;go.disabled=false;log.scrollTop=log.scrollHeight;});
     }
     go.addEventListener("click",ask);
