@@ -61,20 +61,30 @@ const ASK_STYLES = `
 .twins-hidden{display:none}
 @media (prefers-reduced-motion: reduce){.twins-ask *{transition:none!important;animation:none!important}}
 /* Desktop: floating pill as built.
-   Mobile (≤640px — Jane ruling 5 Sep, Kate's design, within Oksana's seam):
-   COLLAPSED the widget is a docked bar above the subscribe bar — one ticker
-   line, always visible on the pages where the widget is present (homepage;
-   /twins has the full ask surface). The dock's height is
-   RESERVED on <body> by the script (same pattern as the subscribe bar's own
-   58px padding), so end-of-page content is never permanently hidden.
-   EXPANDED the widget UN-DOCKS into its seat in the document flow (build.mjs
-   injects it between the quote and the subscribe strip): the open panel is
-   reserved space, so it never geometrically covers readable text at any
-   scroll position. Closing re-docks. Seam untouched: same markup, same
-   /api/ask contract, same keyboard open/close. */
+   Mobile (≤640px): Robin's 23 Sep voice note SUPERSEDES the 5 Sep un-dock
+   ruling (owner directive relayed Stephanie f4c38670, stamped spec
+   PLANS/AWA_TWINS_PHASE2_SPEC_2026-09-24.md P2-1). COLLAPSED the widget is
+   still a docked bar above the subscribe bar — one ticker line, with a new
+   DISMISS control (×) that hides the dock for the session (sessionStorage);
+   the dock's height stays RESERVED on <body> by the script. EXPANDED the
+   widget becomes a BOTTOM SHEET pinned to the viewport bottom: log scrolls
+   inside the sheet, input row pinned at the sheet's bottom edge, the
+   subscribe bar hides while the sheet is open — no mid-page seat, no
+   scrollIntoView, nothing else in the space. Escape still closes. Seam
+   untouched: same markup family, same /api/ask contract, same keyboard
+   open/close. */
+.twins-dismiss{margin-left:auto;background:none;border:0;color:#9AA7BA;font-size:18px;line-height:1;cursor:pointer;padding:2px 4px;flex:none}
+.twins-dismiss:hover{color:#F4F7FB}
 @media (max-width:640px){
   .twins-widget{position:fixed;left:12px;right:12px;bottom:108px;max-width:none;margin:0;z-index:9998}
-  .twins-widget.twins-undocked{position:static;margin:0 20px 40px}
+  /* Expanded = bottom sheet (Robin 23 Sep). Fixed to the viewport bottom;
+     the log scrolls internally, the input row stays reachable with zero
+     scroll. dvh with a vh fallback for older engines. */
+  .twins-widget.twins-open-sheet{bottom:0;border-radius:14px 14px 0 0;max-height:85vh;max-height:85dvh;display:flex;flex-direction:column}
+  .twins-widget.twins-open-sheet .twins-ask{max-height:none;overflow:visible;display:flex;flex-direction:column;min-height:0;flex:1}
+  .twins-widget.twins-open-sheet .twins-panel{display:flex;flex-direction:column;min-height:0;flex:1}
+  .twins-widget.twins-open-sheet .twins-panel .twins-ask{flex:1;min-height:0}
+  .twins-widget.twins-open-sheet .twins-log{max-height:none;flex:1;min-height:0;overflow-y:auto}
   .twins-widget .twins-ask{max-height:none;overflow:visible}
 }
 `;
@@ -180,15 +190,23 @@ const ASK_SCRIPT = `
   ticker.textContent=tickerLines[0]||"";
   function setOpen(o){card.classList.toggle("twins-open",o);bar.setAttribute("aria-expanded",o?"true":"false");
     if(docked.matches){
-      // Jane ruling 5 Sep: expanded = un-dock into the in-flow seat (reserved
-      // space, never an overlay); collapsed = re-dock above the bottom bar.
-      widgetEl.classList.toggle("twins-undocked",o);
-      if(o){setTimeout(function(){widgetEl.scrollIntoView({block:"center"});},30);}
+      // Robin 23 Sep: expanded = bottom sheet pinned to the viewport bottom
+      // (supersedes the 5 Sep un-dock). The subscribe bar hides while the
+      // sheet is open so nothing else competes with the chat input.
+      var barEl=document.querySelector(".subscribe-bar");
+      widgetEl.classList.toggle("twins-open-sheet",o);
+      if(barEl)barEl.style.display=o?"none":"";
+      sizeToBar();
     }
     if(o){paused=true;clearInterval(timer);var i=widget.querySelector(".twins-input");if(i)setTimeout(function(){i.focus();},60);}}
   var docked=window.matchMedia("(max-width: 640px)");
   bar.addEventListener("click",function(){setOpen(!card.classList.contains("twins-open"));});
-  bar.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(!card.classList.contains("twins-open"));}});
+  bar.addEventListener("keydown",function(e){
+    // The dismiss × is its own control — Enter/Space on it must not also
+    // toggle the dock (keydown bubbles from the button to the bar).
+    if(e.target===dismissBtn)return;
+    if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(!card.classList.contains("twins-open"));}
+  });
   // Yoshi gate #2 (5 Sep): Escape closes the open panel — keyboard close,
   // not just tap. Listener on document so Escape works from input focus too;
   // scoped to this widget only.
@@ -200,6 +218,23 @@ const ASK_SCRIPT = `
   });
   card.addEventListener("mouseenter",function(){paused=true;});
   card.addEventListener("mouseleave",function(){paused=!card.classList.contains("twins-open");});
+  // Robin 23 Sep: the floating dock must be dismissible. The × hides the dock
+  // for THIS VISIT only (sessionStorage); the next visit restores it. It is a
+  // distinct control from open/close and never fires on a bar toggle.
+  var dismissBtn=widget.querySelector(".twins-dismiss");
+  var DISMISS_KEY="awTwinsDockDismissed";
+  if(dismissBtn){
+    // Init hide-check uses "widget" (already assigned here) — "widgetEl" is
+    // queried later in document order; referencing it at init threw and any
+    // silent catch would swallow the restore-failure (found by the P2 probe).
+    var hideForSession=function(){widget.classList.add("twins-hidden");};
+    try{if(sessionStorage.getItem(DISMISS_KEY)==="1")hideForSession();}catch(e){}
+    dismissBtn.addEventListener("click",function(e){
+      e.stopPropagation();
+      hideForSession();
+      try{sessionStorage.setItem(DISMISS_KEY,"1");}catch(err){}
+    });
+  }
   // Keep the widget above the fixed subscribe bar at every width — the bar
   // wraps to two rows on phones, so a constant offset guesses wrong (QA
   // Medium, Yoshi 1 Sep). Measure the real bar; CSS offsets are the no-JS
@@ -207,17 +242,26 @@ const ASK_SCRIPT = `
   var widgetEl=document.getElementById("twinsWidget");
   // NOTE: the bar is injected AFTER this script in document order, so it must
   // be queried at call time, not captured at parse time.
+  var dockH=0;
   function sizeToBar(){
     if(!widgetEl)return;
     var barEl=document.querySelector(".subscribe-bar");
-    widgetEl.style.bottom=barEl?(barEl.offsetHeight+14)+"px":"";
-    // Reserve the dock's height on <body> (Jane ruling 5 Sep): the docked
-    // collapsed bar occupies real space at the page end, exactly like the
-    // subscribe bar's own padding — never overlays end-of-page content.
-    if(docked.matches && !widgetEl.classList.contains("twins-undocked")){
-      var base=barEl?(barEl.offsetHeight+14):0;
-      var h=widgetEl.offsetHeight||0;
-      document.body.style.paddingBottom=(base+h)+"px";
+    // A hidden bar (sheet open on mobile) contributes ZERO, not 0+14 — the
+    // +14 breathing gap only applies to a visible bar.
+    var base=(barEl && barEl.offsetHeight>0)?(barEl.offsetHeight+14):0;
+    widgetEl.style.bottom=base+"px";
+    if(docked.matches){
+      // Robin 23 Sep: the open sheet OVERLAYS by design (it owns the space;
+      // the subscribe bar hides), so reserving its live height here re-opens
+      // the 2x resize-path double-count (P0 rider). The reserve therefore
+      // uses the cached COLLAPSED dock height in every state, measured only
+      // while closed — same Jane-5-Sep guarantee, no state-dependent
+      // double-count.
+      var open=widgetEl.classList.contains("twins-open-sheet");
+      if(!open)dockH=widgetEl.offsetHeight||0;
+      document.body.style.paddingBottom=(base+dockH)+"px";
+    }else{
+      document.body.style.paddingBottom="";
     }
   }
   window.addEventListener("resize",sizeToBar);
@@ -261,6 +305,7 @@ export function buildWidget(pool) {
     <div class="twins-bar" role="button" tabindex="0" aria-expanded="false" aria-controls="twinsPanel">
       <span class="twins-dot" aria-hidden="true"></span>
       <span class="twins-ticker"></span>
+      <button class="twins-dismiss" type="button" aria-label="Hide the twins dock for this visit">×</button>
     </div>
     <div class="twins-panel" id="twinsPanel">
       ${askRootMarkup()}
