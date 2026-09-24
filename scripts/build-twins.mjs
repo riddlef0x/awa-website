@@ -30,6 +30,16 @@ const BANNED = [
 // are identical, so the client and server can never drift apart.
 const TWINS_THREAD_TURN_CAP = 10;
 
+// Copy-surface label map of record (Oksana stamp 24 Sep, Ruling 2 amended
+// after Yoshi's flag): ONE source for every visitor-facing twins name, so a
+// spelling ruling flips in one line. Internal roster values (robin-twin /
+// tobi-twin, advocate / counterweight) are DATA and never change. Interim =
+// the WRITTEN of-record spelling "Tobi" (locked channel rule 9, event
+// 1e2bd303, 13 Aug) — flips to Robin's WRITTEN spelling answer when it lands
+// via Stephanie; the flip posts as an amendment receipt.
+const TWINS_LABELS = { robin: "Robin", tobi: "Tobi" };
+const TWINS_TWIN_LINE = "We are the digital twins of Robin and " + TWINS_LABELS.tobi + ".";
+
 const ASK_STYLES = `
 .twins-ask{background:#131E33;border:1px solid #22304A;border-radius:12px;color:#F4F7FB;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .twins-log{max-height:300px;overflow-y:auto;padding:4px 12px 0;font-size:13px;line-height:1.45}
@@ -40,8 +50,17 @@ const ASK_STYLES = `
 .twins-sys a{color:#C8FF3D}
 .twins-handoff{display:inline-block;margin:6px 0 10px;padding:7px 12px;border-radius:8px;background:#C8FF3D;color:#0A1628;font-weight:700;font-size:13px;text-decoration:none}
 .twins-row{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px 12px}
-.twins-who{flex:none}
-.twins-addressee{background:#0A1628;border:1px solid #22304A;border-radius:8px;color:#F4F7FB;padding:8px 4px;font-size:16px}
+/* P2-2 avatar toggles (Robin 23 Sep): tap toggles a twin in/out, replacing
+   the dropdown. Monogram interim until host photos land (About-rebuild
+   blocker). aria-pressed is the state; off = dashed + dimmed, never hidden. */
+.twins-who{display:flex;gap:6px;flex:none}
+.twins-avatar{display:inline-flex;align-items:center;gap:6px;background:#0A1628;border:1px solid #22304A;border-radius:999px;color:#F4F7FB;padding:3px 10px 3px 3px;cursor:pointer;font-size:16px}
+.twins-avatar:hover{border-color:#C8FF3D}
+.twins-mono{width:26px;height:26px;border-radius:50%;background:#C8FF3D;color:#0A1628;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.twins-av-name{font-size:13px}
+.twins-avatar[aria-pressed="false"]{opacity:.55;border-style:dashed}
+.twins-avatar[aria-pressed="false"] .twins-mono{background:#22304A;color:#9AA7BA}
+.twins-hint{color:#FFB86B;font-size:12px;margin:0 12px 10px}
 .twins-input{flex:1;background:#0A1628;border:1px solid #22304A;border-radius:8px;color:#F4F7FB;padding:8px 10px;font-size:16px;min-width:0}
 .twins-go{background:#C8FF3D;border:0;border-radius:8px;color:#0A1628;font-weight:700;padding:8px 12px;cursor:pointer}
 .twins-err{color:#FFB86B;font-size:12px;margin:0 12px 10px}
@@ -94,7 +113,8 @@ const ASK_SCRIPT = `
   function initAsk(root){
     var log=root.querySelector(".twins-log"),input=root.querySelector(".twins-input"),
         go=root.querySelector(".twins-go"),err=root.querySelector(".twins-err"),
-        hp=root.querySelector(".twins-hp"),sel=root.querySelector(".twins-addressee");
+        hp=root.querySelector(".twins-hp"),avs=[].slice.call(root.querySelectorAll(".twins-avatar")),
+        hint=root.querySelector(".twins-hint");
     if(!log||!input||!go)return;
     var busy=false;
     // Two-agent thread layer (spec S1/S6): the visitor's browser holds the
@@ -109,6 +129,26 @@ const ASK_SCRIPT = `
     // scripts/test-two-agent-chat.mjs, so the two can never drift apart.
     var THREAD_CAP=${TWINS_THREAD_TURN_CAP};
     var thread=[],asked=0;
+    // P2-2 avatar state: exactly one of advocate/counterweight on = that
+    // roster value on the wire; both on (default) = field ABSENT (server
+    // default path untouched); both off = asking disabled (at-least-one
+    // invariant — the visible state matches the wire, never a silent
+    // coercion to "both").
+    function addresseeOf(){
+      var on=avs.filter(function(b){return b.getAttribute("aria-pressed")==="true";});
+      if(on.length===1)return on[0].getAttribute("data-twin");
+      return "both";
+    }
+    function syncAvatars(){
+      var any=avs.some(function(b){return b.getAttribute("aria-pressed")==="true";});
+      if(hint)hint.hidden=any;
+      input.disabled=!any;
+      go.disabled=busy||!any;
+    }
+    avs.forEach(function(b){b.addEventListener("click",function(){
+      b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")==="true"?"false":"true");
+      syncAvatars();
+    });});
     function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;}
     function sysLine(text,href,label){
       var e=document.createElement("div");e.className="twins-sys";e.textContent=text;
@@ -138,11 +178,12 @@ const ASK_SCRIPT = `
       // consent record; the honeypot field is sent back only if a bot filled it.
       var payload={question:q,source:root.closest("#twinsWidget")?"widget":"twins"};
       if(hp&&hp.value)payload.website=hp.value;
-      // Addressee (spec S2/plan 3.3): optional; "both" is the default and is
-      // sent as ABSENT so the server's default path stays untouched. An
-      // unknown server-side reroute comes back flagged and renders a visible
-      // system line below — never a silent reroute.
-      if(sel&&sel.value&&sel.value!=="both")payload.addressee=sel.value;
+      // Addressee (spec S2/plan 3.3, P2-2 avatar control): optional; "both"
+      // is the default and is sent as ABSENT so the server's default path
+      // stays untouched. An unknown server-side reroute comes back flagged
+      // and renders a visible system line below — never a silent reroute.
+      var addr=addresseeOf();
+      if(addr!=="both")payload.addressee=addr;
       if(thread.length)payload.history=thread.slice(-8);
       fetch("/api/ask",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)})
       .then(function(r){return r.json().then(function(b){return {status:r.status,body:b};});})
@@ -157,7 +198,7 @@ const ASK_SCRIPT = `
         if(b.turns&&b.turns.length){
           b.turns.forEach(function(t){
             var aEl=document.createElement("div");aEl.className="twins-a";
-            aEl.textContent=(t.speaker==="robin-twin"?"Robin-twin":"Tobi-twin")+": "+t.text;log.appendChild(aEl);
+            aEl.textContent=(t.speaker==="robin-twin"?${JSON.stringify(TWINS_LABELS.robin)}:${JSON.stringify(TWINS_LABELS.tobi)})+": "+t.text;log.appendChild(aEl);
             if(t.citations&&t.citations.length)citeLine(t.citations[0]);
             thread.push({role:"agent",text:t.text});
           });
@@ -171,12 +212,19 @@ const ASK_SCRIPT = `
         if(asked>=THREAD_CAP)sysLine("That's the ten questions for this visit – the twins are handing you over to the episodes.","/episodes/","Watch the episodes");
       })
       .catch(function(){err.textContent="The twins lost the thread for a second. Try again – or watch the real thing.";err.hidden=false;})
-      .finally(function(){busy=false;go.disabled=false;log.scrollTop=log.scrollHeight;});
+      .finally(function(){busy=false;syncAvatars();log.scrollTop=log.scrollHeight;});
     }
     go.addEventListener("click",ask);
     input.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();ask();}});
+    syncAvatars();
   }
-  document.querySelectorAll(".twins-ask").forEach(initAsk);
+  // P2-2 fix (found by the identity probe): the widget nests .twins-ask
+  // (outer card wraps the inner ask root), so a naive forEach attached every
+  // handler TWICE — invisible for years because ask()'s busy guard made the
+  // doubled go/keydown handlers self-cancel and the old select read was
+  // idempotent, but the avatar toggle is stateful per click and a double
+  // toggle is a no-op. Attach only to the INNERMOST ask root.
+  document.querySelectorAll(".twins-ask").forEach(function(r){ if(!r.querySelector(".twins-ask")) initAsk(r); });
 
   // Corner widget: idle ticker + expand-to-ask.
   var widget=document.getElementById("twinsWidget");
@@ -280,23 +328,27 @@ const ASK_SCRIPT = `
 `;
 
 function askRootMarkup(honest = true) {
-  // Two-agent surface (plan §3.3/§5): explicit addressee control, default
-  // "both"; per-message attribution renders from the wire's `speaker`/`turns`
-  // fields, never from tone. Labels are copy-only swap surfaces for Robin at
-  // preview — the option VALUES are the fixed internal roster ids.
+  // Two-agent surface (plan §3.3/§5, P2-2 per Robin's 23 Sep voice note):
+  // avatar toggle buttons replace the dropdown — tap toggles a twin in/out;
+  // both-in is the default and maps to NO payload field (server default
+  // path), one-in maps to its roster value (advocate/counterweight). The
+  // values are the fixed internal roster ids and never change; the rendered
+  // names come from TWINS_LABELS (one map, one spelling ruling). At-least-one
+  // invariant (Oksana stamp 24 Sep): both out = Ask disabled + visible hint —
+  // no silent coercion, the visible state matches the wire addressee.
   return `<div class="twins-ask">
   <span class="twins-tag">AI twins — may be wrong</span>
-  <div class="twins-log" aria-live="polite"><div class="twins-sys">Robin-twin and Tobi-twin are AI agents arguing the show's positions – not the hosts.</div></div>
+  <div class="twins-log" aria-live="polite"><div class="twins-sys">${TWINS_TWIN_LINE} We argue the show's positions – not the hosts.</div></div>
   <div class="twins-row">
-    <label class="twins-who"><select class="twins-addressee" aria-label="Who answers">
-      <option value="both" selected>Both chairs</option>
-      <option value="advocate">Robin-twin</option>
-      <option value="counterweight">Tobi-twin</option>
-    </select></label>
+    <div class="twins-who" role="group" aria-label="Who answers">
+      <button type="button" class="twins-avatar" data-twin="advocate" aria-pressed="true"><span class="twins-mono" aria-hidden="true">R</span><span class="twins-av-name">${TWINS_LABELS.robin}</span></button>
+      <button type="button" class="twins-avatar" data-twin="counterweight" aria-pressed="true"><span class="twins-mono" aria-hidden="true">T</span><span class="twins-av-name">${TWINS_LABELS.tobi}</span></button>
+    </div>
     <input class="twins-input" maxlength="280" placeholder="Ask the twins…" aria-label="Ask the twins">
     <button class="twins-go">Ask</button>
   </div>
   <p class="twins-err" hidden></p>
+  <p class="twins-hint" hidden>Pick at least one twin to ask.</p>
   ${honest ? `<p class="twins-note">Answers are drafted with the help of an AI service. We don't keep your questions – just an anonymous record that one was asked; <a href="/privacy/">what happens to your question</a>.</p>` : ""}
   <input class="twins-hp" name="website" type="text" tabindex="-1" aria-hidden="true" autocomplete="off">
 </div>`;
@@ -431,7 +483,7 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
   const cards = entries
     .map((e) => {
       const lines = e.lines
-        .map((l) => `<p class="t-line"><strong>${l.speaker === "robin-twin" ? "Robin-twin" : "Tobi-twin"}:</strong> ${l.text}</p>`)
+        .map((l) => `<p class="t-line"><strong>${l.speaker === "robin-twin" ? TWINS_LABELS.robin : TWINS_LABELS.tobi}:</strong> ${l.text}</p>`)
         .join("\n      ");
       const cite = e.citations[0];
       const href = `${e.handoff.url}&utm_source=awa_site&utm_medium=twins&utm_campaign=archive&utm_content=${e.id}`;
@@ -479,7 +531,7 @@ h2{font-size:20px;margin:32px 0 12px}
 <main class="wrap">
   <p class="kicker">Act Without Asking</p>
   <h1>The twins</h1>
-  <p class="dek">Two AI twins, built from the show's own arguments. Robin-twin is dry and opinionated. Tobi-twin starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
+  <p class="dek">Two AI twins, built from the show's own arguments. ${TWINS_LABELS.robin} is dry and opinionated. ${TWINS_LABELS.tobi} starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
   <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode — that link is the product.</p>
   <section class="t-ask">
     <h2>Ask the twins</h2>
