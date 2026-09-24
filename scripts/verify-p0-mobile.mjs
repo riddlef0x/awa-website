@@ -112,31 +112,16 @@ for (const [name, width, height] of [["iPhone 390px", 390, 844], ["Android 360px
   if (vis.h >= 100 && vis.hasInput && vis.inputInside) pass(`${name}: open panel affirmatively visible (height ${vis.h}px >= 100, contains ask input)`);
   else fail(`${name}: open panel visibility assertion failed: ${JSON.stringify(vis)}`);
 
-  // Nine scroll positions per the consolidated receipt standard (Oksana, 5 Sep).
-  for (const scrollY of [0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200]) {
-    await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), scrollY);
-    await page.waitForTimeout(80);
-    const hits = await page.evaluate(() => {
-      const widget = document.getElementById("twinsWidget");
-      const panel = widget.querySelector(".twins-ask");
-      const p = panel.getBoundingClientRect();
-      if (p.width === 0 || p.height === 0) return ["panel has no box"];
-      const out = [];
-      document.querySelectorAll("main h1, main h2, main h3, main p, main a, main img").forEach((el) => {
-        if (widget.contains(el)) return;
-        const st = getComputedStyle(el);
-        if (st.display === "none" || st.visibility === "hidden") return;
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) return;
-        const ix = Math.max(0, Math.min(r.right, p.right) - Math.max(r.left, p.left));
-        const iy = Math.max(0, Math.min(r.bottom, p.bottom) - Math.max(r.top, p.top));
-        if (ix * iy > 1) out.push(el.tagName + "." + el.className + " " + Math.round(ix * iy) + "px2");
-      });
-      return out;
-    });
-    if (hits.length === 0) pass(`${name}: open panel intersects nothing (scrollY=${scrollY})`);
-    else fail(`${name}: open panel overlaps content at scrollY=${scrollY}: ${hits.slice(0, 5).join(", ")}`);
-  }
+  // SUPERSEDED 2026-09-24 by owner directive (Robin 23 Sep voice note,
+  // relayed Stephanie f4c38670; Oksana stamp ruling 1, Yoshi concurrence
+  // 24 Sep): the open panel is now an OVERLAY bottom sheet on mobile —
+  // covering content while open IS the requirement, so the open-panel-
+  // must-not-overlap assertion no longer applies. It is reported as a
+  // DOCUMENTED SKIP, not a silent pass. Open-state sheet geometry is owned
+  // by scripts/verify-p2-mobile.mjs (successor standard). The closed-dock
+  // reserved-space check (4b) and the fixed-overlay ancestor trap (4c)
+  // remain live and keep running.
+  pass(`${name}: open-panel overlap assertion SKIPPED (superseded 2026-09-24 — overlay sheet is the requirement; successor: verify-p2-mobile.mjs)`);
 
   // 6. Keyboard close.
   await page.locator(".twins-bar").focus();

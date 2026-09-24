@@ -137,6 +137,27 @@ const browser = await chromium.launch();
   });
   if (desk.noSheetClass && desk.fixedPill && desk.barVisible) pass("1280: desktop unchanged — fixed pill, bar visible when open");
   else fail(`1280: desktop drift: ${JSON.stringify(desk)}`);
+
+  // Oksana stamp 24 Sep (required-fix regression guard): /twins has NO
+  // subscribe bar — the pill must keep its CSS-default 74px breathing gap,
+  // never flush against the viewport bottom.
+  await page.goto(URL.replace(/\/$/, "") + "/twins/");
+  await page.waitForTimeout(300);
+  await page.locator("#twinsWidget .twins-bar").click();
+  await page.waitForTimeout(250);
+  const twinsDesk = await page.evaluate(() => {
+    const w = document.getElementById("twinsWidget");
+    const r = w.getBoundingClientRect();
+    return { gap: window.innerHeight - r.bottom, inline: w.style.bottom };
+  });
+  if (Math.abs(twinsDesk.gap - 74) <= 2) pass(`1280 /twins: pill keeps the 74px gap (actual ${twinsDesk.gap}, inline "${twinsDesk.inline}")`);
+  else fail(`1280 /twins: pill gap ${twinsDesk.gap}px (inline "${twinsDesk.inline}") — flush-bottom regression`);
+  // Close: /twins must also close cleanly (Escape) with the bar absent.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  const twinsClosed = await page.evaluate(() => !document.getElementById("twinsWidget").classList.contains("twins-open-sheet"));
+  if (twinsClosed) pass("1280 /twins: Escape closes the sheet");
+  else fail("1280 /twins: sheet stuck open after Escape");
   await page.close();
 }
 

@@ -246,10 +246,19 @@ const ASK_SCRIPT = `
   function sizeToBar(){
     if(!widgetEl)return;
     var barEl=document.querySelector(".subscribe-bar");
-    // A hidden bar (sheet open on mobile) contributes ZERO, not 0+14 — the
-    // +14 breathing gap only applies to a visible bar.
-    var base=(barEl && barEl.offsetHeight>0)?(barEl.offsetHeight+14):0;
-    widgetEl.style.bottom=base+"px";
+    var sheetOpen=widgetEl.classList.contains("twins-open-sheet");
+    // Three-state bottom write (Oksana stamp 24 Sep: the old two-state write
+    // pinned the pill flush to the viewport bottom on bar-less pages such as
+    // /twins, overlapping the footer — found in her review, invisible to a
+    // homepage-only probe):
+    //   no bar        -> clear the inline style; the CSS default applies
+    //                    (desktop 74px, mobile 108px)
+    //   sheet open    -> 0px (the sheet owns the bottom; the bar is hidden)
+    //   visible bar   -> bar height + 14px breathing gap
+    var base;
+    if(sheetOpen){ base=0; widgetEl.style.bottom="0px"; }
+    else if(!barEl || barEl.offsetHeight<=0){ base=0; widgetEl.style.bottom=""; }
+    else { base=barEl.offsetHeight+14; widgetEl.style.bottom=base+"px"; }
     if(docked.matches){
       // Robin 23 Sep: the open sheet OVERLAYS by design (it owns the space;
       // the subscribe bar hides), so reserving its live height here re-opens
