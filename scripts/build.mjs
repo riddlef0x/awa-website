@@ -834,7 +834,7 @@ ${MOTION_TILT_JS}
         <label for="email">Email address</label>
         <input id="email" name="email" type="email" placeholder="you@example.com" disabled>
         <button type="submit" disabled>Subscribe</button>
-        <p class="form-note">Email capture opens with our list provider this week — the form switches on the moment it does. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
+        <p class="form-note">Email capture is coming soon. The form switches on the moment our list provider is connected. Double opt-in: you're only on the list after you click the confirmation email. See the <a href="/privacy/">privacy page</a> for exactly what we store.</p>
       </form>
       <p class="alt">Not into email? <a href="${ytUtm(YOUTUBE_SUBSCRIBE, { medium: "subscribe_page", campaign: "subscribe" })}" target="_blank" rel="noopener">Subscribe on YouTube</a> instead.</p>
       ${listenOnBlock({ compact: true })}
