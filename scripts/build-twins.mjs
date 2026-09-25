@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// Fact gate — binding named bans from the spec + Vera's final verdicts.
+// Fact gate – binding named bans from the spec + Vera's final verdicts.
 const BANNED = [
   "31%", "4.3%", "2.53", // org-chart stats; unsourced returns figure
   "australia has recently changed", "director liability", // Ep 1 law claim: UNVERIFIED
@@ -24,7 +24,7 @@ const BANNED = [
 
 // Session turn cap (two-agent spec §S6, pinned by Oksana's stamp 18 Sep): 10
 // visitor messages per session, a CLIENT-ENFORCED UX BRAKE displayed honestly
-// — never a security control (the rate limiter + per-request budget are the
+// – never a security control (the rate limiter + per-request budget are the
 // real cost brakes). One constant here feeds the client script; ask.mjs
 // exports the same value and scripts/test-two-agent-chat.mjs asserts the two
 // are identical, so the client and server can never drift apart.
@@ -61,8 +61,8 @@ const ASK_STYLES = `
 .twins-hidden{display:none}
 @media (prefers-reduced-motion: reduce){.twins-ask *{transition:none!important;animation:none!important}}
 /* Desktop: floating pill as built.
-   Mobile (≤640px — Jane ruling 5 Sep, Kate's design, within Oksana's seam):
-   COLLAPSED the widget is a docked bar above the subscribe bar — one ticker
+   Mobile (≤640px – Jane ruling 5 Sep, Kate's design, within Oksana's seam):
+   COLLAPSED the widget is a docked bar above the subscribe bar – one ticker
    line, always visible on the pages where the widget is present (homepage;
    /twins has the full ask surface). The dock's height is
    RESERVED on <body> by the script (same pattern as the subscribe bar's own
@@ -88,12 +88,12 @@ const ASK_SCRIPT = `
     if(!log||!input||!go)return;
     var busy=false;
     // Two-agent thread layer (spec S1/S6): the visitor's browser holds the
-    // thread — in-memory ONLY (never localStorage: first-party storage of
+    // thread – in-memory ONLY (never localStorage: first-party storage of
     // question text is Option B territory, gated separately). Each request
     // sends the last 8 turns (the server's structural cap; anything over is
     // refused wholesale, so pre-trimming here avoids a needless refusal).
     // THREAD_CAP is the pinned client UX brake (spec S6 = 10 visitor
-    // messages), NOT a security control — the rate limiter and budget are.
+    // messages), NOT a security control – the rate limiter and budget are.
     // The value is interpolated from the TWINS_THREAD_TURN_CAP constant in
     // this file and cross-checked against ask.mjs's export by
     // scripts/test-two-agent-chat.mjs, so the two can never drift apart.
@@ -131,7 +131,7 @@ const ASK_SCRIPT = `
       // Addressee (spec S2/plan 3.3): optional; "both" is the default and is
       // sent as ABSENT so the server's default path stays untouched. An
       // unknown server-side reroute comes back flagged and renders a visible
-      // system line below — never a silent reroute.
+      // system line below – never a silent reroute.
       if(sel&&sel.value&&sel.value!=="both")payload.addressee=sel.value;
       if(thread.length)payload.history=thread.slice(-8);
       fetch("/api/ask",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)})
@@ -189,7 +189,7 @@ const ASK_SCRIPT = `
   var docked=window.matchMedia("(max-width: 640px)");
   bar.addEventListener("click",function(){setOpen(!card.classList.contains("twins-open"));});
   bar.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(!card.classList.contains("twins-open"));}});
-  // Yoshi gate #2 (5 Sep): Escape closes the open panel — keyboard close,
+  // Yoshi gate #2 (5 Sep): Escape closes the open panel – keyboard close,
   // not just tap. Listener on document so Escape works from input focus too;
   // scoped to this widget only.
   document.addEventListener("keydown",function(e){
@@ -200,7 +200,7 @@ const ASK_SCRIPT = `
   });
   card.addEventListener("mouseenter",function(){paused=true;});
   card.addEventListener("mouseleave",function(){paused=!card.classList.contains("twins-open");});
-  // Keep the widget above the fixed subscribe bar at every width — the bar
+  // Keep the widget above the fixed subscribe bar at every width – the bar
   // wraps to two rows on phones, so a constant offset guesses wrong (QA
   // Medium, Yoshi 1 Sep). Measure the real bar; CSS offsets are the no-JS
   // fallback. No bar (/twins) -> clear the inline override.
@@ -213,7 +213,7 @@ const ASK_SCRIPT = `
     widgetEl.style.bottom=barEl?(barEl.offsetHeight+14)+"px":"";
     // Reserve the dock's height on <body> (Jane ruling 5 Sep): the docked
     // collapsed bar occupies real space at the page end, exactly like the
-    // subscribe bar's own padding — never overlays end-of-page content.
+    // subscribe bar's own padding – never overlays end-of-page content.
     if(docked.matches && !widgetEl.classList.contains("twins-undocked")){
       var base=barEl?(barEl.offsetHeight+14):0;
       var h=widgetEl.offsetHeight||0;
@@ -230,9 +230,9 @@ function askRootMarkup(honest = true) {
   // Two-agent surface (plan §3.3/§5): explicit addressee control, default
   // "both"; per-message attribution renders from the wire's `speaker`/`turns`
   // fields, never from tone. Labels are copy-only swap surfaces for Robin at
-  // preview — the option VALUES are the fixed internal roster ids.
+  // preview – the option VALUES are the fixed internal roster ids.
   return `<div class="twins-ask">
-  <span class="twins-tag">AI twins — may be wrong</span>
+  <span class="twins-tag">AI twins – may be wrong</span>
   <div class="twins-log" aria-live="polite"><div class="twins-sys">Robin-twin and Tobi-twin are AI agents arguing the show's positions – not the hosts.</div></div>
   <div class="twins-row">
     <label class="twins-who"><select class="twins-addressee" aria-label="Who answers">
@@ -279,7 +279,7 @@ export async function buildTwins(data, siteUrl) {
     throw new Error(`[twins-gate] ${msg}`);
   };
 
-  // Name gate (spec §4.5) — entry content only; pool.notes may document the correction.
+  // Name gate (spec §4.5) – entry content only; pool.notes may document the correction.
   if (/toby/i.test(JSON.stringify(pool.entries))) fail('"Toby" found in pool entries — spec gate 5 requires "Tobi" everywhere');
 
   // Fact gate (spec §4.2)
@@ -326,7 +326,7 @@ export async function buildTwins(data, siteUrl) {
 
   // Greeting router topics (fallback-honesty unit, 17 Sep ruling): the topics
   // the scripted greeting may promise. Each label must contain its anchor
-  // VERBATIM and the anchor must be one of that entry's pool keywords — that
+  // VERBATIM and the anchor must be one of that entry's pool keywords – that
   // guarantees a phrase match (+3) at the ask.mjs threshold, so the router
   // can never promise more than the pool genuinely answers.
   const GREETING_TOPICS = [
@@ -351,18 +351,18 @@ export async function buildTwins(data, siteUrl) {
       // Pointer genericization (ruled 17 Sep, Oksana `626fcdb8` §1/§2 + the
       // sealed follow-up; landed with F-NEW-2 per consolidation `6150aced`):
       // the neutral pointer goes to the SITE'S EPISODES INDEX, not one
-      // specific episode — "the real version lives in the episodes" handing
+      // specific episode – "the real version lives in the episodes" handing
       // the visitor a today's-latest-episode deep link read as a soft pointer
       // to "the answer". The internal `episode` datum dies with it: the
       // fallback tier (handoffResponse) ships this object VERBATIM, so the
-      // field must not exist at the source — stripping only on the
+      // field must not exist at the source – stripping only on the
       // llm-decline path left the fallback wire carrying it. No episode
       // attribution on any tier now, source or wire.
       url: siteUrl.replace(/\/+$/, "") + "/episodes/",
       label: "The real version lives in the episodes",
       // Fallback-honesty ruling (17 Sep): NO citations on the fallback tier.
       // The old `citations: [{episode 5 · 0:00}]` here was fabricated
-      // provenance — a scripted deflection was never spoken on that episode.
+      // provenance – a scripted deflection was never spoken on that episode.
       // The handoff stays: it is a general, true pointer, not a citation.
     },
     disagreementIds: pool.disagreement,
@@ -383,7 +383,7 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
       const href = `${e.handoff.url}&utm_source=awa_site&utm_medium=twins&utm_campaign=archive&utm_content=${e.id}`;
       return `<article class="t-card">
       ${lines}
-      <a class="t-link" href="${href}" target="_blank" rel="noopener">Episode ${e.handoff.episode}${cite && cite.timestamp ? " · " + cite.timestamp : ""} — ${e.handoff.label}</a>
+      <a class="t-link" href="${href}" target="_blank" rel="noopener">Episode ${e.handoff.episode}${cite && cite.timestamp ? " · " + cite.timestamp : ""} – ${e.handoff.label}</a>
     </article>`;
     })
     .join("\n");
@@ -393,14 +393,14 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
 <meta charset="utf-8">
 <link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The twins — Act Without Asking</title>
-<meta name="description" content="AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
-<meta property="og:title" content="The twins — Act Without Asking">
-<meta property="og:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<title>The twins – Act Without Asking</title>
+<meta name="description" content="AI twins built from the show's best arguments. Ask them anything – they may be wrong, and they always hand you the episode where it really happened.">
+<meta property="og:title" content="The twins – Act Without Asking">
+<meta property="og:description" content="Two AI twins built from the show's arguments. They may be wrong – and they always hand you the episode.">
 <meta property="og:image" content="${ogImage}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The twins — Act Without Asking">
-<meta name="twitter:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<meta name="twitter:title" content="The twins – Act Without Asking">
+<meta name="twitter:description" content="Two AI twins built from the show's arguments. They may be wrong – and they always hand you the episode.">
 <meta name="twitter:image" content="${ogImage}">
 <link rel="canonical" href="${siteUrl}/twins/">
 <meta property="og:url" content="${siteUrl}/twins/">
@@ -426,7 +426,7 @@ h2{font-size:20px;margin:32px 0 12px}
   <p class="kicker">Act Without Asking</p>
   <h1>The twins</h1>
   <p class="dek">Two AI twins, built from the show's own arguments. Robin-twin is dry and opinionated. Tobi-twin starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
-  <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode — that link is the product.</p>
+  <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode – that link is the product.</p>
   <section class="t-ask">
     <h2>Ask the twins</h2>
     ${askRootMarkup(false)}
@@ -440,7 +440,7 @@ h2{font-size:20px;margin:32px 0 12px}
     <h2>Best exchanges</h2>
     ${cards}
   </section>
-  <p class="t-foot">Act Without Asking — a show from Axela, hosted by Robin Leonard with Tobi Webster.</p>
+  <p class="t-foot">Act Without Asking – a show from Axela, hosted by Robin Leonard with Tobi Webster.</p>
 </main>
 ${widgetMarkup}
 </body>
