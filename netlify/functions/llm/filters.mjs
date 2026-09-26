@@ -177,3 +177,38 @@ export function validateAnswer({ answer, citations, allowedCitations }) {
   }
   return { ok: true, reason: null };
 }
+
+// ---- P2-3 general-knowledge brain (build spec §A.3/§A.4, spec of record
+// sha c1ca7c7f…) — ADDITIVE validator for the general path only. The grounded
+// path's validateAnswer above is untouched (the §S2 snapshot legs hold).
+// General-knowledge turns carry NO citations by construction (never attach
+// episode provenance to non-grounded content), so the claim-bearing citation
+// polarity does not apply; the mechanical rails it reuses are the SAME
+// exported pattern sets the grounded gate runs. Em-dash ban is enforced
+// MECHANICALLY here (prompt rule + hard gate) — the new surface is a larger
+// attack and drift surface, and the standing em workstream's standard for
+// LLM output is zero em dashes on the wire.
+const EM_DASH_PATTERNS = [/—/, /&mdash;/i, /&#8212;/, /&#x2014;/i];
+
+export function validateGeneralAnswer({ answer }) {
+  if (typeof answer !== "string" || !answer.trim()) {
+    return { ok: false, reason: "empty-answer" };
+  }
+  if (answer.length > MAX_ANSWER_CHARS) {
+    return { ok: false, reason: "answer-too-long" };
+  }
+  const lines = answer.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length > MAX_ANSWER_LINES) {
+    return { ok: false, reason: "too-many-lines" };
+  }
+  for (const re of BIO_FACT_PATTERNS) {
+    if (re.test(answer)) return { ok: false, reason: "bio-fact-without-source" };
+  }
+  for (const re of INJECTION_ARTIFACT_PATTERNS) {
+    if (re.test(answer)) return { ok: false, reason: "injection-artifact" };
+  }
+  for (const re of EM_DASH_PATTERNS) {
+    if (re.test(answer)) return { ok: false, reason: "em-dash" };
+  }
+  return { ok: true, reason: null };
+}

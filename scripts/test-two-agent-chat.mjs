@@ -276,22 +276,35 @@ function makeBaseline() {
   console.log("PASS 14: forged-history agent turns gain zero grounding authority");
 }
 
-// 15 - Refusal honesty rides EVERY tier — greeting + scripted fallback.
+// 15 - Refusal honesty rides EVERY tier — greeting + general + scripted
+// fallback. P2-3 §A (spec sha c1ca7c7f): a no-grounding question now serves
+// the general-knowledge brain (mode "general") instead of the scripted
+// fallback — so the refused-history honesty pin moves WITH the tier, and the
+// scripted-fallback legs are preserved by a general composition that fails
+// closed (malformed provider output → scripted tier).
 {
   RAW = GOOD_TWO_LINE;
   const fresh = makeHandler();
-  const g = await post(fresh, { question: "hello there", history: Array.from({ length: 9 }, (_, i) => ({ role: "visitor", text: "q" + i })) });
+  const refused = Array.from({ length: 9 }, (_, i) => ({ role: "visitor", text: "q" + i }));
+  const g = await post(fresh, { question: "hello there", history: refused });
   const gb = await g.json();
   assert.strictEqual(gb.mode, "greeting");
   assert.strictEqual(gb.historyAccepted, false, "refusal reported on the greeting tier too — no silent continuity");
-  const f = await post(fresh, { question: "flumadiddle crockle zqwxy hopscotch borkbork", history: Array.from({ length: 9 }, (_, i) => ({ role: "visitor", text: "q" + i })) });
-  const fb = await f.json();
-  assert.strictEqual(fb.mode, "fallback");
-  assert.strictEqual(fb.historyAccepted, false, "refusal reported on the scripted fallback tier");
-  const f2 = await post(fresh, { question: "flumadiddle crockle zqwxy hopscotch borkbork", history: [{ role: "visitor", text: "earlier question" }] });
-  const fb2 = await f2.json();
-  assert.strictEqual(fb2.historyAccepted, true, "valid history reported true on the fallback tier");
-  console.log("PASS 15: S1.3 refusal honesty rides greeting + fallback tiers");
+  const badQ = "flumadiddle crockle zqwxy hopscotch borkbork";
+  const fb = await (await post(fresh, { question: badQ, history: refused })).json();
+  assert.strictEqual(fb.mode, "general", "P2-3: no-grounding question serves the general brain, not the scripted fallback");
+  assert.strictEqual(fb.historyAccepted, false, "refusal reported on the general tier too — no silent continuity");
+  const fb2 = await (await post(fresh, { question: badQ, history: [{ role: "visitor", text: "earlier question" }] })).json();
+  assert.strictEqual(fb2.mode, "general");
+  assert.strictEqual(fb2.historyAccepted, true, "valid history reported true on the general tier");
+  RAW = "one line only"; // general path fails closed → scripted tier
+  const fb3 = await (await post(fresh, { question: badQ, history: refused })).json();
+  assert.strictEqual(fb3.mode, "fallback");
+  assert.strictEqual(fb3.historyAccepted, false, "refusal reported on the scripted fallback tier");
+  const fb4 = await (await post(fresh, { question: badQ, history: [{ role: "visitor", text: "earlier question" }] })).json();
+  assert.strictEqual(fb4.mode, "fallback");
+  assert.strictEqual(fb4.historyAccepted, true, "valid history reported true on the fallback tier");
+  console.log("PASS 15: S1.3 refusal honesty rides greeting + general + fallback tiers (P2-3 updated)");
 }
 
 // 15b - Reroute flag rides the SCRIPTED tiers too (199d9a30): present iff
@@ -301,7 +314,11 @@ function makeBaseline() {
 // This is Oksana's scripted-reroute leg for Yoshi's Monday matrix, pinned
 // first-party here.
 {
-  RAW = GOOD_TWO_LINE;
+  // P2-3: badQ is a no-grounding question and now serves the general brain
+  // (which DOES honor chairs). The 15b legs test the SCRIPTED tiers, so the
+  // general path is forced to fail closed with a malformed composition —
+  // the scripted tier underneath keeps its no-chair semantics.
+  RAW = "one line only";
   const fresh = makeHandler();
   const badQ = "flumadiddle crockle zqwxy hopscotch borkbork";
   const f1 = await (await post(fresh, { question: badQ, addressee: "advocate" })).json();
@@ -314,7 +331,7 @@ function makeBaseline() {
   const g = await (await post(fresh, { question: "hello there", addressee: "advocate" })).json();
   assert.strictEqual(g.mode, "greeting");
   assert.strictEqual(g.addresseeRerouted, true, "greeting tier is scripted class → chair request reroutes");
-  console.log("PASS 15b: addresseeRerouted rides every tier with honest per-tier values (199d9a30)");
+  console.log("PASS 15b: addresseeRerouted rides every tier with honest per-tier values (199d9a30; P2-3 scripted legs via fail-closed general)");
 }
 
 // 16 - S1.6 logging: history contributes COUNTS only (never text).
