@@ -587,15 +587,21 @@ async function llmExchange(question, { historyTurns = [], addressee = "both" } =
     return { turns: [advocateGate.turn], handoff: neutralHandoff };
   }
   const counterweightGate = gateTurn(ROSTER[1], split.counterweight, picked, citations, UBIQUITOUS, IDF);
-  // RED-CYCLE-3 (Oksana 8315969c, Kate's grounded-tier repro): the per-turn
-  // gate above has no exchange-level constraint — each chair may
-  // INDEPENDENTLY and legitimately land an honest decline (no material tie),
-  // so both chairs can each pass gateTurn as their own genuine decline. That
-  // is the doubled-decline shape on the wire. Symmetric fix to the general
-  // path's Fix B: at most ONE decline turn per exchange. Suppress the
-  // counterweight exactly like TERMINATE when both would decline — the
-  // advocate's decline (with whatever real content it carries) stands alone.
-  if (advocateGate.ok && isHonestDecline(advocateGate.turn.text) && counterweightGate.ok && isHonestDecline(counterweightGate.turn.text)) {
+  // RED-CYCLE-3/4 (Oksana 8315969c, Kate's grounded-tier repro; Yoshi
+  // 6148bad8 cycle-3 RED — D1 was incomplete): the per-turn gate above has
+  // no exchange-level constraint — each chair may INDEPENDENTLY and
+  // legitimately land an honest decline (no material tie), so both chairs
+  // can each render a decline. That is the doubled-decline shape on the
+  // wire — and it is NOT limited to the both-gates-PASS branch: a FAILED
+  // gate also renders a decline (`declineTurn()`'s constant DECLINE_LINE
+  // always classifies as `isHonestDecline`), so a genuinely declining
+  // advocate next to a counterweight that fails its gate for ANY reason
+  // (e.g. D2's episode-ref reject) doubles the decline exactly the same
+  // way. Check the RENDERED text's decline status regardless of gate
+  // pass/fail — not gate outcome — so both shapes are caught by one rule.
+  // Symmetric fix to the general path's Fix B: at most ONE decline turn per
+  // exchange; suppress the counterweight exactly like TERMINATE.
+  if (isHonestDecline(advocateGate.turn.text) && isHonestDecline(counterweightGate.turn.text)) {
     return { turns: [advocateGate.turn], handoff: neutralHandoff };
   }
   // Symmetric case (§S5): advocate's passed reply stays visible regardless of

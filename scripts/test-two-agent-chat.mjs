@@ -391,6 +391,22 @@ function makeBaseline() {
   console.log("PASS 19: D1/D2 regression guard — normal grounded exchange unaffected");
 }
 
+// ---- 20 - RED-CYCLE-4 fault injection (Yoshi 6148bad8 Case B): D1's first
+// pass only suppressed when BOTH gates PASS — but a FAILED gate ALSO renders
+// a decline (declineTurn()'s constant DECLINE_LINE), so a genuinely-declining
+// advocate next to a counterweight that fails ITS gate (here: D2's own
+// episode-ref reject) doubled the decline right through the gap. Must now
+// suppress to one turn regardless of which side failed its gate.
+{
+  RAW = "Robin-twin: We haven't covered goldfish naming on the show yet – ask us something else.\nTobi-twin: We haven't covered whether episode 47 discussed this – that's not something we said on air.";
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
+  assert.strictEqual(body.turns.length, 1, "Case B: declining advocate + gate-failing (episode-ref) counterweight must still collapse to one decline turn");
+  assert.strictEqual(body.turns[0].speaker, "robin-twin");
+  assert.ok(!body.answer.includes("Tobi-twin:"), "Case B: the gate-failure-rendered second decline never reaches the wire");
+  assert.ok(!/\bep(isode)?\s*#?\s*47\b/i.test(body.answer), "Case B: planted episode number also stays off the wire (D2 still holds)");
+  console.log("PASS 20: RED-CYCLE-4 Case B fault injection — declining advocate + gate-failing counterweight collapses to one turn");
+}
+
 globalThis.fetch = realFetch;
 try {
   unlinkSync(new URL("../" + BASELINE_PATH, import.meta.url)); // temp baseline copy removed
