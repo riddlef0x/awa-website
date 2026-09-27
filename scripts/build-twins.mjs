@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// Fact gate — binding named bans from the spec + Vera's final verdicts.
+// Fact gate – binding named bans from the spec + Vera's final verdicts.
 const BANNED = [
   "31%", "4.3%", "2.53", // org-chart stats; unsourced returns figure
   "australia has recently changed", "director liability", // Ep 1 law claim: UNVERIFIED
@@ -24,7 +24,7 @@ const BANNED = [
 
 // Session turn cap (two-agent spec §S6, pinned by Oksana's stamp 18 Sep): 10
 // visitor messages per session, a CLIENT-ENFORCED UX BRAKE displayed honestly
-// — never a security control (the rate limiter + per-request budget are the
+// – never a security control (the rate limiter + per-request budget are the
 // real cost brakes). One constant here feeds the client script; ask.mjs
 // exports the same value and scripts/test-two-agent-chat.mjs asserts the two
 // are identical, so the client and server can never drift apart.
@@ -35,7 +35,7 @@ const TWINS_THREAD_TURN_CAP = 10;
 // spelling ruling flips in one line. Internal roster values (robin-twin /
 // tobi-twin, advocate / counterweight) are DATA and never change. Interim =
 // the WRITTEN of-record spelling "Tobi" (locked channel rule 9, event
-// 1e2bd303, 13 Aug) — flips to Robin's WRITTEN spelling answer when it lands
+// 1e2bd303, 13 Aug) – flips to Robin's WRITTEN spelling answer when it lands
 // via Stephanie; the flip posts as an amendment receipt.
 const TWINS_LABELS = { robin: "Robin", tobi: "Tobi" };
 const TWINS_TWIN_LINE = "We are the digital twins of Robin and " + TWINS_LABELS.tobi + ".";
@@ -83,12 +83,12 @@ const ASK_STYLES = `
    Mobile (≤640px): Robin's 23 Sep voice note SUPERSEDES the 5 Sep un-dock
    ruling (owner directive relayed Stephanie f4c38670, stamped spec
    PLANS/AWA_TWINS_PHASE2_SPEC_2026-09-24.md P2-1). COLLAPSED the widget is
-   still a docked bar above the subscribe bar — one ticker line, with a new
+   still a docked bar above the subscribe bar – one ticker line, with a new
    DISMISS control (×) that hides the dock for the session (sessionStorage);
    the dock's height stays RESERVED on <body> by the script. EXPANDED the
    widget becomes a BOTTOM SHEET pinned to the viewport bottom: log scrolls
    inside the sheet, input row pinned at the sheet's bottom edge, the
-   subscribe bar hides while the sheet is open — no mid-page seat, no
+   subscribe bar hides while the sheet is open – no mid-page seat, no
    scrollIntoView, nothing else in the space. Escape still closes. Seam
    untouched: same markup family, same /api/ask contract, same keyboard
    open/close. */
@@ -118,12 +118,12 @@ const ASK_SCRIPT = `
     if(!log||!input||!go)return;
     var busy=false;
     // Two-agent thread layer (spec S1/S6): the visitor's browser holds the
-    // thread — in-memory ONLY (never localStorage: first-party storage of
+    // thread – in-memory ONLY (never localStorage: first-party storage of
     // question text is Option B territory, gated separately). Each request
     // sends the last 8 turns (the server's structural cap; anything over is
     // refused wholesale, so pre-trimming here avoids a needless refusal).
     // THREAD_CAP is the pinned client UX brake (spec S6 = 10 visitor
-    // messages), NOT a security control — the rate limiter and budget are.
+    // messages), NOT a security control – the rate limiter and budget are.
     // The value is interpolated from the TWINS_THREAD_TURN_CAP constant in
     // this file and cross-checked against ask.mjs's export by
     // scripts/test-two-agent-chat.mjs, so the two can never drift apart.
@@ -132,7 +132,7 @@ const ASK_SCRIPT = `
     // P2-2 avatar state: exactly one of advocate/counterweight on = that
     // roster value on the wire; both on (default) = field ABSENT (server
     // default path untouched); both off = asking disabled (at-least-one
-    // invariant — the visible state matches the wire, never a silent
+    // invariant – the visible state matches the wire, never a silent
     // coercion to "both").
     function addresseeOf(){
       var on=avs.filter(function(b){return b.getAttribute("aria-pressed")==="true";});
@@ -181,7 +181,7 @@ const ASK_SCRIPT = `
       // Addressee (spec S2/plan 3.3, P2-2 avatar control): optional; "both"
       // is the default and is sent as ABSENT so the server's default path
       // stays untouched. An unknown server-side reroute comes back flagged
-      // and renders a visible system line below — never a silent reroute.
+      // and renders a visible system line below – never a silent reroute.
       var addr=addresseeOf();
       if(addr!=="both")payload.addressee=addr;
       if(thread.length)payload.history=thread.slice(-8);
@@ -220,7 +220,7 @@ const ASK_SCRIPT = `
   }
   // P2-2 fix (found by the identity probe): the widget nests .twins-ask
   // (outer card wraps the inner ask root), so a naive forEach attached every
-  // handler TWICE — invisible for years because ask()'s busy guard made the
+  // handler TWICE – invisible for years because ask()'s busy guard made the
   // doubled go/keydown handlers self-cancel and the old select read was
   // idempotent, but the avatar toggle is stateful per click and a double
   // toggle is a no-op. Attach only to the INNERMOST ask root.
@@ -250,12 +250,12 @@ const ASK_SCRIPT = `
   var docked=window.matchMedia("(max-width: 640px)");
   bar.addEventListener("click",function(){setOpen(!card.classList.contains("twins-open"));});
   bar.addEventListener("keydown",function(e){
-    // The dismiss × is its own control — Enter/Space on it must not also
+    // The dismiss × is its own control – Enter/Space on it must not also
     // toggle the dock (keydown bubbles from the button to the bar).
     if(e.target===dismissBtn)return;
     if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(!card.classList.contains("twins-open"));}
   });
-  // Yoshi gate #2 (5 Sep): Escape closes the open panel — keyboard close,
+  // Yoshi gate #2 (5 Sep): Escape closes the open panel – keyboard close,
   // not just tap. Listener on document so Escape works from input focus too;
   // scoped to this widget only.
   document.addEventListener("keydown",function(e){
@@ -272,7 +272,7 @@ const ASK_SCRIPT = `
   var dismissBtn=widget.querySelector(".twins-dismiss");
   var DISMISS_KEY="awTwinsDockDismissed";
   if(dismissBtn){
-    // Init hide-check uses "widget" (already assigned here) — "widgetEl" is
+    // Init hide-check uses "widget" (already assigned here) – "widgetEl" is
     // queried later in document order; referencing it at init threw and any
     // silent catch would swallow the restore-failure (found by the P2 probe).
     var hideForSession=function(){widget.classList.add("twins-hidden");};
@@ -283,7 +283,7 @@ const ASK_SCRIPT = `
       try{sessionStorage.setItem(DISMISS_KEY,"1");}catch(err){}
     });
   }
-  // Keep the widget above the fixed subscribe bar at every width — the bar
+  // Keep the widget above the fixed subscribe bar at every width – the bar
   // wraps to two rows on phones, so a constant offset guesses wrong (QA
   // Medium, Yoshi 1 Sep). Measure the real bar; CSS offsets are the no-JS
   // fallback. No bar (/twins) -> clear the inline override.
@@ -297,7 +297,7 @@ const ASK_SCRIPT = `
     var sheetOpen=widgetEl.classList.contains("twins-open-sheet");
     // Three-state bottom write (Oksana stamp 24 Sep: the old two-state write
     // pinned the pill flush to the viewport bottom on bar-less pages such as
-    // /twins, overlapping the footer — found in her review, invisible to a
+    // /twins, overlapping the footer – found in her review, invisible to a
     // homepage-only probe):
     //   no bar        -> clear the inline style; the CSS default applies
     //                    (desktop 74px, mobile 108px)
@@ -312,7 +312,7 @@ const ASK_SCRIPT = `
       // the subscribe bar hides), so reserving its live height here re-opens
       // the 2x resize-path double-count (P0 rider). The reserve therefore
       // uses the cached COLLAPSED dock height in every state, measured only
-      // while closed — same Jane-5-Sep guarantee, no state-dependent
+      // while closed – same Jane-5-Sep guarantee, no state-dependent
       // double-count.
       var open=widgetEl.classList.contains("twins-open-sheet");
       if(!open)dockH=widgetEl.offsetHeight||0;
@@ -329,15 +329,15 @@ const ASK_SCRIPT = `
 
 function askRootMarkup(honest = true) {
   // Two-agent surface (plan §3.3/§5, P2-2 per Robin's 23 Sep voice note):
-  // avatar toggle buttons replace the dropdown — tap toggles a twin in/out;
+  // avatar toggle buttons replace the dropdown – tap toggles a twin in/out;
   // both-in is the default and maps to NO payload field (server default
   // path), one-in maps to its roster value (advocate/counterweight). The
   // values are the fixed internal roster ids and never change; the rendered
   // names come from TWINS_LABELS (one map, one spelling ruling). At-least-one
-  // invariant (Oksana stamp 24 Sep): both out = Ask disabled + visible hint —
+  // invariant (Oksana stamp 24 Sep): both out = Ask disabled + visible hint –
   // no silent coercion, the visible state matches the wire addressee.
   return `<div class="twins-ask">
-  <span class="twins-tag">AI twins — may be wrong</span>
+  <span class="twins-tag">AI twins – may be wrong</span>
   <div class="twins-log" aria-live="polite"><div class="twins-sys">${TWINS_TWIN_LINE} We argue the show's positions – not the hosts.</div></div>
   <div class="twins-row">
     <div class="twins-who" role="group" aria-label="Who answers">
@@ -385,7 +385,7 @@ export async function buildTwins(data, siteUrl) {
     throw new Error(`[twins-gate] ${msg}`);
   };
 
-  // Name gate (spec §4.5) — entry content only; pool.notes may document the correction.
+  // Name gate (spec §4.5) – entry content only; pool.notes may document the correction.
   if (/toby/i.test(JSON.stringify(pool.entries))) fail('"Toby" found in pool entries — spec gate 5 requires "Tobi" everywhere');
 
   // Fact gate (spec §4.2)
@@ -432,7 +432,7 @@ export async function buildTwins(data, siteUrl) {
 
   // Greeting router topics (fallback-honesty unit, 17 Sep ruling): the topics
   // the scripted greeting may promise. Each label must contain its anchor
-  // VERBATIM and the anchor must be one of that entry's pool keywords — that
+  // VERBATIM and the anchor must be one of that entry's pool keywords – that
   // guarantees a phrase match (+3) at the ask.mjs threshold, so the router
   // can never promise more than the pool genuinely answers.
   const GREETING_TOPICS = [
@@ -457,18 +457,18 @@ export async function buildTwins(data, siteUrl) {
       // Pointer genericization (ruled 17 Sep, Oksana `626fcdb8` §1/§2 + the
       // sealed follow-up; landed with F-NEW-2 per consolidation `6150aced`):
       // the neutral pointer goes to the SITE'S EPISODES INDEX, not one
-      // specific episode — "the real version lives in the episodes" handing
+      // specific episode – "the real version lives in the episodes" handing
       // the visitor a today's-latest-episode deep link read as a soft pointer
       // to "the answer". The internal `episode` datum dies with it: the
       // fallback tier (handoffResponse) ships this object VERBATIM, so the
-      // field must not exist at the source — stripping only on the
+      // field must not exist at the source – stripping only on the
       // llm-decline path left the fallback wire carrying it. No episode
       // attribution on any tier now, source or wire.
       url: siteUrl.replace(/\/+$/, "") + "/episodes/",
       label: "The real version lives in the episodes",
       // Fallback-honesty ruling (17 Sep): NO citations on the fallback tier.
       // The old `citations: [{episode 5 · 0:00}]` here was fabricated
-      // provenance — a scripted deflection was never spoken on that episode.
+      // provenance – a scripted deflection was never spoken on that episode.
       // The handoff stays: it is a general, true pointer, not a citation.
     },
     disagreementIds: pool.disagreement,
@@ -489,7 +489,7 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
       const href = `${e.handoff.url}&utm_source=awa_site&utm_medium=twins&utm_campaign=archive&utm_content=${e.id}`;
       return `<article class="t-card">
       ${lines}
-      <a class="t-link" href="${href}" target="_blank" rel="noopener">Episode ${e.handoff.episode}${cite && cite.timestamp ? " · " + cite.timestamp : ""} — ${e.handoff.label}</a>
+      <a class="t-link" href="${href}" target="_blank" rel="noopener">Episode ${e.handoff.episode}${cite && cite.timestamp ? " · " + cite.timestamp : ""} – ${e.handoff.label}</a>
     </article>`;
     })
     .join("\n");
@@ -499,14 +499,14 @@ function renderTwinsPage(pool, entries, widgetMarkup, siteUrl, ogImage = "") {
 <meta charset="utf-8">
 <link rel="icon" href="/favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The twins — Act Without Asking</title>
-<meta name="description" content="AI twins built from the show's best arguments. Ask them anything — they may be wrong, and they always hand you the episode where it really happened.">
-<meta property="og:title" content="The twins — Act Without Asking">
-<meta property="og:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<title>The twins – Act Without Asking</title>
+<meta name="description" content="AI twins built from the show's best arguments. Ask them anything – they may be wrong, and they always hand you the episode where it really happened.">
+<meta property="og:title" content="The twins – Act Without Asking">
+<meta property="og:description" content="Two AI twins built from the show's arguments. They may be wrong – and they always hand you the episode.">
 <meta property="og:image" content="${ogImage}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The twins — Act Without Asking">
-<meta name="twitter:description" content="Two AI twins built from the show's arguments. They may be wrong — and they always hand you the episode.">
+<meta name="twitter:title" content="The twins – Act Without Asking">
+<meta name="twitter:description" content="Two AI twins built from the show's arguments. They may be wrong – and they always hand you the episode.">
 <meta name="twitter:image" content="${ogImage}">
 <link rel="canonical" href="${siteUrl}/twins/">
 <meta property="og:url" content="${siteUrl}/twins/">
@@ -532,7 +532,7 @@ h2{font-size:20px;margin:32px 0 12px}
   <p class="kicker">Act Without Asking</p>
   <h1>The twins</h1>
   <p class="dek">Two AI twins, built from the show's own arguments. ${TWINS_LABELS.robin} is dry and opinionated. ${TWINS_LABELS.tobi} starts fights. Powered by the show itself, which is exactly as honest as we know how to be.</p>
-  <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode — that link is the product.</p>
+  <p class="t-honest">They may be wrong. When they're wrong, they hand you the episode – that link is the product.</p>
   <section class="t-ask">
     <h2>Ask the twins</h2>
     ${askRootMarkup(false)}
@@ -546,7 +546,7 @@ h2{font-size:20px;margin:32px 0 12px}
     <h2>Best exchanges</h2>
     ${cards}
   </section>
-  <p class="t-foot">Act Without Asking — a show from Axela, hosted by Robin Leonard with Tobi Webster.</p>
+  <p class="t-foot">Act Without Asking – a show from Axela, hosted by Robin Leonard with Tobi Webster.</p>
 </main>
 ${widgetMarkup}
 </body>
