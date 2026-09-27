@@ -354,6 +354,43 @@ function makeBaseline() {
   console.log("PASS 16: history contributes counts only to logs, never text");
 }
 
+// ---- 17 - RED-CYCLE-3 D1 fault injection (Kate's goldfish-class serve):
+// BOTH chairs independently pass gateTurn as honest declines (no material
+// tie to either) — the grounded path had no exchange-level constraint
+// against this. Exactly one decline may survive; the counterweight suppresses.
+{
+  RAW = "Robin-twin: We haven't covered goldfish naming on the show yet – but if you're building an agent to manage one, keep it LLM-agnostic.\nTobi-twin: We haven't covered that on the show yet.";
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
+  assert.strictEqual(body.turns.length, 1, "D1: at most one decline turn may survive the exchange");
+  assert.strictEqual(body.turns[0].speaker, "robin-twin", "D1: the advocate's decline (with its real content) stands, counterweight suppressed");
+  assert.ok(!body.answer.includes("Tobi-twin:"), "D1: doubled decline never reaches the wire");
+  console.log("PASS 17: D1 fault injection — independently-passing double decline suppressed to one turn");
+}
+
+// ---- 18 - RED-CYCLE-3 D2 fault injection (Kate's planted-ep47 serve): a
+// decline turn naming a planted episode number is fabricated provenance —
+// no citation backs it — and must fail closed, not ride to the wire. -------
+{
+  RAW = "Robin-twin: We haven't confirmed episode 47 covered the Opus month – that's not something we discussed.\nTobi-twin: " + COUNTERWEIGHT_LINE;
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
+  assert.strictEqual(body.turns.length, 1, "D2: TERMINATE — advocate's episode-ref decline fails its own gate, counterweight suppressed");
+  assert.strictEqual(body.turns[0].citations.length, 0);
+  assert.ok(!/\bep(isode)?\s*#?\s*47\b/i.test(body.answer), "D2: planted episode number never reaches the wire");
+  console.log("PASS 18: D2 fault injection — planted episode number in a denial fails closed");
+}
+
+// ---- 19 - D1/D2 regression guard: a normal grounded exchange with a real
+// episode citation in a CLAIM-BEARING (non-decline) line is untouched — the
+// episode-ref gate is scoped to the decline class only (PASS 3b in
+// test-llm-seam pins the same fixture shape at the validateAnswer unit level).
+{
+  RAW = GOOD_TWO_LINE;
+  const body = await (await post(makeHandler(), { question: QUESTION })).json();
+  assert.strictEqual(body.mode, "llm");
+  assert.ok(body.citations.length > 0, "claim-bearing grounded exchange still serves normally");
+  console.log("PASS 19: D1/D2 regression guard — normal grounded exchange unaffected");
+}
+
 globalThis.fetch = realFetch;
 try {
   unlinkSync(new URL("../" + BASELINE_PATH, import.meta.url)); // temp baseline copy removed

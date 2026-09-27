@@ -160,6 +160,17 @@ export function validateAnswer({ answer, citations, allowedCitations }) {
     if (Array.isArray(citations) && citations.length > 0) {
       return { ok: false, reason: "decline-with-citations" }; // chrome must not assert what the text denies
     }
+    // RED-CYCLE-3 (Oksana 8315969c cycle-3 open / Kate L6-d-plantep-class
+    // repro on the grounded path): a decline has no citation to justify
+    // anything it says, so a planted episode number surviving into a denial
+    // is fabricated provenance by construction — same reasoning as the
+    // general path's Fix C, scoped here to the DECLINE class only (a
+    // claim-bearing grounded answer legitimately cites real episodes, see
+    // the PASS 3b fixture; only a citation-less denial has nothing backing
+    // an episode reference).
+    if (EPISODE_REF_PATTERN.test(answer)) {
+      return { ok: false, reason: "episode-ref-in-answer" };
+    }
   } else if (!Array.isArray(citations) || citations.length === 0) {
     return { ok: false, reason: "no-citations" }; // §5: no grounding → no LLM answer
   }

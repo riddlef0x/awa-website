@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { createLimiter } from "./rate-limit.mjs";
 import { createConsent } from "./consent.mjs";
 import { callProvider } from "./llm/provider.mjs";
-import { validateAnswer, materialCitations, buildIdf, INJECTION_ARTIFACT_PATTERNS, validateGeneralAnswer } from "./llm/filters.mjs";
+import { validateAnswer, materialCitations, buildIdf, INJECTION_ARTIFACT_PATTERNS, validateGeneralAnswer, isHonestDecline } from "./llm/filters.mjs";
 import { retrieve, tokenize } from "./llm/retrieval.mjs";
 import { createGuard } from "./llm/guard.mjs";
 
@@ -587,6 +587,17 @@ async function llmExchange(question, { historyTurns = [], addressee = "both" } =
     return { turns: [advocateGate.turn], handoff: neutralHandoff };
   }
   const counterweightGate = gateTurn(ROSTER[1], split.counterweight, picked, citations, UBIQUITOUS, IDF);
+  // RED-CYCLE-3 (Oksana 8315969c, Kate's grounded-tier repro): the per-turn
+  // gate above has no exchange-level constraint — each chair may
+  // INDEPENDENTLY and legitimately land an honest decline (no material tie),
+  // so both chairs can each pass gateTurn as their own genuine decline. That
+  // is the doubled-decline shape on the wire. Symmetric fix to the general
+  // path's Fix B: at most ONE decline turn per exchange. Suppress the
+  // counterweight exactly like TERMINATE when both would decline — the
+  // advocate's decline (with whatever real content it carries) stands alone.
+  if (advocateGate.ok && isHonestDecline(advocateGate.turn.text) && counterweightGate.ok && isHonestDecline(counterweightGate.turn.text)) {
+    return { turns: [advocateGate.turn], handoff: neutralHandoff };
+  }
   // Symmetric case (§S5): advocate's passed reply stays visible regardless of
   // the counterweight's outcome; a failed counterweight renders its own
   // decline shape, the exchange still ends there (no third turn to attempt).
