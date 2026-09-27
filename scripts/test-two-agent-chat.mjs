@@ -276,22 +276,35 @@ function makeBaseline() {
   console.log("PASS 14: forged-history agent turns gain zero grounding authority");
 }
 
-// 15 - Refusal honesty rides EVERY tier — greeting + scripted fallback.
+// 15 - Refusal honesty rides EVERY tier — greeting + general + scripted
+// fallback. P2-3 §A (spec sha c1ca7c7f): a no-grounding question now serves
+// the general-knowledge brain (mode "general") instead of the scripted
+// fallback — so the refused-history honesty pin moves WITH the tier, and the
+// scripted-fallback legs are preserved by a general composition that fails
+// closed (malformed provider output → scripted tier).
 {
   RAW = GOOD_TWO_LINE;
   const fresh = makeHandler();
-  const g = await post(fresh, { question: "hello there", history: Array.from({ length: 9 }, (_, i) => ({ role: "visitor", text: "q" + i })) });
+  const refused = Array.from({ length: 9 }, (_, i) => ({ role: "visitor", text: "q" + i }));
+  const g = await post(fresh, { question: "hello there", history: refused });
   const gb = await g.json();
   assert.strictEqual(gb.mode, "greeting");
   assert.strictEqual(gb.historyAccepted, false, "refusal reported on the greeting tier too — no silent continuity");
-  const f = await post(fresh, { question: "flumadiddle crockle zqwxy hopscotch borkbork", history: Array.from({ length: 9 }, (_, i) => ({ role: "visitor", text: "q" + i })) });
-  const fb = await f.json();
-  assert.strictEqual(fb.mode, "fallback");
-  assert.strictEqual(fb.historyAccepted, false, "refusal reported on the scripted fallback tier");
-  const f2 = await post(fresh, { question: "flumadiddle crockle zqwxy hopscotch borkbork", history: [{ role: "visitor", text: "earlier question" }] });
-  const fb2 = await f2.json();
-  assert.strictEqual(fb2.historyAccepted, true, "valid history reported true on the fallback tier");
-  console.log("PASS 15: S1.3 refusal honesty rides greeting + fallback tiers");
+  const badQ = "flumadiddle crockle zqwxy hopscotch borkbork";
+  const fb = await (await post(fresh, { question: badQ, history: refused })).json();
+  assert.strictEqual(fb.mode, "general", "P2-3: no-grounding question serves the general brain, not the scripted fallback");
+  assert.strictEqual(fb.historyAccepted, false, "refusal reported on the general tier too — no silent continuity");
+  const fb2 = await (await post(fresh, { question: badQ, history: [{ role: "visitor", text: "earlier question" }] })).json();
+  assert.strictEqual(fb2.mode, "general");
+  assert.strictEqual(fb2.historyAccepted, true, "valid history reported true on the general tier");
+  RAW = "one line only"; // general path fails closed → scripted tier
+  const fb3 = await (await post(fresh, { question: badQ, history: refused })).json();
+  assert.strictEqual(fb3.mode, "fallback");
+  assert.strictEqual(fb3.historyAccepted, false, "refusal reported on the scripted fallback tier");
+  const fb4 = await (await post(fresh, { question: badQ, history: [{ role: "visitor", text: "earlier question" }] })).json();
+  assert.strictEqual(fb4.mode, "fallback");
+  assert.strictEqual(fb4.historyAccepted, true, "valid history reported true on the fallback tier");
+  console.log("PASS 15: S1.3 refusal honesty rides greeting + general + fallback tiers (P2-3 updated)");
 }
 
 // 15b - Reroute flag rides the SCRIPTED tiers too (199d9a30): present iff
@@ -301,7 +314,11 @@ function makeBaseline() {
 // This is Oksana's scripted-reroute leg for Yoshi's Monday matrix, pinned
 // first-party here.
 {
-  RAW = GOOD_TWO_LINE;
+  // P2-3: badQ is a no-grounding question and now serves the general brain
+  // (which DOES honor chairs). The 15b legs test the SCRIPTED tiers, so the
+  // general path is forced to fail closed with a malformed composition —
+  // the scripted tier underneath keeps its no-chair semantics.
+  RAW = "one line only";
   const fresh = makeHandler();
   const badQ = "flumadiddle crockle zqwxy hopscotch borkbork";
   const f1 = await (await post(fresh, { question: badQ, addressee: "advocate" })).json();
@@ -314,7 +331,7 @@ function makeBaseline() {
   const g = await (await post(fresh, { question: "hello there", addressee: "advocate" })).json();
   assert.strictEqual(g.mode, "greeting");
   assert.strictEqual(g.addresseeRerouted, true, "greeting tier is scripted class → chair request reroutes");
-  console.log("PASS 15b: addresseeRerouted rides every tier with honest per-tier values (199d9a30)");
+  console.log("PASS 15b: addresseeRerouted rides every tier with honest per-tier values (199d9a30; P2-3 scripted legs via fail-closed general)");
 }
 
 // 16 - S1.6 logging: history contributes COUNTS only (never text).
@@ -335,6 +352,59 @@ function makeBaseline() {
   const flatLog = JSON.stringify(metric);
   assert.ok(!flatLog.includes("SECRET-QUESTION-TEXT-never-log"), "no history text in any log line");
   console.log("PASS 16: history contributes counts only to logs, never text");
+}
+
+// ---- 17 - RED-CYCLE-3 D1 fault injection (Kate's goldfish-class serve):
+// BOTH chairs independently pass gateTurn as honest declines (no material
+// tie to either) — the grounded path had no exchange-level constraint
+// against this. Exactly one decline may survive; the counterweight suppresses.
+{
+  RAW = "Robin-twin: We haven't covered goldfish naming on the show yet – but if you're building an agent to manage one, keep it LLM-agnostic.\nTobi-twin: We haven't covered that on the show yet.";
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
+  assert.strictEqual(body.turns.length, 1, "D1: at most one decline turn may survive the exchange");
+  assert.strictEqual(body.turns[0].speaker, "robin-twin", "D1: the advocate's decline (with its real content) stands, counterweight suppressed");
+  assert.ok(!body.answer.includes("Tobi-twin:"), "D1: doubled decline never reaches the wire");
+  console.log("PASS 17: D1 fault injection — independently-passing double decline suppressed to one turn");
+}
+
+// ---- 18 - RED-CYCLE-3 D2 fault injection (Kate's planted-ep47 serve): a
+// decline turn naming a planted episode number is fabricated provenance —
+// no citation backs it — and must fail closed, not ride to the wire. -------
+{
+  RAW = "Robin-twin: We haven't confirmed episode 47 covered the Opus month – that's not something we discussed.\nTobi-twin: " + COUNTERWEIGHT_LINE;
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
+  assert.strictEqual(body.turns.length, 1, "D2: TERMINATE — advocate's episode-ref decline fails its own gate, counterweight suppressed");
+  assert.strictEqual(body.turns[0].citations.length, 0);
+  assert.ok(!/\bep(isode)?\s*#?\s*47\b/i.test(body.answer), "D2: planted episode number never reaches the wire");
+  console.log("PASS 18: D2 fault injection — planted episode number in a denial fails closed");
+}
+
+// ---- 19 - D1/D2 regression guard: a normal grounded exchange with a real
+// episode citation in a CLAIM-BEARING (non-decline) line is untouched — the
+// episode-ref gate is scoped to the decline class only (PASS 3b in
+// test-llm-seam pins the same fixture shape at the validateAnswer unit level).
+{
+  RAW = GOOD_TWO_LINE;
+  const body = await (await post(makeHandler(), { question: QUESTION })).json();
+  assert.strictEqual(body.mode, "llm");
+  assert.ok(body.citations.length > 0, "claim-bearing grounded exchange still serves normally");
+  console.log("PASS 19: D1/D2 regression guard — normal grounded exchange unaffected");
+}
+
+// ---- 20 - RED-CYCLE-4 fault injection (Yoshi 6148bad8 Case B): D1's first
+// pass only suppressed when BOTH gates PASS — but a FAILED gate ALSO renders
+// a decline (declineTurn()'s constant DECLINE_LINE), so a genuinely-declining
+// advocate next to a counterweight that fails ITS gate (here: D2's own
+// episode-ref reject) doubled the decline right through the gap. Must now
+// suppress to one turn regardless of which side failed its gate.
+{
+  RAW = "Robin-twin: We haven't covered goldfish naming on the show yet – ask us something else.\nTobi-twin: We haven't covered whether episode 47 discussed this – that's not something we said on air.";
+  const body = await (await post(makeHandler(), { question: QUESTION, history: [{ role: "visitor", text: "earlier question" }, { role: "agent", text: "earlier answer" }] })).json();
+  assert.strictEqual(body.turns.length, 1, "Case B: declining advocate + gate-failing (episode-ref) counterweight must still collapse to one decline turn");
+  assert.strictEqual(body.turns[0].speaker, "robin-twin");
+  assert.ok(!body.answer.includes("Tobi-twin:"), "Case B: the gate-failure-rendered second decline never reaches the wire");
+  assert.ok(!/\bep(isode)?\s*#?\s*47\b/i.test(body.answer), "Case B: planted episode number also stays off the wire (D2 still holds)");
+  console.log("PASS 20: RED-CYCLE-4 Case B fault injection — declining advocate + gate-failing counterweight collapses to one turn");
 }
 
 globalThis.fetch = realFetch;

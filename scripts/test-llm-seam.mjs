@@ -290,4 +290,28 @@ console.log("PASS 5: fixture registry complete");
   console.log("PASS 10: decline-class polarity — citations empty ⟺ DECLINE, chrome under a decline fails CLOSED");
 }
 
+// 11. RED-CYCLE-3 D2 (Oksana f272ce9c spec / Kate's grounded-tier repro):
+// a DECLINE-class answer naming a planted episode number has no citation to
+// back it — fabricated provenance by construction — and must reject. A
+// CLAIM-BEARING answer with a real grounded citation legitimately naming an
+// episode number (PASS 3b's fixture shape) must NOT be touched — the check
+// is scoped to the decline class only.
+{
+  const declineWithEp = "Robin-twin: We haven't covered whether episode 47 discussed the Opus month – that's not something we said on air.\nTobi-twin: Ask us about the token bill instead.";
+  assert.strictEqual(isHonestDecline(declineWithEp), true, "setup: this answer must classify as DECLINE");
+  const vDeclineEp = validateAnswer({ answer: declineWithEp, citations: [], allowedCitations: [] });
+  assert.deepStrictEqual(vDeclineEp, { ok: false, reason: "episode-ref-in-answer" }, "a decline naming a planted episode number must reject");
+  const declineEpShort = "Robin-twin: We haven't covered that on the show yet – definitely not ep #12.\nTobi-twin: Ask us about the token bill instead.";
+  assert.strictEqual(isHonestDecline(declineEpShort), true, "setup: this answer must classify as DECLINE");
+  const vDeclineEpShort = validateAnswer({ answer: declineEpShort, citations: [], allowedCitations: [] });
+  assert.deepStrictEqual(vDeclineEpShort, { ok: false, reason: "episode-ref-in-answer" }, "the ep# short form must also reject inside a decline");
+  // Regression guard: claim-bearing text with a REAL grounded citation is
+  // untouched — same fixture shape as PASS 3b (episode number in prose, but
+  // backed by an actual citation, not a decline).
+  const claimWithEp = { answer: `Robin-twin: ${"Grounded banter about the memory wall from Episode 3. ".repeat(2)}\nTobi-twin: Still my favourite fight.`, citations: ALLOWED, allowedCitations: ALLOWED };
+  const vClaimEp = validateAnswer(claimWithEp);
+  assert.strictEqual(vClaimEp.ok, true, `claim-bearing text citing a real episode must still pass: ${vClaimEp.reason}`);
+  console.log("PASS 11: RED-CYCLE-3 D2 — episode-ref rejects inside a decline, untouched for a cited claim-bearing answer");
+}
+
 console.log("ALL LLM-SEAM TESTS PASS");

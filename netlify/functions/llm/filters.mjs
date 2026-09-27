@@ -160,6 +160,17 @@ export function validateAnswer({ answer, citations, allowedCitations }) {
     if (Array.isArray(citations) && citations.length > 0) {
       return { ok: false, reason: "decline-with-citations" }; // chrome must not assert what the text denies
     }
+    // RED-CYCLE-3 (Oksana 8315969c cycle-3 open / Kate L6-d-plantep-class
+    // repro on the grounded path): a decline has no citation to justify
+    // anything it says, so a planted episode number surviving into a denial
+    // is fabricated provenance by construction — same reasoning as the
+    // general path's Fix C, scoped here to the DECLINE class only (a
+    // claim-bearing grounded answer legitimately cites real episodes, see
+    // the PASS 3b fixture; only a citation-less denial has nothing backing
+    // an episode reference).
+    if (EPISODE_REF_PATTERN.test(answer)) {
+      return { ok: false, reason: "episode-ref-in-answer" };
+    }
   } else if (!Array.isArray(citations) || citations.length === 0) {
     return { ok: false, reason: "no-citations" }; // §5: no grounding → no LLM answer
   }
@@ -174,6 +185,85 @@ export function validateAnswer({ answer, citations, allowedCitations }) {
   }
   for (const re of INJECTION_ARTIFACT_PATTERNS) {
     if (re.test(answer)) return { ok: false, reason: "injection-artifact" };
+  }
+  return { ok: true, reason: null };
+}
+
+// ---- P2-3 general-knowledge brain (build spec §A.3/§A.4, spec of record
+// sha c1ca7c7f…) — ADDITIVE validator for the general path only. The grounded
+// path's validateAnswer above is untouched (the §S2 snapshot legs hold).
+// General-knowledge turns carry NO citations by construction (never attach
+// episode provenance to non-grounded content), so the claim-bearing citation
+// polarity does not apply; the mechanical rails it reuses are the SAME
+// exported pattern sets the grounded gate runs. Em-dash ban is enforced
+// MECHANICALLY here (prompt rule + hard gate) — the new surface is a larger
+// attack and drift surface, and the standing em workstream's standard for
+// LLM output is zero em dashes on the wire.
+const EM_DASH_PATTERNS = [/—/, /&mdash;/i, /&#8212;/, /&#x2014;/i];
+
+// RED-CYCLE-2 Fix B (Oksana 0fd0a2d7 §4 / RV-2a): the general path's honest
+// decline is a SERVER-authored constant (ask.mjs DECLINE_LINE) — the composed
+// answer must carry it EXACTLY once. Zero means the server-side prepend was
+// skipped (construction bug); two or more means the model duplicated it
+// somewhere the construction-side strip (ask.mjs stripDeclineEcho) missed —
+// this gate is the mechanical backstop, independent of that construction.
+// Marker pattern matches isHonestDecline's paraphrase tolerance (not just the
+// literal DECLINE_LINE string) so a reworded model echo still counts.
+const DECLINE_MARKER_PATTERNS = [/\bhaven'?t\s+covered\b/gi, /\bnot\s+covered\b[^.\n]*\bon the show\b/gi];
+
+export function countDeclineMarkers(answer) {
+  let count = 0;
+  for (const re of DECLINE_MARKER_PATTERNS) {
+    const matches = String(answer).match(re);
+    if (matches) count += matches.length;
+  }
+  return count;
+}
+
+// RED-CYCLE-2 Fix C (Oksana 0fd0a2d7 §4 / RV-2a, RV-3): no episode identifier
+// may ever appear in a general-knowledge turn, IN ANY ROLE — including a
+// denial/rebuttal that is only naming the number to reject a planted claim
+// (L6-d-plantep). The general path has no retrieved episode to attribute, so
+// any "episode 47" / "ep #12" shaped token is fabricated provenance by
+// construction and must reject, not just decorate.
+const EPISODE_REF_PATTERN = /ep(isode)?\s*#?\s*\d+/i;
+
+// `requireExactlyOneDecline`: the gate unit for bio/injection/em-dash/episode-
+// ref is a single TURN (spec §A.3), but decline-count is only meaningful over
+// the FULL composed exchange — a lone counterweight turn legitimately carries
+// zero decline markers (the server prepend lives on the advocate turn only).
+// Per-turn calls (default) reject only an outright doubled marker WITHIN that
+// turn; the composed-whole call (ask.mjs, `requireExactlyOneDecline: true`)
+// enforces the real contract — exactly one marker across the entire answer,
+// catching both a skipped prepend (0) and a model-authored duplicate that
+// escaped construction-side stripping anywhere in either voice (>=2).
+export function validateGeneralAnswer({ answer, requireExactlyOneDecline = false }) {
+  if (typeof answer !== "string" || !answer.trim()) {
+    return { ok: false, reason: "empty-answer" };
+  }
+  if (answer.length > MAX_ANSWER_CHARS) {
+    return { ok: false, reason: "answer-too-long" };
+  }
+  const lines = answer.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length > MAX_ANSWER_LINES) {
+    return { ok: false, reason: "too-many-lines" };
+  }
+  for (const re of BIO_FACT_PATTERNS) {
+    if (re.test(answer)) return { ok: false, reason: "bio-fact-without-source" };
+  }
+  for (const re of INJECTION_ARTIFACT_PATTERNS) {
+    if (re.test(answer)) return { ok: false, reason: "injection-artifact" };
+  }
+  for (const re of EM_DASH_PATTERNS) {
+    if (re.test(answer)) return { ok: false, reason: "em-dash" };
+  }
+  const declineCount = countDeclineMarkers(answer);
+  const declineBad = requireExactlyOneDecline ? declineCount !== 1 : declineCount > 1;
+  if (declineBad) {
+    return { ok: false, reason: "decline-count" };
+  }
+  if (EPISODE_REF_PATTERN.test(answer)) {
+    return { ok: false, reason: "episode-ref-in-answer" };
   }
   return { ok: true, reason: null };
 }
