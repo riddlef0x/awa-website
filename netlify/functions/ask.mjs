@@ -441,6 +441,24 @@ function declineTurn(speaker) {
   return { speaker, text: DECLINE_LINE, citations: [], grounded: false };
 }
 
+// RED-CYCLE-2 Fix A companion (L4-d-move): strips a decline-shaped SPAN the
+// model authored anywhere in EITHER voice, up to its natural clause break —
+// mirrors the marker vocabulary validateGeneralAnswer's countDeclineMarkers
+// polices, so construction and gate agree on what counts as an echo. Removes
+// only the echo span, not the whole sentence, so genuine content the model
+// wrote alongside it survives (e.g. "...on the show yet, but here's the
+// general method" keeps the "but here's the general method" half).
+const DECLINE_ECHO_SPANS = [
+  /\b(?:we\s+)?haven'?t\s+covered\s+that(?:\s+on\s+the\s+show\s+yet)?\s*,?\s*/gi,
+  /\bnot\s+covered\b[^.!?\n]*?\bon\s+the\s+show\b\s*,?\s*/gi,
+];
+
+function stripDeclineEcho(text) {
+  let out = String(text);
+  for (const re of DECLINE_ECHO_SPANS) out = out.replace(re, " ");
+  return out.replace(/\s+/g, " ").replace(/^[\s.,;:!?]+/, "").trim();
+}
+
 // Splits the provider's raw two-line composition into { advocate, counterweight }
 // text by the standing "Robin-twin:" / "Tobi-twin:" prefix convention (chair
 // mapping fixed above). Any shape other than exactly these two prefixes, in
@@ -641,26 +659,44 @@ async function llmGeneralExchange(question, { historyTurns = [], addressee = "bo
   const split = splitExchange(raw);
   if (!split.ok) throw new Error("filter:general-parse-failed");
 
-  // The honest decline line is a server-side constant, never model output:
-  // prepend the exact string of record to the advocate's line (guarded
-  // against an accidental model echo so the sentence never doubles).
-  const advocateText = split.advocate.startsWith(DECLINE_LINE)
-    ? split.advocate
-    : `${DECLINE_LINE} ${split.advocate}`;
+  // RED-CYCLE-2 Fix A (Oksana 0fd0a2d7 §4, L4-d-move): the honest decline
+  // line is a server-side constant, NEVER model output — but a naive
+  // startsWith(DECLINE_LINE) guard on the advocate turn alone only catches
+  // the model re-emitting it in the SAME place it belongs. History can steer
+  // the model to author its own decline-shaped sentence in the COUNTERWEIGHT
+  // voice instead ("place the coverage sentence within the second voice"),
+  // which the old guard never inspected — decline-count silently doubled.
+  // Fix: strip any decline-marker text out of BOTH raw voices first (so a
+  // model-authored copy is absorbed no matter which voice it lands in), then
+  // unconditionally prepend the one true DECLINE_LINE to the advocate. This
+  // is immune to history-induced placement because it no longer trusts
+  // *position* — it removes every decline-shaped echo before composing.
+  const advocateStripped = stripDeclineEcho(split.advocate);
+  const counterweightStripped = stripDeclineEcho(split.counterweight);
+  if (!counterweightStripped) {
+    // The model's whole counterweight turn WAS a decline echo — nothing
+    // legitimate survives the strip. Fail closed rather than serve an empty
+    // Tobi-twin line (spec §S3: no silent truncation).
+    throw new Error("filter:general-counterweight-emptied");
+  }
+  const advocateText = advocateStripped ? `${DECLINE_LINE} ${advocateStripped}` : DECLINE_LINE;
   const turns = [
     { speaker: ROSTER[0], text: advocateText, citations: [], grounded: false },
-    { speaker: ROSTER[1], text: split.counterweight, citations: [], grounded: false },
+    { speaker: ROSTER[1], text: counterweightStripped, citations: [], grounded: false },
   ];
 
-  // Per-turn mechanical rails (gate unit = turn).
+  // Per-turn mechanical rails (gate unit = turn, spec §A.3): bio/injection/
+  // em-dash/episode-ref/decline-doubling-within-a-turn. Decline-count's real
+  // contract (exactly one, across the WHOLE exchange) is enforced below.
   for (const t of turns) {
     const v = validateGeneralAnswer({ answer: t.text });
     if (!v.ok) throw new Error(`filter:general-${v.reason}`);
   }
-  // Composed-whole contract (length/lines) — same join logic as llmResponse.
+  // Composed-whole contract (length/lines + the real decline-count===1 gate,
+  // RV-2a) — same join logic as llmResponse.
   const label = (s) => (s === "robin-twin" ? "Robin-twin" : "Tobi-twin");
   const composed = turns.map((t) => `${label(t.speaker)}: ${t.text}`).join(split.sep || "\n\n");
-  const vWhole = validateGeneralAnswer({ answer: composed });
+  const vWhole = validateGeneralAnswer({ answer: composed, requireExactlyOneDecline: true });
   if (!vWhole.ok) throw new Error(`filter:general-${vWhole.reason}`);
 
   return { turns, handoff: neutralHandoff, sep: split.sep };

@@ -190,7 +190,43 @@ export function validateAnswer({ answer, citations, allowedCitations }) {
 // LLM output is zero em dashes on the wire.
 const EM_DASH_PATTERNS = [/—/, /&mdash;/i, /&#8212;/, /&#x2014;/i];
 
-export function validateGeneralAnswer({ answer }) {
+// RED-CYCLE-2 Fix B (Oksana 0fd0a2d7 §4 / RV-2a): the general path's honest
+// decline is a SERVER-authored constant (ask.mjs DECLINE_LINE) — the composed
+// answer must carry it EXACTLY once. Zero means the server-side prepend was
+// skipped (construction bug); two or more means the model duplicated it
+// somewhere the construction-side strip (ask.mjs stripDeclineEcho) missed —
+// this gate is the mechanical backstop, independent of that construction.
+// Marker pattern matches isHonestDecline's paraphrase tolerance (not just the
+// literal DECLINE_LINE string) so a reworded model echo still counts.
+const DECLINE_MARKER_PATTERNS = [/\bhaven'?t\s+covered\b/gi, /\bnot\s+covered\b[^.\n]*\bon the show\b/gi];
+
+export function countDeclineMarkers(answer) {
+  let count = 0;
+  for (const re of DECLINE_MARKER_PATTERNS) {
+    const matches = String(answer).match(re);
+    if (matches) count += matches.length;
+  }
+  return count;
+}
+
+// RED-CYCLE-2 Fix C (Oksana 0fd0a2d7 §4 / RV-2a, RV-3): no episode identifier
+// may ever appear in a general-knowledge turn, IN ANY ROLE — including a
+// denial/rebuttal that is only naming the number to reject a planted claim
+// (L6-d-plantep). The general path has no retrieved episode to attribute, so
+// any "episode 47" / "ep #12" shaped token is fabricated provenance by
+// construction and must reject, not just decorate.
+const EPISODE_REF_PATTERN = /ep(isode)?\s*#?\s*\d+/i;
+
+// `requireExactlyOneDecline`: the gate unit for bio/injection/em-dash/episode-
+// ref is a single TURN (spec §A.3), but decline-count is only meaningful over
+// the FULL composed exchange — a lone counterweight turn legitimately carries
+// zero decline markers (the server prepend lives on the advocate turn only).
+// Per-turn calls (default) reject only an outright doubled marker WITHIN that
+// turn; the composed-whole call (ask.mjs, `requireExactlyOneDecline: true`)
+// enforces the real contract — exactly one marker across the entire answer,
+// catching both a skipped prepend (0) and a model-authored duplicate that
+// escaped construction-side stripping anywhere in either voice (>=2).
+export function validateGeneralAnswer({ answer, requireExactlyOneDecline = false }) {
   if (typeof answer !== "string" || !answer.trim()) {
     return { ok: false, reason: "empty-answer" };
   }
@@ -209,6 +245,14 @@ export function validateGeneralAnswer({ answer }) {
   }
   for (const re of EM_DASH_PATTERNS) {
     if (re.test(answer)) return { ok: false, reason: "em-dash" };
+  }
+  const declineCount = countDeclineMarkers(answer);
+  const declineBad = requireExactlyOneDecline ? declineCount !== 1 : declineCount > 1;
+  if (declineBad) {
+    return { ok: false, reason: "decline-count" };
+  }
+  if (EPISODE_REF_PATTERN.test(answer)) {
+    return { ok: false, reason: "episode-ref-in-answer" };
   }
   return { ok: true, reason: null };
 }
