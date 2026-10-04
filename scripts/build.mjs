@@ -526,6 +526,15 @@ ${jsonLdSafe({
 </script>
 ${isStale ? `<!-- BUILD WARNING: YouTube data source="${data.source}", fetchedAt=${data.fetchedAt} (${ageDays.toFixed(1)} days old). This build shipped with stale/fallback data rather than failing. -->` : ""}
 <link rel="stylesheet" href="/site.css">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1DTPHLYG60"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1DTPHLYG60');
+</script>
 </head>
 <body>
 
@@ -722,6 +731,15 @@ ${ogImageTags}
 <link rel="canonical" href="${abs}">
 ${jsonLd ? `<script type="application/ld+json">\n${jsonLdSafe(jsonLd)}\n</script>\n` : ""}<link rel="stylesheet" href="/site.css">
 <style>${innerCSS}</style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1DTPHLYG60"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1DTPHLYG60');
+</script>
 </head>
 <body>
 
