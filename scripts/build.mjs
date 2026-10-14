@@ -781,7 +781,7 @@ ${MOTION_TILT_JS}
     <div class="wrap narrow">
       <p class="kicker">Privacy</p>
       <h1 class="legal-title">Everything we collect, and why.</h1>
-      <p class="updated">Last updated: 4 September 2026.</p>
+      <p class="updated">Last updated: 14 October 2026.</p>
 
       <h3>Who we are</h3>
       <p>Act Without Asking is a podcast hosted by Robin Leonard and Tobi Webster. For any privacy request — access, correction, or deletion of your data — email <code>CONTACT_ADDRESS_PENDING_DOMAIN</code>. A human reads it.</p>
@@ -798,7 +798,7 @@ ${MOTION_TILT_JS}
       <p><strong>We do not sell, rent, or share your email address. Ever.</strong></p>
 
       <h3>Analytics</h3>
-      <p>No Google Analytics, no ad trackers, no third-party cookies. If we ever add analytics, it will be self-hosted and first-party — and this page will say exactly what we collect before it turns on.</p>
+      <p>This site uses Google Analytics to count which pages and episodes people visit. Google sets a small identifier in your browser to do this. If you would rather not be counted, standard browser settings or a blocking extension will stop it.</p>
 
       <h3>The twins</h3>
       <p>When you ask the twins a question, here is exactly what happens to it.
@@ -1089,7 +1089,7 @@ ${ARTICLES.filter((a) => episodesByNumber.has(a.episodeNumber)).map((a) => {
       ],
     } })],
     ["subscribe/index.html", pageShell({ path: "/subscribe/", title: "Subscribe — Act Without Asking", desc: "Get new episodes and The Harness Kit — checklists and templates from the show. Double opt-in, unsubscribe any time.", body: subscribeBody })],
-    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: your email if you subscribe, aggregate twins counts, and nothing hidden.", body: privacyBody })],
+    ["privacy/index.html", pageShell({ path: "/privacy/", title: "Privacy — Act Without Asking", desc: "Everything Act Without Asking collects and why: your email if you subscribe, site analytics, aggregate twins counts, and nothing hidden.", body: privacyBody })],
     ["404.html", pageShell({ path: "/404.html", title: "Page not found — Act Without Asking", desc: "That page doesn't exist.", body: notFoundBody })],
     ["robots.txt", `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`],
   ];

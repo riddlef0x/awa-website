@@ -526,6 +526,15 @@ h2{font-size:20px;margin:32px 0 12px}
 .t-link:hover{background:rgba(200,255,61,.1)}
 .t-foot{color:#9AA7BA;font-size:12px;margin-top:40px}
 </style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1DTPHLYG60"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1DTPHLYG60');
+</script>
 </head>
 <body>
 <main class="wrap">
